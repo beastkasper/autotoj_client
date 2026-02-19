@@ -2,6 +2,8 @@
 
 import { Instagram, Send, MessageCircle } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 export function DesktopFooter() {
   const pathname = usePathname();
@@ -10,63 +12,42 @@ export function DesktopFooter() {
   // Hide footer on auth pages
   if (pathname.startsWith("/login")) return null;
 
-  const handleNavigate = (page: "about" | "terms" | "privacy" | "faq") => {
-    router.push(`/${page}`);
-  };
+  const links = [
+    { label: "О приложении", page: "about" },
+    { label: "Условия соглашения", page: "terms" },
+    { label: "Конфиденциальность", page: "privacy" },
+    { label: "Помощь", page: "faq" },
+  ] as const;
 
   return (
     <footer className="hidden md:block bg-white border-t border-[#E5E5E7] mt-16">
       <div className="max-w-[1400px] mx-auto px-8 py-8">
         <div className="flex flex-col items-center gap-6">
-          {/* Logo and Description */}
-          <div className="text-center">
-            <h3
-              className="text-[20px] font-bold text-[#111111] mb-2"
-              style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif" }}
-            >
-              autoTOJ
-            </h3>
-          </div>
+          {/* Logo */}
+          <h3
+            className="text-[20px] font-bold text-[#111111] mb-2"
+            style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif" }}
+          >
+            autoTOJ
+          </h3>
 
-          {/* Links */}
-          <div className="flex items-center gap-8">
-            <button
-              onClick={() => handleNavigate("about")}
-              className="text-[14px] text-[#111111] hover:text-[#8E8E93] transition-colors font-medium bg-transparent border-none cursor-pointer"
-              style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif" }}
-            >
-              О приложении
-            </button>
-
-            <div className="w-px h-4 bg-[#E5E5E7]" />
-
-            <button
-              onClick={() => handleNavigate("terms")}
-              className="text-[14px] text-[#111111] hover:text-[#8E8E93] transition-colors font-medium bg-transparent border-none cursor-pointer"
-              style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif" }}
-            >
-              Условия соглашения
-            </button>
-
-            <div className="w-px h-4 bg-[#E5E5E7]" />
-
-            <button
-              onClick={() => handleNavigate("privacy")}
-              className="text-[14px] text-[#111111] hover:text-[#8E8E93] transition-colors font-medium bg-transparent border-none cursor-pointer"
-              style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif" }}
-            >
-              Конфиденциальность
-            </button>
-
-            <div className="w-px h-4 bg-[#E5E5E7]" />
-
-            <button
-              onClick={() => handleNavigate("faq")}
-              className="text-[14px] text-[#111111] hover:text-[#8E8E93] transition-colors font-medium bg-transparent border-none cursor-pointer"
-              style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif" }}
-            >
-              Помощь
-            </button>
+          {/* Links with Separators */}
+          <div className="flex items-center gap-4">
+            {links.map((link, i) => (
+              <div key={link.page} className="flex items-center gap-4">
+                <Button
+                  variant="link"
+                  onClick={() => router.push(`/${link.page}`)}
+                  className="text-[14px] text-[#111111] hover:text-[#8E8E93] font-medium p-0 h-auto no-underline hover:no-underline"
+                  style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif" }}
+                >
+                  {link.label}
+                </Button>
+                {i < links.length - 1 && (
+                  <Separator orientation="vertical" className="h-4" />
+                )}
+              </div>
+            ))}
           </div>
 
           {/* Social Networks */}

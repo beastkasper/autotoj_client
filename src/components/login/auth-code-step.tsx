@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { useVerifyCodeMutation, useSendCodeMutation } from "@/lib/features/auth/authApi";
 import { resetAuth, setResendCountdown } from "@/lib/features/auth/authSlice";
@@ -233,35 +235,20 @@ export function AuthCodeStep({
       )}
 
       {/* Submit button */}
-      <button
+      <Button
         type="button"
         disabled={!allFilled || isVerifying}
         onClick={handleSubmit}
-        className="w-full transition-all duration-200"
+        className="w-full h-[52px] rounded-[20px] text-[15px] font-medium"
         style={{
-          height: 52,
-          borderRadius: 20,
-          border: "none",
-          fontSize: 15,
-          fontWeight: 500,
-          cursor: allFilled && !isVerifying ? "pointer" : "not-allowed",
           backgroundColor: allFilled ? "var(--ios-label)" : "var(--ios-disabled-separator)",
           color: allFilled ? "#FFFFFF" : "var(--ios-secondary-label)",
           fontFamily: "var(--font-manrope), sans-serif",
         }}
       >
-        {isVerifying ? (
-          <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            Проверка...
-          </span>
-        ) : (
-          "Подтвердить"
-        )}
-      </button>
+        {isVerifying && <Loader2 className="h-4 w-4 animate-spin" />}
+        {isVerifying ? "Проверка..." : "Подтвердить"}
+      </Button>
 
       {/* Resend & change links */}
       <div className="flex flex-col items-center mt-5" style={{ gap: 12 }}>
@@ -273,36 +260,33 @@ export function AuthCodeStep({
             </span>
           </p>
         ) : (
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={handleResend}
             disabled={isResending}
-            className="bg-transparent border-none cursor-pointer"
+            className="text-[15px] font-medium h-auto p-0"
             style={{
-              fontSize: 15,
-              fontWeight: 500,
               color: "var(--ios-label)",
               fontFamily: "var(--font-manrope), sans-serif",
-              opacity: isResending ? 0.5 : 1,
             }}
           >
             {isResending ? "Отправка..." : "Отправить код повторно"}
-          </button>
+          </Button>
         )}
 
-        <button
+        <Button
           type="button"
+          variant="ghost"
           onClick={handleBack}
-          className="bg-transparent border-none cursor-pointer"
+          className="text-[15px] font-medium h-auto p-0"
           style={{
-            fontSize: 15,
-            fontWeight: 500,
             color: "var(--ios-label)",
             fontFamily: "var(--font-manrope), sans-serif",
           }}
         >
           {contactType === "phone" ? "Изменить номер" : "Изменить email"}
-        </button>
+        </Button>
       </div>
     </div>
   );

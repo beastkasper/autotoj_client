@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { AutoTojLogo } from "@/components/brand/AutoTojLogo";
 import { HeaderNav } from "./HeaderNav";
@@ -10,14 +9,24 @@ import { ListingsBar } from "./ListingsBar";
 export function DesktopHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("search");
+
+  // Derive active tab from current route
+  const activeTab = pathname.startsWith("/parts") ? "parts" : "search";
 
   // Hide header on auth pages
   if (pathname.startsWith("/login")) return null;
 
   const handleNavigate = (tab: string) => {
-    setActiveTab(tab);
-    // TODO: map tabs to actual routes when they exist
+    switch (tab) {
+      case "search":
+        router.push("/");
+        break;
+      case "parts":
+        router.push("/parts");
+        break;
+      default:
+        console.log("Navigate:", tab);
+    }
   };
 
   const handleShowAuth = () => {

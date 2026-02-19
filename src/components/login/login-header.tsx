@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChevronLeft, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function LoginHeader() {
   const pathname = usePathname();
@@ -10,25 +12,16 @@ export function LoginHeader() {
   return (
     <header className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
       {isConfirm ? (
-        <Link
-          href="/login"
-          aria-label="Назад"
-          className="flex items-center justify-center w-8 h-8 rounded-full text-gray-700 hover:bg-gray-100 transition-colors"
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          className="rounded-full"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </Link>
+          <Link href="/login" aria-label="Назад">
+            <ChevronLeft className="w-5 h-5" />
+          </Link>
+        </Button>
       ) : (
         <span />
       )}
@@ -37,26 +30,16 @@ export function LoginHeader() {
         {isConfirm ? "Подтверждение" : "Вход"}
       </span>
 
-      <Link
-        href="/"
-        aria-label="Закрыть"
-        className="flex items-center justify-center w-8 h-8 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
+      <Button
+        asChild
+        variant="ghost"
+        size="icon"
+        className="rounded-full text-gray-500"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M18 6 6 18" />
-          <path d="m6 6 12 12" />
-        </svg>
-      </Link>
+        <Link href="/" aria-label="Закрыть">
+          <X className="w-5 h-5" />
+        </Link>
+      </Button>
     </header>
   );
 }

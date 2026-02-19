@@ -1,7 +1,13 @@
 "use client";
 
-import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import type { FilterState } from "./FilterSheet";
 
 interface DesktopFilterPanelProps {
@@ -11,30 +17,16 @@ interface DesktopFilterPanelProps {
 
 export function DesktopFilterPanel({ onClose, onApply }: DesktopFilterPanelProps) {
   return (
-    <div className="fixed inset-0 z-50">
-      {/* Overlay */}
-      <div
-        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-        onClick={onClose}
-      />
-
-      {/* Panel */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl w-[560px] max-h-[70vh] overflow-y-auto p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[560px] max-h-[70vh] overflow-y-auto rounded-2xl p-8">
+        <DialogHeader>
+          <DialogTitle
             className="text-xl font-bold text-[#111111]"
             style={{ fontFamily: "var(--font-manrope), system-ui, sans-serif" }}
           >
             Фильтры
-          </h2>
-          <button
-            onClick={onClose}
-            className="size-8 rounded-full bg-[#F2F2F7] flex items-center justify-center text-[#8E8E93] hover:bg-[#E5E5E7] transition-colors"
-          >
-            <X className="size-4" />
-          </button>
-        </div>
+          </DialogTitle>
+        </DialogHeader>
 
         {/* Placeholder content */}
         <p className="text-sm text-[#8E8E93] text-center py-16">
@@ -42,7 +34,7 @@ export function DesktopFilterPanel({ onClose, onApply }: DesktopFilterPanelProps
         </p>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <DialogFooter className="flex gap-3 sm:flex-row">
           <Button
             onClick={onClose}
             variant="outline"
@@ -56,8 +48,8 @@ export function DesktopFilterPanel({ onClose, onApply }: DesktopFilterPanelProps
           >
             Применить
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

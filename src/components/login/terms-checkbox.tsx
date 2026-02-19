@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { LegalModal } from "@/components/login/legal-modal";
 
 interface TermsCheckboxProps {
@@ -15,29 +17,17 @@ export function TermsCheckbox({ checked, onChange, error }: TermsCheckboxProps) 
   return (
     <>
       <div className="mt-5">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <button
-            type="button"
-            onClick={() => onChange(!checked)}
-            className={`mt-0.5 w-5 h-5 min-w-5 rounded border-2 flex items-center justify-center transition-all duration-150 ${
-              checked
-                ? "bg-[var(--ios-label)] border-[var(--ios-label)]"
-                : "bg-white border-gray-300"
-            }`}
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="terms-agreement"
+            checked={checked}
+            onCheckedChange={(val) => onChange(val === true)}
+            className="mt-0.5 data-[state=checked]:bg-[var(--ios-label)] data-[state=checked]:border-[var(--ios-label)]"
+          />
+          <Label
+            htmlFor="terms-agreement"
+            className="text-sm text-[var(--ios-secondary-label)] leading-relaxed font-normal cursor-pointer"
           >
-            {checked && (
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path
-                  d="M2.5 6L5 8.5L9.5 4"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            )}
-          </button>
-          <span className="text-sm text-[var(--ios-secondary-label)] leading-relaxed">
             Я принимаю{" "}
             <button
               type="button"
@@ -60,8 +50,8 @@ export function TermsCheckbox({ checked, onChange, error }: TermsCheckboxProps) 
             >
               Политику конфиденциальности
             </button>
-          </span>
-        </label>
+          </Label>
+        </div>
         {error && (
           <p className="mt-1.5 text-xs text-[var(--ios-destructive)]">{error}</p>
         )}

@@ -1,9 +1,9 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
-  ArrowLeft,
+  X,
   Heart,
   Share2,
   MapPin,
@@ -11,19 +11,25 @@ import {
   Fuel,
   Gauge,
   Settings2,
-  Video,
   Phone,
   MessageCircle,
-  ChevronRight,
   Shield,
-  Clock,
+  Upload,
+  ChevronLeft,
+  Palette,
+  Users,
+  FileText,
+  Check,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { AdImageSection } from "@/components/ad/AdImageSection";
+import { AdPriceCard } from "@/components/ad/AdPriceCard";
+import { AdSpecsTable } from "@/components/ad/AdSpecsTable";
+import { SellerCard } from "@/components/ad/SellerCard";
+import { AdActionBar } from "@/components/ad/AdActionBar";
 import { getAdById } from "@/lib/data/mockAds";
-import type { Ad } from "@/components/cards/AdCard";
-import { ImageWithFallback } from "@/components/cards/ImageWithFallback";
-
-const formatPrice = (price: number) =>
-  price.toLocaleString("ru-RU").replace(/,/g, " ");
+import { formatPrice } from "@/lib/utils/formatPrice";
 
 export default function AdDetailPage() {
   const params = useParams();
@@ -31,7 +37,45 @@ export default function AdDetailPage() {
   const id = params.id as string;
 
   const ad = getAdById(id);
-  const [isFavorite, setIsFavorite] = useState(ad?.isFavorite ?? false);
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const title = useMemo(
+    () =>
+      ad
+        ? ad.version
+          ? `${ad.brand} ${ad.model} ${ad.version}`
+          : `${ad.brand} ${ad.model}`
+        : "",
+    [ad]
+  );
+
+  const specs = useMemo(() => {
+    if (!ad) return [];
+    const result: { icon: typeof Gauge; label: string; value: string }[] = [];
+    if (ad.year) result.push({ icon: Calendar, label: "Год выпуска", value: `${ad.year}` });
+    if (ad.mileage !== undefined) result.push({ icon: Gauge, label: "Пробег", value: `${ad.mileage.toLocaleString("ru-RU")} км` });
+    if (ad.bodyType) result.push({ icon: Settings2, label: "Тип кузова", value: ad.bodyType });
+    if (ad.color) result.push({ icon: Palette, label: "Цвет", value: ad.color });
+    if (ad.engineType) {
+      const engineLabel = ad.engineVolume ? `${ad.engineVolume} / ${ad.engineType}` : ad.engineType;
+      result.push({ icon: Fuel, label: "Двигатель", value: engineLabel });
+    }
+    if (ad.transmission) result.push({ icon: Settings2, label: "Коробка передач", value: ad.transmission });
+    if (ad.driveType) result.push({ icon: Settings2, label: "Привод", value: ad.driveType });
+    if (ad.condition) result.push({ icon: Shield, label: "Состояние", value: ad.condition });
+    if (ad.owners !== undefined) result.push({ icon: Users, label: "Владельцев", value: `${ad.owners}` });
+    if (ad.isCustomsCleared !== undefined) result.push({ icon: FileText, label: "Растаможен", value: ad.isCustomsCleared ? "Да" : "Нет" });
+    return result;
+  }, [ad]);
+
+  const quickStats = useMemo(() => {
+    if (!ad) return [];
+    const qs: string[] = [];
+    if (ad.year) qs.push(`${ad.year}`);
+    if (ad.mileage !== undefined) qs.push(`${ad.mileage.toLocaleString("ru-RU")} км`);
+    if (ad.engineType) qs.push(ad.engineType);
+    return qs;
+  }, [ad]);
 
   if (!ad) {
     return (
@@ -43,270 +87,270 @@ export default function AdDetailPage() {
           <p className="text-[14px] text-[#8E8E93] mb-6 font-[family-name:var(--font-manrope)]">
             Возможно, оно было удалено или ссылка устарела.
           </p>
-          <button
+          <Button
             onClick={() => router.push("/")}
-            className="px-6 py-3 bg-[#111111] text-white rounded-2xl text-[14px] font-medium font-[family-name:var(--font-manrope)] hover:bg-[#333] transition-colors"
+            className="px-6 py-3 bg-[#111111] text-white rounded-2xl text-[14px] font-medium hover:bg-[#333]"
           >
             Вернуться на главную
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
-  const title =
-    ad.category === "parts"
-      ? ad.title || "Запчасть"
-      : `${ad.brand} ${ad.model}`;
-
-  // Build spec rows
-  const specs: { icon: typeof Gauge; label: string; value: string }[] = [];
-
-  if (ad.year) specs.push({ icon: Calendar, label: "Год выпуска", value: `${ad.year} г.` });
-  if (ad.mileage !== undefined) specs.push({ icon: Gauge, label: "Пробег", value: `${ad.mileage.toLocaleString("ru-RU")} км` });
-  if (ad.engineType) specs.push({ icon: Fuel, label: "Топливо", value: ad.engineType });
-  if (ad.engineVolume) specs.push({ icon: Settings2, label: "Объём двигателя", value: `${ad.engineVolume} л` });
-  if (ad.transmission) specs.push({ icon: Settings2, label: "КПП", value: ad.transmission });
-  if (ad.driveType) specs.push({ icon: Settings2, label: "Привод", value: ad.driveType });
-  if (ad.motorcycleType) specs.push({ icon: Settings2, label: "Тип мото", value: ad.motorcycleType });
-  if (ad.motorHours) specs.push({ icon: Clock, label: "Моточасы", value: `${ad.motorHours} ч` });
-  if (ad.bodyType) specs.push({ icon: Settings2, label: "Кузов", value: ad.bodyType });
-  if (ad.condition) specs.push({ icon: Shield, label: "Состояние", value: ad.condition });
-  if (ad.partCategory) specs.push({ icon: Settings2, label: "Категория", value: ad.partCategory });
+  const handleShare = () => {
+    if (navigator.share) {
+      navigator.share({ title, url: window.location.href });
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F5]">
-      {/* ──── Mobile Header ──── */}
+    <div className="min-h-screen bg-[#F5F5F7]">
+      {/* ── Desktop Top Action Bar ── */}
+      <div className="hidden lg:block bg-white border-b border-[#E5E5E7]">
+        <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-[14px] text-[#111111] hover:text-[#8E8E93] font-medium font-[family-name:var(--font-manrope)]"
+          >
+            <X className="w-4 h-4" />
+            Закрыть
+          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              onClick={handleShare}
+              className="flex items-center gap-2 text-[14px] text-[#111111] hover:text-[#8E8E93] font-medium font-[family-name:var(--font-manrope)]"
+            >
+              <Upload className="w-4 h-4" />
+              Поделиться
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setIsFavorite(!isFavorite)}
+              className={`flex items-center gap-2 text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
+                isFavorite ? "text-[#E53935]" : "text-[#111111] hover:text-[#8E8E93]"
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${isFavorite ? "fill-[#E53935]" : ""}`} />
+              В избранное
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Desktop Two-Column Layout ── */}
+      <div className="hidden lg:block">
+        <div className="max-w-[1200px] mx-auto px-6 py-8">
+          <div className="grid grid-cols-[1fr_380px] gap-8 items-start">
+            {/* Left Column */}
+            <div className="space-y-6">
+              <AdImageSection
+                image={ad.image}
+                alt={title}
+                statusNew={ad.statusNew}
+                statusOnOrder={ad.statusOnOrder}
+                className="aspect-[16/10] rounded-2xl"
+              />
+
+              {ad.description && (
+                <Card className="rounded-2xl border-[#E5E5E7] shadow-none py-0">
+                  <CardContent className="p-6">
+                    <h2 className="text-[16px] font-semibold text-[#111111] mb-3 font-[family-name:var(--font-manrope)]">
+                      Описание
+                    </h2>
+                    <p className="text-[14px] text-[#333] leading-relaxed font-[family-name:var(--font-manrope)]">
+                      {ad.description}
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              <AdSpecsTable specs={specs} />
+
+              {ad.equipment && ad.equipment.length > 0 && (
+                <Card className="rounded-2xl border-[#E5E5E7] shadow-none py-0">
+                  <CardContent className="p-6">
+                    <h2 className="text-[16px] font-semibold text-[#111111] mb-3 font-[family-name:var(--font-manrope)]">
+                      Комплектация
+                    </h2>
+                    <div className="grid grid-cols-2 gap-2">
+                      {ad.equipment.map((item, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-[#4CAF50] mt-0.5 shrink-0" />
+                          <span className="text-[13px] text-[#333] font-[family-name:var(--font-manrope)]">
+                            {item}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Right Column — Sticky */}
+            <div className="sticky top-28 space-y-4">
+              <AdPriceCard
+                price={ad.price}
+                title={title}
+                location={ad.location}
+                isFavorite={isFavorite}
+                onFavoriteToggle={() => setIsFavorite(!isFavorite)}
+                quickStats={quickStats}
+              />
+
+              <div className="space-y-3">
+                <Button className="w-full h-[52px] bg-[#E53935] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#D32F2F] font-[family-name:var(--font-manrope)]">
+                  <Phone className="w-[18px] h-[18px]" />
+                  Позвонить
+                </Button>
+                <Button className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]">
+                  <MessageCircle className="w-[18px] h-[18px]" />
+                  Написать
+                </Button>
+              </div>
+
+              <SellerCard
+                sellerName={ad.sellerName}
+                sellerType={ad.sellerType}
+                sellerAdsCount={ad.sellerAdsCount}
+                publishedDate={ad.publishedDate}
+                vehicleStatus={ad.vehicleStatus}
+              />
+
+              <Button
+                variant="outline"
+                onClick={handleShare}
+                className="w-full h-[44px] rounded-2xl text-[14px] text-[#E53935] font-medium border-[#E5E5E7] hover:bg-[#FFF5F5] font-[family-name:var(--font-manrope)]"
+              >
+                Поделиться объявлением
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Mobile Header ── */}
       <div className="lg:hidden sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
         <div className="flex items-center justify-between px-4 h-14">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
+            className="rounded-full -ml-2"
           >
-            <ArrowLeft className="w-5 h-5 text-[#111111]" />
-          </button>
+            <ChevronLeft className="w-5 h-5 text-[#111111]" />
+          </Button>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({ title, url: window.location.href });
-                }
-              }}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F2F2F7] transition-colors"
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleShare}
+              className="rounded-full"
             >
               <Share2 className="w-5 h-5 text-[#111111]" />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsFavorite(!isFavorite)}
-              className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F2F2F7] transition-colors"
+              className="rounded-full"
             >
               <Heart
                 className={`w-5 h-5 ${isFavorite ? "fill-[#E53935] text-[#E53935]" : "text-[#111111]"}`}
               />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-[1200px] mx-auto lg:py-8">
-        <div className="lg:grid lg:grid-cols-[1fr_380px] lg:gap-8">
-          {/* ──── Left Column ──── */}
-          <div>
-            {/* Desktop back button */}
-            <button
-              onClick={() => router.back()}
-              className="hidden lg:flex items-center gap-2 text-[14px] text-[#8E8E93] hover:text-[#111111] transition-colors mb-4 font-[family-name:var(--font-manrope)]"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Назад к результатам
-            </button>
+      {/* ── Mobile Content ── */}
+      <div className="lg:hidden pb-24">
+        <AdImageSection
+          image={ad.image}
+          alt={title}
+          statusNew={ad.statusNew}
+          statusOnOrder={ad.statusOnOrder}
+          className="aspect-[16/10]"
+        />
 
-            {/* Image */}
-            <div className="relative aspect-[16/10] lg:rounded-2xl overflow-hidden bg-[#E5E5E7]">
-              <ImageWithFallback
-                src={ad.image}
-                alt={title}
-                className="w-full h-full object-cover"
-              />
+        {/* Title + Price */}
+        <div className="px-4 mt-5">
+          <h1 className="text-[20px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
+            {title}
+          </h1>
+          <p className="text-[22px] font-bold text-[#111111] mt-3 font-[family-name:var(--font-manrope)]">
+            {formatPrice(ad.price)}{" "}
+            <span className="text-[14px] font-medium text-[#8E8E93]">сомони</span>
+          </p>
+          <div className="flex items-center gap-2 mt-2 text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+            <MapPin className="w-3.5 h-3.5" />
+            <span>{ad.location}</span>
+            {ad.publishedDate && <span>• {ad.publishedDate}</span>}
+          </div>
+        </div>
 
-              {/* Status badges */}
-              <div className="absolute top-4 left-4 flex gap-2">
-                {ad.statusNew && (
-                  <span className="bg-[#4CAF50] text-white text-[12px] font-bold px-3 py-1.5 rounded-lg font-[family-name:var(--font-manrope)]">
-                    Новый
-                  </span>
-                )}
-                {ad.statusOnOrder && (
-                  <span className="bg-[#111111] text-white text-[12px] font-bold px-3 py-1.5 rounded-lg font-[family-name:var(--font-manrope)]">
-                    На заказ
-                  </span>
-                )}
-              </div>
-
-              {/* Video badge */}
-              {ad.hasVideo && (
-                <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-1.5">
-                  <Video className="w-4 h-4 text-white" />
-                  <span className="text-white text-[12px] font-medium font-[family-name:var(--font-manrope)]">
-                    Видео
-                  </span>
-                </div>
-              )}
-
-              {/* Desktop fav + share */}
-              <div className="hidden lg:flex absolute top-4 right-4 gap-2">
-                <button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm"
-                >
-                  <Heart
-                    className={`w-5 h-5 ${isFavorite ? "fill-[#E53935] text-[#E53935]" : "text-[#111111]"}`}
-                  />
-                </button>
-                <button
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({ title, url: window.location.href });
-                    }
-                  }}
-                  className="w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-colors shadow-sm"
-                >
-                  <Share2 className="w-5 h-5 text-[#111111]" />
-                </button>
-              </div>
-            </div>
-
-            {/* ──── Content (mobile: below image, desktop: left col) ──── */}
-            <div className="px-4 lg:px-0 mt-6">
-              {/* Title + Price */}
-              <div className="mb-6">
-                <h1 className="text-[22px] lg:text-[28px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
-                  {title}
-                </h1>
-                {ad.version && (
-                  <p className="text-[14px] text-[#8E8E93] mt-1 font-[family-name:var(--font-manrope)]">
-                    {ad.version}
-                  </p>
-                )}
-                <p className="text-[24px] lg:text-[30px] font-bold text-[#111111] mt-3 font-[family-name:var(--font-manrope)]">
-                  {formatPrice(ad.price)}{" "}
-                  <span className="text-[16px] font-medium text-[#8E8E93]">
-                    {ad.currency || "сомони"}
-                  </span>
+        {/* Description */}
+        {ad.description && (
+          <div className="px-4 mt-5">
+            <Card className="rounded-2xl border-[#E5E5E7] shadow-none py-0">
+              <CardContent className="p-4">
+                <h2 className="text-[16px] font-semibold text-[#111111] mb-2 font-[family-name:var(--font-manrope)]">
+                  Описание
+                </h2>
+                <p className="text-[14px] text-[#333] leading-relaxed font-[family-name:var(--font-manrope)]">
+                  {ad.description}
                 </p>
-              </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-              {/* Specs */}
-              {specs.length > 0 && (
-                <div className="bg-white rounded-2xl border border-[#E5E5E7] overflow-hidden mb-6">
-                  <h2 className="text-[16px] font-semibold text-[#111111] px-4 pt-4 pb-2 font-[family-name:var(--font-manrope)]">
-                    Характеристики
-                  </h2>
-                  <div className="divide-y divide-[#F2F2F7]">
-                    {specs.map((spec, i) => (
-                      <div key={i} className="flex items-center justify-between px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <spec.icon className="w-4 h-4 text-[#8E8E93]" />
-                          <span className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-                            {spec.label}
-                          </span>
-                        </div>
-                        <span className="text-[14px] font-medium text-[#111111] font-[family-name:var(--font-manrope)]">
-                          {spec.value}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+        {/* Seller */}
+        <div className="px-4 mt-5">
+          <SellerCard
+            sellerName={ad.sellerName}
+            sellerType={ad.sellerType}
+            sellerAdsCount={ad.sellerAdsCount}
+            vehicleStatus={ad.vehicleStatus}
+          />
+        </div>
 
-              {/* Location & Date */}
-              <div className="bg-white rounded-2xl border border-[#E5E5E7] overflow-hidden mb-6">
-                <div className="divide-y divide-[#F2F2F7]">
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <MapPin className="w-4 h-4 text-[#8E8E93]" />
-                    <span className="text-[14px] text-[#111111] font-[family-name:var(--font-manrope)]">
-                      {ad.location}
-                    </span>
-                  </div>
-                  {ad.publishedDate && (
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <Clock className="w-4 h-4 text-[#8E8E93]" />
-                      <span className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-                        Опубликовано {ad.publishedDate}
+        {/* Specs */}
+        {specs.length > 0 && (
+          <div className="px-4 mt-5">
+            <AdSpecsTable specs={specs} />
+          </div>
+        )}
+
+        {/* Equipment */}
+        {ad.equipment && ad.equipment.length > 0 && (
+          <div className="px-4 mt-5">
+            <Card className="rounded-2xl border-[#E5E5E7] shadow-none py-0">
+              <CardContent className="p-4">
+                <h2 className="text-[16px] font-semibold text-[#111111] mb-3 font-[family-name:var(--font-manrope)]">
+                  Комплектация
+                </h2>
+                <div className="space-y-2">
+                  {ad.equipment.map((item, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <Check className="w-4 h-4 text-[#4CAF50] mt-0.5 shrink-0" />
+                      <span className="text-[13px] text-[#333] font-[family-name:var(--font-manrope)]">
+                        {item}
                       </span>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
-
-          {/* ──── Right Column (Desktop Sidebar) ──── */}
-          <div className="hidden lg:block">
-            <div className="sticky top-28 space-y-4">
-              {/* Price Card */}
-              <div className="bg-white rounded-2xl border border-[#E5E5E7] p-6">
-                <p className="text-[28px] font-bold text-[#111111] mb-1 font-[family-name:var(--font-manrope)]">
-                  {formatPrice(ad.price)}{" "}
-                  <span className="text-[16px] font-medium text-[#8E8E93]">
-                    {ad.currency || "сомони"}
-                  </span>
-                </p>
-                <p className="text-[13px] text-[#8E8E93] mb-6 font-[family-name:var(--font-manrope)]">
-                  {title}{ad.version ? ` · ${ad.version}` : ""}
-                </p>
-
-                {/* CTA Buttons */}
-                <div className="space-y-3">
-                  <button className="w-full h-12 bg-[#111111] text-white rounded-2xl text-[15px] font-semibold flex items-center justify-center gap-2 hover:bg-[#333] transition-colors font-[family-name:var(--font-manrope)]">
-                    <Phone className="w-4 h-4" />
-                    Позвонить
-                  </button>
-                  <button className="w-full h-12 bg-[#F2F2F7] text-[#111111] rounded-2xl text-[15px] font-semibold flex items-center justify-center gap-2 hover:bg-[#E5E5E7] transition-colors font-[family-name:var(--font-manrope)]">
-                    <MessageCircle className="w-4 h-4" />
-                    Написать
-                  </button>
-                </div>
-              </div>
-
-              {/* Seller Card */}
-              <div className="bg-white rounded-2xl border border-[#E5E5E7] p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[#F2F2F7] flex items-center justify-center text-[14px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">
-                      П
-                    </div>
-                    <div>
-                      <p className="text-[14px] font-medium text-[#111111] font-[family-name:var(--font-manrope)]">
-                        Продавец
-                      </p>
-                      <p className="text-[12px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-                        На autoTOJ с 2024 года
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-5 h-5 text-[#C7C7CC]" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* ──── Mobile Bottom CTA ──── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#E5E5E7] px-4 py-3 pb-safe">
-        <div className="flex gap-3">
-          <button className="flex-1 h-12 bg-[#111111] text-white rounded-2xl text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#333] transition-colors font-[family-name:var(--font-manrope)]">
-            <Phone className="w-4 h-4" />
-            Позвонить
-          </button>
-          <button className="flex-1 h-12 bg-[#F2F2F7] text-[#111111] rounded-2xl text-[15px] font-semibold flex items-center justify-center gap-2 active:bg-[#E5E5E7] transition-colors font-[family-name:var(--font-manrope)]">
-            <MessageCircle className="w-4 h-4" />
-            Написать
-          </button>
-        </div>
-      </div>
+      {/* Mobile Bottom CTA */}
+      <AdActionBar />
     </div>
   );
 }

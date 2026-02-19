@@ -11,6 +11,8 @@ import {
   type LoginMethod,
 } from "@/lib/validations/auth";
 import { parseRawPhone } from "@/lib/utils/phone";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { LoginTabs } from "@/components/login/login-tabs";
 import { PhoneInput } from "@/components/login/phone-input";
 import { EmailInput } from "@/components/login/email-input";
@@ -120,27 +122,18 @@ export function LoginForm() {
         error={errors.agreed}
       />
 
-      <button
+      <Button
         type="submit"
         disabled={!canSubmit}
-        className={`w-full mt-6 py-3.5 rounded-full text-[15px] font-medium transition-all duration-200 ${
+        className={`w-full mt-6 py-3.5 rounded-full text-[15px] font-medium h-auto ${
           canSubmit
             ? "bg-[var(--ios-label)] text-white hover:bg-[#333]"
             : "bg-[var(--ios-disabled-bg)] text-[var(--ios-disabled-text)] cursor-default"
         }`}
       >
-        {isLoading ? (
-          <span className="flex items-center justify-center gap-2">
-            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
-            {buttonText}
-          </span>
-        ) : (
-          buttonText
-        )}
-      </button>
+        {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+        {buttonText}
+      </Button>
     </form>
   );
 }
