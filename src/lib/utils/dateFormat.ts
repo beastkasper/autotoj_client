@@ -3,6 +3,23 @@ const MONTHS_SHORT = [
   "июл", "авг", "сен", "окт", "ноя", "дек",
 ];
 
+const MONTHS_FULL = [
+  "января", "февраля", "марта", "апреля", "мая", "июня",
+  "июля", "августа", "сентября", "октября", "ноября", "декабря",
+];
+
+/**
+ * Formats a date string with full month name, year and city.
+ * Example: "18 января 2026, Душанбе"
+ */
+export function formatFullDateWithCity(dateStr: string, city: string): string {
+  const date = new Date(dateStr);
+  const day = date.getDate();
+  const month = MONTHS_FULL[date.getMonth()];
+  const year = date.getFullYear();
+  return `${day} ${month} ${year}, ${city}`;
+}
+
 /**
  * Formats a date string with city context.
  * - Today → "Сегодня, Душанбе"

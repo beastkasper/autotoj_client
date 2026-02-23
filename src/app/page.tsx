@@ -9,7 +9,7 @@ import { PullToRefreshIndicator } from "@/components/search/PullToRefreshIndicat
 import { AdsGrid } from "@/components/cards/AdsGrid";
 import { PageStateRenderer } from "@/components/states/PageStateRenderer";
 import { FilterSheet } from "@/components/filters/FilterSheet";
-import { DesktopFilterPanel } from "@/components/filters/DesktopFilterPanel";
+// DesktopFilterPanel now managed by DesktopHeader
 import { useFavorites } from "@/hooks/useFavorites";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
 import { useFilteredAds } from "@/hooks/useFilteredAds";
@@ -134,15 +134,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* Desktop Filter Panel */}
-      {isFilterOpen && (
-        <div className="hidden lg:block">
-          <DesktopFilterPanel
-            onClose={() => setIsFilterOpen(false)}
-            onApply={handleFilterApply}
-          />
-        </div>
-      )}
     </div>
   );
 }
