@@ -122,7 +122,7 @@ export const mockAds: Ad[] = [
     condition: 'Новый',
     owners: 0,
     pts: 'Оригинал',
-    vehicleStatus: 'В наичии',
+    vehicleStatus: 'В наличии',
     negotiable: false,
     statusNew: true,
     statusCustomsCleared: true,

@@ -10,7 +10,7 @@ export function DesktopFooter() {
   const router = useRouter();
 
   // Hide footer on auth pages
-  if (pathname.startsWith("/login")) return null;
+  if (pathname.startsWith("/login") || pathname.startsWith("/post-ad")) return null;
 
   const links = [
     { label: "О приложении", page: "about" },

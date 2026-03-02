@@ -32,6 +32,9 @@ export function DesktopHeader() {
       case "rental":
         router.push("/rental");
         break;
+      case "post":
+        router.push("/post-ad");
+        break;
       default:
         console.log("Navigate:", tab);
     }
@@ -57,7 +60,7 @@ export function DesktopHeader() {
   };
 
   // Hide header on auth pages — AFTER all hooks
-  if (pathname.startsWith("/login")) return null;
+  if (pathname.startsWith("/login") || pathname.startsWith("/post-ad")) return null;
 
   return (
     <>

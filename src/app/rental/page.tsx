@@ -7,12 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RentalCard } from "@/components/cards/RentalCard";
 import { EmptyState } from "@/components/states/EmptyState";
+import { RentalAddForm } from "@/components/rental/rental-add-form";
 import {
   mockRentals,
   CAR_CLASSES,
   RENTAL_CITIES,
   type CarClass,
   type RentalCity,
+  type RentalCar,
 } from "@/lib/data/mockRentals";
 
 export default function RentalPage() {
@@ -20,9 +22,11 @@ export default function RentalPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState<CarClass | null>(null);
   const [selectedCity, setSelectedCity] = useState<RentalCity | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [localRentals, setLocalRentals] = useState(mockRentals);
 
   const filteredCars = useMemo(() => {
-    return mockRentals.filter((car) => {
+    return localRentals.filter((car) => {
       const matchesSearch = car.title
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
@@ -31,7 +35,16 @@ export default function RentalPage() {
       const matchesCity = selectedCity === null || car.city === selectedCity;
       return matchesSearch && matchesClass && matchesCity;
     });
-  }, [searchQuery, selectedClass, selectedCity]);
+  }, [localRentals, searchQuery, selectedClass, selectedCity]);
+
+  const handleAddSuccess = useCallback((car: Omit<RentalCar, "id">) => {
+    const newCar: RentalCar = {
+      ...car,
+      id: Date.now(),
+    };
+    setLocalRentals((prev) => [newCar, ...prev]);
+    setShowAddForm(false);
+  }, []);
 
   const hasActiveFilters =
     searchQuery !== "" || selectedClass !== null || selectedCity !== null;
@@ -116,7 +129,10 @@ export default function RentalPage() {
             </div>
 
             {/* Add Button */}
-            <Button className="h-10 bg-[#E53935] text-white rounded-xl hover:bg-[#D32F2F] font-medium text-[15px] ml-auto font-[family-name:var(--font-manrope)]">
+            <Button
+              onClick={() => setShowAddForm(true)}
+              className="h-10 bg-[#E53935] text-white rounded-xl hover:bg-[#D32F2F] font-medium text-[15px] ml-auto font-[family-name:var(--font-manrope)]"
+            >
               <Plus className="w-5 h-5" />
               Добавить
             </Button>
@@ -267,6 +283,23 @@ export default function RentalPage() {
           />
         )}
       </div>
+
+      {/* ── Mobile FAB ── */}
+      <button
+        type="button"
+        onClick={() => setShowAddForm(true)}
+        className="lg:hidden fixed bottom-6 right-4 z-30 w-14 h-14 rounded-full bg-[#E53935] text-white flex items-center justify-center shadow-lg hover:bg-[#D32F2F] active:scale-95 transition-all"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
+
+      {/* ── Add Form Overlay ── */}
+      {showAddForm && (
+        <RentalAddForm
+          onClose={() => setShowAddForm(false)}
+          onSuccess={handleAddSuccess}
+        />
+      )}
     </div>
   );
 }
