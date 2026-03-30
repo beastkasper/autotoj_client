@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /login
+Disallow: /login/confirm
+Disallow: /profile
+Disallow: /my-ads
+Disallow: /favorites
+Disallow: /messages
+Disallow: /post-ad
+
+Sitemap: https://autotoj.tj/sitemap.xml

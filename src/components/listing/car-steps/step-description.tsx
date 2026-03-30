@@ -1,6 +1,7 @@
 "use client";
 
 import type { CarListingForm, ValidationErrors } from "@/lib/types/listing";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
 interface StepDescriptionProps {
@@ -20,7 +21,7 @@ export function StepDescription({ form, errors, onUpdate }: StepDescriptionProps
       </p>
 
       <div className="relative">
-        <textarea
+        <Textarea
           value={form.description}
           onChange={(e) => {
             if (e.target.value.length <= 3000) {

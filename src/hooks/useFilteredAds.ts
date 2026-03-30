@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { Ad } from "@/lib/data/mockAds";
+import type { Ad } from "@/lib/types/ad";
 
 interface UseFilteredAdsOptions {
   ads: Ad[];

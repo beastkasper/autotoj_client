@@ -7,11 +7,14 @@ import { HeaderNav } from "./HeaderNav";
 import { HeaderActions } from "./HeaderActions";
 import { ListingsBar } from "./ListingsBar";
 import { DesktopFilterPanel } from "@/components/filters/DesktopFilterPanel";
+import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { useAuth } from "@/hooks/useAuth";
 import type { FilterState } from "@/components/filters/FilterSheet";
 
 export function DesktopHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const { isAuthenticated, showAuthModal, requireAuth, closeAuthModal } = useAuth();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Derive active tab from current route
@@ -19,30 +22,47 @@ export function DesktopHeader() {
     ? "rental"
     : pathname.startsWith("/parts")
       ? "parts"
-      : "search";
+      : pathname.startsWith("/services")
+        ? "services"
+        : pathname.startsWith("/logbook")
+          ? "logbook"
+          : pathname.startsWith("/profile")
+            ? "menu"
+            : "search";
 
-  const handleNavigate = (tab: string) => {
-    switch (tab) {
-      case "search":
-        router.push("/");
-        break;
-      case "parts":
-        router.push("/parts");
-        break;
-      case "rental":
-        router.push("/rental");
-        break;
-      case "post":
-        router.push("/post-ad");
-        break;
-      default:
-        console.log("Navigate:", tab);
-    }
-  };
+  const handleNavigate = useCallback(
+    (tab: string) => {
+      // Auth-required routes
+      const authRoutes: Record<string, string> = {
+        favorites: "/favorites",
+        myads: "/my-ads",
+        messages: "/messages",
+        post: "/post-ad",
+        profile: "/profile",
+      };
 
-  const handleShowAuth = () => {
+      // Public routes
+      const publicRoutes: Record<string, string> = {
+        search: "/",
+        parts: "/parts",
+        rental: "/rental",
+        services: "/services",
+        logbook: "/logbook",
+        blog: "/logbook",
+      };
+
+      if (authRoutes[tab]) {
+        requireAuth(() => router.push(authRoutes[tab]));
+      } else if (publicRoutes[tab]) {
+        router.push(publicRoutes[tab]);
+      }
+    },
+    [requireAuth, router],
+  );
+
+  const handleShowAuth = useCallback(() => {
     router.push("/login");
-  };
+  }, [router]);
 
   const handleFilterClick = () => {
     setIsFilterOpen(true);
@@ -83,8 +103,9 @@ export function DesktopHeader() {
             <HeaderActions
               activeTab={activeTab}
               onNavigate={handleNavigate}
-              isAuthenticated={false}
+              isAuthenticated={isAuthenticated}
               onShowAuth={handleShowAuth}
+              onProfileClick={() => handleNavigate("profile")}
             />
           </div>
         </div>
@@ -106,6 +127,9 @@ export function DesktopHeader() {
           onApply={handleFilterApply}
         />
       )}
+
+      {/* Auth Required Modal */}
+      <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
     </>
   );
 }

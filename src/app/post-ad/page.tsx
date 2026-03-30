@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useListingForm } from "@/hooks/useListingForm";
 import { isCarStepOptional } from "@/lib/validations/listing";
 import type { ListingCategory } from "@/lib/types/listing";
@@ -10,6 +10,7 @@ import type { ListingCategory } from "@/lib/types/listing";
 import { StepHeader } from "@/components/listing/step-header";
 import { ContinueButton } from "@/components/listing/continue-button";
 import { ConfirmDialog } from "@/components/listing/confirm-dialog";
+import { AccordionFormLayout } from "@/components/listing/accordion-form-layout";
 import { SuccessScreen } from "@/components/listing/success-screen";
 import { CategorySelectSheet } from "@/components/listing/category-select-sheet";
 import { MotoSubcategorySheet } from "@/components/listing/moto-subcategory-sheet";
@@ -39,17 +40,56 @@ import { StepPreview } from "@/components/listing/car-steps/step-preview";
 import { MotoForm } from "@/components/listing/moto-form";
 import { CommercialForm } from "@/components/listing/commercial-form";
 
+// Parts
+import { PartsListingPlaceholder } from "@/components/add-listing/PartsListingPlaceholder";
+import { TiresListingForm } from "@/components/add-listing/tires/TiresListingForm";
+import { WheelsListingForm } from "@/components/add-listing/wheels/WheelsListingForm";
+import { SteeringWheelListingForm } from "@/components/add-listing/steering-wheel/SteeringWheelListingForm";
+import { OpticsListingForm } from "@/components/add-listing/optics/OpticsListingForm";
+import { SuspensionListingForm } from "@/components/add-listing/suspension/SuspensionListingForm";
+import { BodyPartsListingForm } from "@/components/add-listing/body-parts/BodyPartsListingForm";
+import { EngineListingForm } from "@/components/add-listing/engine/EngineListingForm";
+import { TransmissionListingForm } from "@/components/add-listing/transmission/TransmissionListingForm";
+import { ConsumablesListingForm } from "@/components/add-listing/consumables/ConsumablesListingForm";
+import type { PartsCategory } from "@/lib/types/parts-listing";
+import type { PartsFormData } from "@/lib/types/parts-listing";
+import {
+  useCreatePartMutation,
+  useUploadPartPhotosMutation,
+} from "@/lib/features/parts/partsApi";
+
 
 
 export default function PostAdPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const form = useListingForm();
 
-  const [showCategorySheet, setShowCategorySheet] = useState(true);
+  const preselectedCategory = searchParams.get("category") as ListingCategory | null;
+  const [showCategorySheet, setShowCategorySheet] = useState(!preselectedCategory);
   const [showMotoSub, setShowMotoSub] = useState(false);
   const [showCommercialSub, setShowCommercialSub] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
+
+  // Parts state
+  const [showPartsCategoryPicker, setShowPartsCategoryPicker] = useState(preselectedCategory === "parts");
+  const [selectedPartsCategory, setSelectedPartsCategory] = useState<PartsCategory | null>(null);
+  const [partsPublishing, setPartsPublishing] = useState(false);
+  const [partsError, setPartsError] = useState<string | null>(null);
+  const [createPart] = useCreatePartMutation();
+  const [uploadPartPhotos] = useUploadPartPhotosMutation();
+
+  // Handle preselected category from URL params
+  useEffect(() => {
+    if (preselectedCategory && !form.category) {
+      form.setCategory(preselectedCategory);
+      setShowCategorySheet(false);
+      if (preselectedCategory === "parts") setShowPartsCategoryPicker(true);
+      else if (preselectedCategory === "moto") setShowMotoSub(true);
+      else if (preselectedCategory === "commercial") setShowCommercialSub(true);
+    }
+  }, [preselectedCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Category selection ──
   const handleCategorySelect = useCallback(
@@ -58,9 +98,56 @@ export default function PostAdPage() {
       setShowCategorySheet(false);
       if (cat === "moto") setShowMotoSub(true);
       else if (cat === "commercial") setShowCommercialSub(true);
+      else if (cat === "parts") setShowPartsCategoryPicker(true);
     },
     [form]
   );
+
+  // ── Parts category selection ──
+  const handlePartsCategorySelect = useCallback((cat: PartsCategory) => {
+    setSelectedPartsCategory(cat);
+    setShowPartsCategoryPicker(false);
+  }, []);
+
+  const handlePartsBack = useCallback(() => {
+    if (selectedPartsCategory) {
+      setSelectedPartsCategory(null);
+      setShowPartsCategoryPicker(true);
+    } else {
+      setShowPartsCategoryPicker(false);
+      setShowCategorySheet(true);
+      form.setCategory(null);
+    }
+  }, [selectedPartsCategory, form]);
+
+  const handlePartsPublish = useCallback(async (data: PartsFormData) => {
+    setPartsPublishing(true);
+    setPartsError(null);
+    try {
+      const body: Record<string, unknown> = {
+        part_type: selectedPartsCategory,
+        condition: data.fields.condition || "Новая",
+        price: Number(data.price),
+        description: data.description || undefined,
+        contact_name: data.name || undefined,
+        contact_phone: data.phone ? `+992${data.phone}` : undefined,
+        city: data.city || undefined,
+        fields: data.fields,
+        toggles: data.toggles,
+      };
+      const result = await createPart(body).unwrap();
+      if (data.photos.length > 0) {
+        await uploadPartPhotos({ id: result.id, photos: data.photos }).unwrap();
+      }
+      form.resetAll();
+      setSelectedPartsCategory(null);
+      router.push("/");
+    } catch {
+      setPartsError("Не удалось опубликовать. Попробуйте ещё раз.");
+    } finally {
+      setPartsPublishing(false);
+    }
+  }, [selectedPartsCategory, createPart, uploadPartPhotos, form, router]);
 
   const handleMotoSubSelect = useCallback(
     (sub: string) => {
@@ -113,13 +200,14 @@ export default function PostAdPage() {
   }, [form]);
 
   // ── Publish ──
-  const handlePublish = useCallback(() => {
+  const handlePublish = useCallback(async () => {
+    if (form.isPublishing) return;
     if (form.category === "moto") {
       if (!form.validateMoto()) return;
     } else if (form.category === "commercial") {
       if (!form.validateCommercial()) return;
     }
-    form.publish();
+    await form.publish();
   }, [form]);
 
   // ── Success ──
@@ -160,6 +248,68 @@ export default function PostAdPage() {
           onSelect={handleCategorySelect}
           onClose={() => router.push("/")}
         />
+      </>
+    );
+  }
+
+  // ── Parts category picker ──
+  if (form.category === "parts" && showPartsCategoryPicker) {
+    return (
+      <PartsListingPlaceholder
+        onSelect={handlePartsCategorySelect}
+        onBack={() => {
+          setShowPartsCategoryPicker(false);
+          setShowCategorySheet(true);
+          form.setCategory(null);
+        }}
+        onClose={() => router.push("/")}
+      />
+    );
+  }
+
+  // ── Parts forms ──
+  if (form.category === "parts" && selectedPartsCategory) {
+    const partsProps = {
+      onBack: handlePartsBack,
+      onClose: () => router.push("/"),
+      onPublish: handlePartsPublish,
+    };
+
+    const partsForm = (() => {
+      switch (selectedPartsCategory) {
+        case "tires":
+          return <TiresListingForm {...partsProps} />;
+        case "wheels":
+          return <WheelsListingForm {...partsProps} />;
+        case "steering-wheel":
+          return <SteeringWheelListingForm {...partsProps} />;
+        case "optics":
+          return <OpticsListingForm {...partsProps} />;
+        case "suspension":
+          return <SuspensionListingForm {...partsProps} />;
+        case "body-parts":
+          return <BodyPartsListingForm {...partsProps} />;
+        case "engine":
+          return <EngineListingForm {...partsProps} />;
+        case "transmission":
+          return <TransmissionListingForm {...partsProps} />;
+        case "consumables":
+          return <ConsumablesListingForm {...partsProps} />;
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <>
+        {partsError && (
+          <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-2">
+            <p className="text-[13px] text-[#D32F2F] text-center bg-red-50 rounded-xl py-2 font-[family-name:var(--font-manrope)]">
+              {partsError}
+            </p>
+          </div>
+        )}
+        {partsForm}
       </>
     );
   }
@@ -242,10 +392,19 @@ export default function PostAdPage() {
           </div>
         </div>
 
+        {form.publishError && isPreview && (
+          <div className="px-4 pb-2">
+            <p className="text-[13px] text-[#D32F2F] text-center font-[family-name:var(--font-manrope)]">
+              {form.publishError}
+            </p>
+          </div>
+        )}
+
         <ContinueButton
-          label={isPreview ? "Опубликовать объявление" : "Продолжить"}
+          label={form.isPublishing ? "Публикация..." : isPreview ? "Опубликовать объявление" : "Продолжить"}
           onClick={isPreview ? () => form.publish() : handleCarContinue}
           variant={isPreview ? "publish" : "primary"}
+          disabled={form.isPublishing}
         />
 
         <ConfirmDialog
@@ -263,118 +422,68 @@ export default function PostAdPage() {
   // ── Moto accordion ──
   if (form.category === "moto") {
     return (
-      <div className="min-h-screen bg-[#F5F5F7] flex flex-col">
-        <StepHeader
-          title={form.subcategory || "Мото"}
-          onBack={() => {
-            if (form.hasUnsavedChanges) {
-              setShowExitDialog(true);
-            } else {
-              setShowMotoSub(true);
-              form.resetForm();
-            }
-          }}
-          onClose={handleClose}
-          rightAction={
-            <button
-              type="button"
-              onClick={handleReset}
-              className="text-[15px] font-medium text-[#D32F2F] font-[family-name:var(--font-manrope)]"
-            >
-              Сброс
-            </button>
+      <AccordionFormLayout
+        title={form.subcategory || "Мото"}
+        onBack={() => {
+          if (form.hasUnsavedChanges) {
+            setShowExitDialog(true);
+          } else {
+            setShowMotoSub(true);
+            form.resetForm();
           }
+        }}
+        onClose={handleClose}
+        onReset={handleReset}
+        onPublish={handlePublish}
+        isPublishing={form.isPublishing}
+        hasUnsavedChanges={form.hasUnsavedChanges}
+        showExitDialog={showExitDialog}
+        onExitDialogChange={setShowExitDialog}
+        onConfirmExit={handleConfirmExit}
+        showResetDialog={showResetDialog}
+        onResetDialogChange={setShowResetDialog}
+        onConfirmReset={handleConfirmReset}
+      >
+        <MotoForm
+          form={form.motoForm}
+          errors={form.errors}
+          onUpdate={form.updateMotoField}
         />
-
-        <div className="flex-1 overflow-y-auto pb-24">
-          <MotoForm
-            form={form.motoForm}
-            errors={form.errors}
-            onUpdate={form.updateMotoField}
-          />
-        </div>
-
-        <ContinueButton
-          label="Далее"
-          onClick={handlePublish}
-        />
-
-        <ConfirmDialog
-          open={showExitDialog}
-          onOpenChange={setShowExitDialog}
-          title="Выйти без сохранения?"
-          description="Все введённые данные будут потеряны"
-          confirmLabel="Выйти"
-          onConfirm={handleConfirmExit}
-        />
-        <ConfirmDialog
-          open={showResetDialog}
-          onOpenChange={setShowResetDialog}
-          title="Сбросить все данные?"
-          description="Это действие нельзя отменить"
-          confirmLabel="Сбросить"
-          onConfirm={handleConfirmReset}
-        />
-      </div>
+      </AccordionFormLayout>
     );
   }
 
   // ── Commercial accordion ──
   if (form.category === "commercial") {
     return (
-      <div className="min-h-screen bg-[#F5F5F7] flex flex-col">
-        <StepHeader
-          title={form.subcategory || "Комтранс"}
-          onBack={() => {
-            if (form.hasUnsavedChanges) {
-              setShowExitDialog(true);
-            } else {
-              setShowCommercialSub(true);
-              form.resetForm();
-            }
-          }}
-          onClose={handleClose}
-          rightAction={
-            <button
-              type="button"
-              onClick={handleReset}
-              className="text-[15px] font-medium text-[#D32F2F] font-[family-name:var(--font-manrope)]"
-            >
-              Сброс
-            </button>
+      <AccordionFormLayout
+        title={form.subcategory || "Комтранс"}
+        onBack={() => {
+          if (form.hasUnsavedChanges) {
+            setShowExitDialog(true);
+          } else {
+            setShowCommercialSub(true);
+            form.resetForm();
           }
+        }}
+        onClose={handleClose}
+        onReset={handleReset}
+        onPublish={handlePublish}
+        isPublishing={form.isPublishing}
+        hasUnsavedChanges={form.hasUnsavedChanges}
+        showExitDialog={showExitDialog}
+        onExitDialogChange={setShowExitDialog}
+        onConfirmExit={handleConfirmExit}
+        showResetDialog={showResetDialog}
+        onResetDialogChange={setShowResetDialog}
+        onConfirmReset={handleConfirmReset}
+      >
+        <CommercialForm
+          form={form.commercialForm}
+          errors={form.errors}
+          onUpdate={form.updateCommercialField}
         />
-
-        <div className="flex-1 overflow-y-auto pb-24">
-          <CommercialForm
-            form={form.commercialForm}
-            errors={form.errors}
-            onUpdate={form.updateCommercialField}
-          />
-        </div>
-
-        <ContinueButton
-          label="Далее"
-          onClick={handlePublish}
-        />
-
-        <ConfirmDialog
-          open={showExitDialog}
-          onOpenChange={setShowExitDialog}
-          title="Выйти без сохранения?"
-          description="Все введённые данные будут потеряны"
-          confirmLabel="Выйти"
-          onConfirm={handleConfirmExit}
-        />
-        <ConfirmDialog
-          open={showResetDialog}
-          onOpenChange={setShowResetDialog}
-          title="Сбросить все данные?"
-          description="Это действие нельзя отменить"
-          confirmLabel="Сбросить"
-          onConfirm={handleConfirmReset}
-        />
-      </div>
+      </AccordionFormLayout>
     );
   }
 

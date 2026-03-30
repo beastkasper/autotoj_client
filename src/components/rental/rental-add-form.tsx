@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { ArrowLeft, Upload, X, ImagePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { RentalCar } from "@/lib/data/mockRentals";
-import { RENTAL_CITIES, type RentalCity } from "@/lib/data/mockRentals";
+import type { RentalCar } from "@/lib/types/rental";
+import { RENTAL_CITIES, type RentalCity } from "@/lib/types/rental";
 
 interface RentalAddFormProps {
   onClose: () => void;

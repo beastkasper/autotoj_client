@@ -18,6 +18,7 @@ import { PhoneInput } from "@/components/listing/phone-input";
 import { PhotoUpload } from "@/components/listing/photo-upload";
 import { VideoUpload } from "@/components/listing/video-upload";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { useCallback } from "react";
 import { cn } from "@/lib/utils";
 
@@ -246,7 +247,7 @@ export function MotoForm({ form, errors, onUpdate }: MotoFormProps) {
             </AccordionTrigger>
             <AccordionContent>
               <div className="relative">
-                <textarea value={form.description} onChange={(e) => { if (e.target.value.length <= 3000) onUpdate("description", e.target.value); }} placeholder="Расскажите о мотоцикле..." rows={4} className="w-full min-h-[120px] p-4 rounded-xl border border-[#C7C7CC] text-[15px] font-[family-name:var(--font-manrope)] outline-none resize-none focus:border-black" />
+                <Textarea value={form.description} onChange={(e) => { if (e.target.value.length <= 3000) onUpdate("description", e.target.value); }} placeholder="Расскажите о мотоцикле..." rows={4} className="w-full min-h-[120px] p-4 rounded-xl border border-[#C7C7CC] text-[15px] font-[family-name:var(--font-manrope)] outline-none resize-none focus:border-black" />
                 <span className="absolute bottom-3 right-4 text-[12px] text-[#8E8E93]">{form.description.length} / 3000</span>
               </div>
             </AccordionContent>

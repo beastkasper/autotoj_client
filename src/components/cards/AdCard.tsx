@@ -5,7 +5,8 @@ import { Heart, Video } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { formatPrice } from "@/lib/utils/formatPrice";
-import type { Ad } from "@/lib/data/mockAds";
+import { buildAdTitle } from "@/lib/utils/ad-helpers";
+import type { Ad } from "@/lib/types/ad";
 
 export type { Ad };
 
@@ -50,7 +51,7 @@ export const AdCard = React.memo(function AdCard({
   const characteristics = buildCharacteristics(ad);
   const title = ad.version
     ? `${ad.brand} · ${ad.model}`
-    : `${ad.brand} ${ad.model}`;
+    : buildAdTitle(ad);
 
   if (variant === "list") {
     return (

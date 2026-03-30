@@ -1,6 +1,6 @@
 "use client";
 
-import { Car, Bike, Truck } from "lucide-react";
+import { Car, Bike, Truck, Wrench } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { ListingCategory } from "@/lib/types/listing";
 
@@ -31,6 +31,13 @@ const CATEGORIES = [
     description: "Грузовики, автобусы, спецтехника",
     Icon: Truck,
     color: "#1565C0",
+  },
+  {
+    id: "parts" as const,
+    label: "Запчасти",
+    description: "Шины, диски, кузов, двигатель",
+    Icon: Wrench,
+    color: "#F57C00",
   },
 ];
 

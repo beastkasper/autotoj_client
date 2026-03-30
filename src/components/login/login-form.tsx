@@ -65,10 +65,10 @@ export function LoginForm() {
       return;
     }
 
-    // Send code via API
+    // Send code via API (INTEGRATION.md: POST /auth/request { phone })
     const contact = method === "phone" ? parseRawPhone(phone) : email;
     try {
-      const response = await sendCode({ contact, method }).unwrap();
+      const response = await sendCode({ phone: contact }).unwrap();
       if (response.success) {
         dispatch(codeSent({ contact, method }));
         router.push("/login/confirm");

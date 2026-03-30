@@ -3,12 +3,14 @@
 import { Button } from "@/components/ui/button";
 
 /** Navigation tab keys — extend this union as new sections are added. */
-export type NavTab = "search" | "parts" | "rental";
+export type NavTab = "search" | "parts" | "rental" | "services" | "logbook";
 
 const NAV_ITEMS: { key: NavTab; label: string }[] = [
   { key: "search", label: "Авто" },
   { key: "parts", label: "Запчасти" },
   { key: "rental", label: "Авто прокат" },
+  { key: "services", label: "Сервисы" },
+  { key: "logbook", label: "Бортжурнал" },
 ];
 
 interface HeaderNavProps {

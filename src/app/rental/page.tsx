@@ -2,47 +2,68 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, ChevronLeft } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { RentalCard } from "@/components/cards/RentalCard";
 import { EmptyState } from "@/components/states/EmptyState";
 import { RentalAddForm } from "@/components/rental/rental-add-form";
+import { PageHeader } from "@/components/layout/page-header";
+import { SearchInput } from "@/components/search/search-input";
+import { FilterChip } from "@/components/search/filter-chip";
+import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { useAuth } from "@/hooks/useAuth";
+import { useGetRentalsQuery } from "@/lib/features/rental/rentalApi";
 import {
-  mockRentals,
   CAR_CLASSES,
   RENTAL_CITIES,
   type CarClass,
   type RentalCity,
   type RentalCar,
-} from "@/lib/data/mockRentals";
+} from "@/lib/types/rental";
+import type { RentalSearchParams } from "@/lib/types/api";
 
 export default function RentalPage() {
   const router = useRouter();
+  const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState<CarClass | null>(null);
   const [selectedCity, setSelectedCity] = useState<RentalCity | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [localRentals, setLocalRentals] = useState(mockRentals);
 
-  const filteredCars = useMemo(() => {
-    return localRentals.filter((car) => {
-      const matchesSearch = car.title
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesClass =
-        selectedClass === null || car.carClass === selectedClass;
-      const matchesCity = selectedCity === null || car.city === selectedCity;
-      return matchesSearch && matchesClass && matchesCity;
-    });
-  }, [localRentals, searchQuery, selectedClass, selectedCity]);
+  // RTK Query — fetch from backend
+  const queryParams: RentalSearchParams = useMemo(() => {
+    const p: RentalSearchParams = {};
+    if (searchQuery) p.q = searchQuery;
+    if (selectedClass) p.car_class = selectedClass;
+    if (selectedCity) p.city = selectedCity;
+    return p;
+  }, [searchQuery, selectedClass, selectedCity]);
 
-  const handleAddSuccess = useCallback((car: Omit<RentalCar, "id">) => {
-    const newCar: RentalCar = {
-      ...car,
-      id: Date.now(),
-    };
-    setLocalRentals((prev) => [newCar, ...prev]);
+  const { data: apiData } = useGetRentalsQuery(queryParams);
+
+  const filteredCars: RentalCar[] = useMemo(() => {
+    if (!apiData?.cars) return [];
+    return apiData.cars.map((car) => ({
+      id: car.id,
+      title: car.title,
+      carClass: car.car_class as RentalCar["carClass"],
+      year: car.year,
+      transmission: car.transmission === "automatic" ? "Автомат" : "Механика",
+      fuel:
+        car.fuel_type === "petrol"
+          ? "Бензин"
+          : car.fuel_type === "diesel"
+            ? "Дизель"
+            : car.fuel_type,
+      pricePerDay: String(car.price_per_day),
+      image: car.photos[0] ?? "",
+      city: car.contact_city,
+      publishedDate: car.published_at,
+    }));
+  }, [apiData]);
+
+  const handleAddSuccess = useCallback((_car: Omit<RentalCar, "id">) => {
+    // TODO: Use createRental API mutation instead
     setShowAddForm(false);
   }, []);
 
@@ -56,81 +77,48 @@ export default function RentalPage() {
   }, []);
 
   const handleCarClick = useCallback(
-    (id: number) => router.push(`/rental/${id}`),
-    [router]
+    (id: string) => router.push(`/rental/${id}`),
+    [router],
   );
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-[#F5F5F7]">
       {/* ── Desktop Filter Bar (sticky) ── */}
       <div className="hidden lg:block sticky top-[65px] z-20 bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1440px] mx-auto px-6 py-4">
           <div className="flex items-center gap-4">
-            {/* Search */}
             <div className="flex-1 max-w-sm">
-              <div className="flex items-center gap-2 bg-[#F5F5F7] rounded-xl px-4 h-10">
-                <Search className="w-5 h-5 text-[#8E8E93] shrink-0" />
-                <Input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Поиск автомобилей.."
-                  className="flex-1 bg-transparent border-none shadow-none text-[15px] text-[#111111] placeholder:text-[#8E8E93] focus-visible:ring-0 font-[family-name:var(--font-manrope)] h-10 px-0"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="p-1 hover:bg-[#E5E5E7] rounded-lg transition-colors"
-                  >
-                    <span className="text-[#8E8E93] text-xs">✕</span>
-                  </button>
-                )}
-              </div>
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Поиск автомобилей.."
+              />
             </div>
 
-            {/* Car Class chips */}
             <div className="flex gap-2">
               {CAR_CLASSES.map((cls) => (
-                <Button
+                <FilterChip
                   key={cls}
-                  variant="outline"
-                  onClick={() =>
-                    setSelectedClass(selectedClass === cls ? null : cls)
-                  }
-                  className={`h-10 rounded-xl text-[15px] font-medium font-[family-name:var(--font-manrope)] ${
-                    selectedClass === cls
-                      ? "bg-white text-[#111111] border-[#111111] border-2 hover:bg-[#F5F5F7]"
-                      : "bg-[#F5F5F7] text-[#111111] hover:bg-[#EAEAEA] border-transparent"
-                  }`}
-                >
-                  {cls}
-                </Button>
+                  label={cls}
+                  isActive={selectedClass === cls}
+                  onClick={() => setSelectedClass(selectedClass === cls ? null : cls)}
+                />
               ))}
             </div>
 
-            {/* City chips */}
             <div className="flex gap-2">
               {RENTAL_CITIES.map((city) => (
-                <Button
+                <FilterChip
                   key={city}
-                  variant="outline"
-                  onClick={() =>
-                    setSelectedCity(selectedCity === city ? null : city)
-                  }
-                  className={`h-10 rounded-xl text-[15px] font-medium font-[family-name:var(--font-manrope)] ${
-                    selectedCity === city
-                      ? "bg-white text-[#111111] border-[#111111] border-2 hover:bg-[#F5F5F7]"
-                      : "bg-[#F5F5F7] text-[#111111] hover:bg-[#EAEAEA] border-transparent"
-                  }`}
-                >
-                  {city}
-                </Button>
+                  label={city}
+                  isActive={selectedCity === city}
+                  onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+                />
               ))}
             </div>
 
-            {/* Add Button */}
             <Button
-              onClick={() => setShowAddForm(true)}
+              onClick={() => requireAuth(() => setShowAddForm(true))}
               className="h-10 bg-[#E53935] text-white rounded-xl hover:bg-[#D32F2F] font-medium text-[15px] ml-auto font-[family-name:var(--font-manrope)]"
             >
               <Plus className="w-5 h-5" />
@@ -138,7 +126,6 @@ export default function RentalPage() {
             </Button>
           </div>
 
-          {/* Results Count + Reset */}
           <div className="mt-3 flex items-center justify-between">
             <p className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
               Найдено {filteredCars.length} автомобилей
@@ -160,12 +147,7 @@ export default function RentalPage() {
         {filteredCars.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredCars.map((car) => (
-              <RentalCard
-                key={car.id}
-                car={car}
-                onClick={handleCarClick}
-                variant="desktop"
-              />
+              <RentalCard key={car.id} car={car} onClick={handleCarClick} variant="desktop" />
             ))}
           </div>
         ) : (
@@ -178,72 +160,36 @@ export default function RentalPage() {
       </div>
 
       {/* ── Mobile Header ── */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5 text-[#111111]" />
-          </button>
-          <h1 className="text-[17px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">
-            Авто прокат
-          </h1>
-        </div>
-      </div>
+      <PageHeader title="Авто прокат" />
 
       {/* ── Mobile Search + Filters ── */}
       <div className="lg:hidden px-4 pt-4 pb-2 space-y-3">
-        <div className="flex items-center gap-2 bg-white rounded-2xl border border-[#E5E5E7] px-4 h-12">
-          <Search className="w-5 h-5 text-[#8E8E93] shrink-0" />
-          <Input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Поиск автомобилей.."
-            className="flex-1 bg-transparent border-none shadow-none text-[15px] text-[#111111] placeholder:text-[#8E8E93] focus-visible:ring-0 font-[family-name:var(--font-manrope)] h-12 px-0"
-          />
-          {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="p-1">
-              <span className="text-[#8E8E93] text-sm">✕</span>
-            </button>
-          )}
-        </div>
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Поиск автомобилей.."
+          variant="mobile"
+        />
 
-        {/* Filter chips */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
           {CAR_CLASSES.map((cls) => (
-            <Button
+            <FilterChip
               key={cls}
-              variant="outline"
-              onClick={() =>
-                setSelectedClass(selectedClass === cls ? null : cls)
-              }
-              className={`shrink-0 h-9 rounded-full text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                selectedClass === cls
-                  ? "bg-white text-[#111111] border-[#111111] border-2"
-                  : "bg-white border-[#E5E5E7] text-[#111111]"
-              }`}
-            >
-              {cls}
-            </Button>
+              label={cls}
+              isActive={selectedClass === cls}
+              onClick={() => setSelectedClass(selectedClass === cls ? null : cls)}
+              variant="mobile"
+            />
           ))}
           <div className="w-px h-9 bg-[#E5E5E7] shrink-0 self-center" />
           {RENTAL_CITIES.map((city) => (
-            <Button
+            <FilterChip
               key={city}
-              variant="outline"
-              onClick={() =>
-                setSelectedCity(selectedCity === city ? null : city)
-              }
-              className={`shrink-0 h-9 rounded-full text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                selectedCity === city
-                  ? "bg-white text-[#111111] border-[#111111] border-2"
-                  : "bg-white border-[#E5E5E7] text-[#111111]"
-              }`}
-            >
-              {city}
-            </Button>
+              label={city}
+              isActive={selectedCity === city}
+              onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+              variant="mobile"
+            />
           ))}
         </div>
 
@@ -267,12 +213,7 @@ export default function RentalPage() {
         {filteredCars.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {filteredCars.map((car) => (
-              <RentalCard
-                key={car.id}
-                car={car}
-                onClick={handleCarClick}
-                variant="mobile"
-              />
+              <RentalCard key={car.id} car={car} onClick={handleCarClick} variant="mobile" />
             ))}
           </div>
         ) : (
@@ -287,7 +228,7 @@ export default function RentalPage() {
       {/* ── Mobile FAB ── */}
       <button
         type="button"
-        onClick={() => setShowAddForm(true)}
+        onClick={() => requireAuth(() => setShowAddForm(true))}
         className="lg:hidden fixed bottom-6 right-4 z-30 w-14 h-14 rounded-full bg-[#E53935] text-white flex items-center justify-center shadow-lg hover:bg-[#D32F2F] active:scale-95 transition-all"
       >
         <Plus className="w-6 h-6" />
@@ -300,6 +241,8 @@ export default function RentalPage() {
           onSuccess={handleAddSuccess}
         />
       )}
-    </div>
+
+      <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
+    </main>
   );
 }

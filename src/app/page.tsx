@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 import { AutoTojLogo } from "@/components/brand/AutoTojLogo";
@@ -9,13 +9,14 @@ import { PullToRefreshIndicator } from "@/components/search/PullToRefreshIndicat
 import { AdsGrid } from "@/components/cards/AdsGrid";
 import { PageStateRenderer } from "@/components/states/PageStateRenderer";
 import { FilterSheet } from "@/components/filters/FilterSheet";
-// DesktopFilterPanel now managed by DesktopHeader
 import { useFavorites } from "@/hooks/useFavorites";
 import { usePullToRefresh } from "@/hooks/usePullToRefresh";
-import { useFilteredAds } from "@/hooks/useFilteredAds";
-import { getAllAds } from "@/lib/data/mockAds";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { useGetAdsQuery } from "@/lib/features/ads/adsApi";
 import type { FilterState } from "@/components/filters/FilterSheet";
-import type { Ad } from "@/lib/data/mockAds";
+import type { Ad } from "@/lib/types/ad";
+import type { AdsSearchParams } from "@/lib/types/api";
 
 type PageState = "default" | "loading" | "empty" | "error" | "offline";
 
@@ -23,16 +24,66 @@ export default function HomePage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [pageState, setPageState] = useState<PageState>("default");
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
-  const [ads] = useState<Ad[]>(getAllAds);
+  const [filterParams, setFilterParams] = useState<AdsSearchParams>({});
+
+  const queryParams: AdsSearchParams = useMemo(
+    () => ({ ...filterParams, ...(searchQuery ? { q: searchQuery } : {}) }),
+    [filterParams, searchQuery]
+  );
+
+  // RTK Query — fetch from backend API
+  const { data: apiData, isLoading, isError, refetch } = useGetAdsQuery(queryParams);
+
+  const displayAds: Ad[] = useMemo(() => {
+    if (!apiData?.ads) return [];
+    return apiData.ads.map((ad) => ({
+      id: ad.id,
+      brand: ad.brand,
+      model: ad.model,
+      version: undefined,
+      price: ad.price,
+      category: "cars" as const,
+      year: ad.year,
+      mileage: ad.mileage,
+      engineType: ad.fuel,
+      transmission: ad.transmission,
+      driveType: ad.drive,
+      location: ad.location,
+      publishedDate: ad.created_at,
+      image: ad.photos[0] ?? "",
+      bodyType: ad.body,
+      color: ad.color,
+      condition: ad.condition,
+      engineVolume: ad.engine_volume ? `${ad.engine_volume}L` : undefined,
+      sellerName: ad.seller.name,
+      sellerType: (ad.seller.type === "business" ? "dealer" : ad.seller.type ?? "private") as "private" | "dealer",
+      sellerAdsCount: ad.seller.ads_count ?? 0,
+      description: undefined,
+      equipment: undefined,
+      vehicleStatus: "В наличии" as const,
+      statusNew: ad.condition === "Новый",
+      statusOnOrder: false,
+      owners: undefined,
+      isCustomsCleared: undefined,
+    } satisfies Ad));
+  }, [apiData]);
+
+  const pageState: PageState = isLoading ? "loading" : isError ? "error" : "default";
 
   const { toggleFavorite } = useFavorites();
-  const filteredAds = useFilteredAds({ ads, searchQuery });
+  const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
+
+  const handleFavoriteToggle = useCallback(
+    (id: string) => {
+      requireAuth(() => toggleFavorite(id));
+    },
+    [requireAuth, toggleFavorite],
+  );
 
   const handleRefresh = useCallback(async () => {
-    await new Promise((r) => setTimeout(r, 1000));
-  }, []);
+    await refetch();
+  }, [refetch]);
 
   const { pullDistance, isRefreshing, scrollRef, touchHandlers } =
     usePullToRefresh({ onRefresh: handleRefresh });
@@ -48,24 +99,37 @@ export default function HomePage() {
     );
     setHasActiveFilters(isActive);
     setIsFilterOpen(false);
+    const params: AdsSearchParams = {};
+    if (filters.brand) params.brand_id = filters.brand;
+    if (filters.yearFrom) params.year_from = Number(filters.yearFrom);
+    if (filters.yearTo) params.year_to = Number(filters.yearTo);
+    if (filters.priceFrom) params.price_from = Number(filters.priceFrom);
+    if (filters.priceTo) params.price_to = Number(filters.priceTo);
+    if (filters.fuel) params.fuel = filters.fuel;
+    if (filters.transmission) params.transmission = filters.transmission;
+    if (filters.drive) params.drive = filters.drive;
+    if (filters.bodyType) params.body = filters.bodyType;
+    setFilterParams(params);
   }, []);
 
   const handleResetFilters = useCallback(() => {
     setSearchQuery("");
     setHasActiveFilters(false);
+    setFilterParams({});
   }, []);
 
   const handleRetry = useCallback(() => {
-    setPageState("loading");
-    setTimeout(() => setPageState("default"), 1000);
-  }, []);
+    refetch();
+  }, [refetch]);
 
   return (
-    <div
+    <main
       className="pb-20 lg:pb-8 bg-white"
       ref={scrollRef}
       {...touchHandlers}
     >
+      <h1 className="sr-only">autoTOJ — покупка, продажа и сервисы автомобилей в Таджикистане</h1>
+
       {/* Mobile Floating Search */}
       <MobileSearchBar
         searchQuery={searchQuery}
@@ -108,7 +172,7 @@ export default function HomePage() {
       <div className="max-w-[1440px] mx-auto lg:px-6 lg:py-6">
         <PageStateRenderer
           state={pageState}
-          isEmpty={filteredAds.length === 0}
+          isEmpty={displayAds.length === 0}
           onRetry={handleRetry}
           onReset={handleResetFilters}
           emptyIcon={Search}
@@ -117,8 +181,8 @@ export default function HomePage() {
           emptyActionLabel="Сбросить"
         >
           <AdsGrid
-            ads={filteredAds}
-            onFavoriteToggle={toggleFavorite}
+            ads={displayAds}
+            onFavoriteToggle={handleFavoriteToggle}
             onAdClick={handleAdClick}
           />
         </PageStateRenderer>
@@ -134,6 +198,7 @@ export default function HomePage() {
         </div>
       )}
 
-    </div>
+      <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
+    </main>
   );
 }

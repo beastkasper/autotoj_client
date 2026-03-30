@@ -22,8 +22,35 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "autoTOJ",
-  description: "autoTOJ — автоматизация для вашего бизнеса",
+  title: {
+    default: "autoTOJ — покупка, продажа и сервисы автомобилей",
+    template: "%s | autoTOJ",
+  },
+  description: "autoTOJ — площадка для покупки и продажи автомобилей, запчастей, аренды авто и автосервисов в Таджикистане",
+  metadataBase: new URL("https://autotoj.tj"),
+  icons: {
+    icon: "/icon.svg",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    url: "https://autotoj.tj",
+    siteName: "autoTOJ",
+    title: "autoTOJ — покупка, продажа и сервисы автомобилей",
+    description: "Площадка для покупки и продажи автомобилей, запчастей, аренды авто и автосервисов в Таджикистане",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "autoTOJ — покупка, продажа и сервисы автомобилей",
+    description: "Площадка для покупки и продажи автомобилей, запчастей, аренды авто и автосервисов в Таджикистане",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  alternates: {
+    canonical: "https://autotoj.tj",
+  },
 };
 
 export default function RootLayout({
@@ -37,6 +64,19 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} antialiased`}
       >
         <StoreProvider>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: "autoTOJ",
+                url: "https://autotoj.tj",
+                logo: "https://autotoj.tj/icon.svg",
+                sameAs: [],
+              }),
+            }}
+          />
           <DesktopHeader />
           {children}
           <DesktopFooter />

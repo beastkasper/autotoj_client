@@ -19,8 +19,102 @@ import {
   validateMotoForm,
   validateCommercialForm,
 } from "@/lib/validations/listing";
+import {
+  useCreateAdDraftMutation,
+  useUpdateMyAdMutation,
+  useUploadAdPhotosMutation,
+  useUploadAdVideoMutation,
+  useSubmitAdMutation,
+} from "@/lib/features/ads/adsApi";
+import type { AdUpdateBody } from "@/lib/types/api";
 
 const CAR_TOTAL_STEPS = 18;
+
+function getApiErrorMessage(err: unknown): string {
+  if (
+    typeof err === "object" &&
+    err !== null &&
+    "data" in err &&
+    typeof (err as Record<string, unknown>).data === "object"
+  ) {
+    const data = (err as Record<string, unknown>).data as Record<string, unknown> | null;
+    if (data && "error" in data && typeof data.error === "object") {
+      const error = data.error as Record<string, unknown> | null;
+      if (error && "message" in error && typeof error.message === "string") {
+        return error.message;
+      }
+    }
+  }
+  return "Произошла ошибка при публикации";
+}
+
+// Map car form condition to API value
+function mapCondition(status: string): string | undefined {
+  if (status === "Новый") return "new";
+  if (status === "С пробегом") return "used";
+  return undefined;
+}
+
+// Map fuel type to API value
+function mapFuel(engineType: string): string | undefined {
+  const map: Record<string, string> = {
+    "Бензин": "petrol",
+    "Дизель": "diesel",
+    "Гибрид": "hybrid",
+    "Электро": "electric",
+    "Газ": "gas",
+  };
+  return map[engineType];
+}
+
+// Map transmission to API value
+function mapTransmission(transmission: string): string | undefined {
+  const map: Record<string, string> = {
+    "Автомат": "automatic",
+    "Механика": "manual",
+    "Робот": "robot",
+    "Вариатор": "cvt",
+  };
+  return map[transmission];
+}
+
+// Map drive type to API value
+function mapDrive(drive: string): string | undefined {
+  const map: Record<string, string> = {
+    "Передний": "fwd",
+    "Задний": "rwd",
+    "Полный": "awd",
+  };
+  return map[drive];
+}
+
+// Map body type to API value
+function mapBody(bodyType: string): string | undefined {
+  const map: Record<string, string> = {
+    "Седан": "sedan",
+    "Хэтчбек": "hatchback",
+    "Универсал": "wagon",
+    "Внедорожник": "suv",
+    "Кроссовер": "crossover",
+    "Купе": "coupe",
+    "Кабриолет": "convertible",
+    "Минивэн": "minivan",
+    "Пикап": "pickup",
+    "Лифтбек": "liftback",
+    "Фургон": "van",
+  };
+  return map[bodyType];
+}
+
+// Map vehicle status
+function mapVehicleStatus(status: string): string | undefined {
+  const map: Record<string, string> = {
+    "В наличии": "available",
+    "В пути": "in_transit",
+    "На заказ": "on_order",
+  };
+  return map[status];
+}
 
 export function useListingForm() {
   const [category, setCategory] = useState<ListingCategory | null>(null);
@@ -33,6 +127,15 @@ export function useListingForm() {
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
   const [isPublished, setIsPublished] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+
+  // RTK Query mutations
+  const [createDraft] = useCreateAdDraftMutation();
+  const [updateAd] = useUpdateMyAdMutation();
+  const [uploadPhotos] = useUploadAdPhotosMutation();
+  const [uploadVideo] = useUploadAdVideoMutation();
+  const [submitAd] = useSubmitAdMutation();
 
   // ── Car form field updater ──
   const updateCarField = useCallback(
@@ -157,10 +260,77 @@ export function useListingForm() {
     return Object.keys(stepErrors).length === 0;
   }, [category, currentStep, carForm]);
 
-  // ── Publish ──
-  const publish = useCallback(() => {
-    setIsPublished(true);
-  }, []);
+  // ── Build API body from car form ──
+  const buildCarAdBody = useCallback((): AdUpdateBody => {
+    const body: AdUpdateBody = {
+      vehicle_type: "car",
+    };
+
+    if (carForm.brand) body.brand_id = carForm.brand;
+    if (carForm.model) body.model_id = carForm.model;
+    if (carForm.year) body.year = carForm.year;
+    if (carForm.bodyType) body.body = mapBody(carForm.bodyType);
+    if (carForm.status) body.condition = mapCondition(carForm.status);
+    if (carForm.mileage) body.mileage = Number(carForm.mileage);
+    if (carForm.engineType) body.fuel = mapFuel(carForm.engineType);
+    if (carForm.driveType) body.drive = mapDrive(carForm.driveType);
+    if (carForm.color) body.color = carForm.color;
+    if (carForm.vin) body.vin = carForm.vin;
+    if (carForm.price) body.price = Number(carForm.price);
+    if (carForm.description) body.description = carForm.description;
+    if (carForm.equipment.length > 0) body.options = carForm.equipment;
+    if (carForm.modification) body.transmission = mapTransmission(carForm.modification) ?? carForm.modification;
+    if (carForm.generation) body.generation_id = carForm.generation;
+    if (carForm.contacts.name) body.contact_name = carForm.contacts.name;
+    if (carForm.contacts.phone) body.contact_phone = carForm.contacts.phone;
+    if (carForm.contacts.city) body.city_id = carForm.contacts.city;
+    body.negotiable = carForm.negotiable;
+    body.can_exchange = carForm.exchangePossible;
+    body.vehicle_status = mapVehicleStatus(carForm.status) ?? "available";
+    body.is_customs_cleared = !carForm.isNotCustomsCleared;
+    if (carForm.pts) body.pts = carForm.pts;
+    if (carForm.owners) body.owners = Number(carForm.owners);
+    body.is_damaged = carForm.hasAccident;
+
+    return body;
+  }, [carForm]);
+
+  // ── Publish: Create draft → Upload media → Update fields → Submit ──
+  const publish = useCallback(async () => {
+    setIsPublishing(true);
+    setPublishError(null);
+
+    try {
+      // Step 1: Create draft
+      const draft = await createDraft().unwrap();
+      const adId = draft.ad_id;
+
+      // Step 2: Upload photos if any
+      const form = category === "cars" ? carForm : category === "moto" ? motoForm : commercialForm;
+      if (form.media.photos.length > 0) {
+        await uploadPhotos({ id: adId, photos: form.media.photos }).unwrap();
+      }
+
+      // Step 3: Upload video if any
+      if (form.media.video) {
+        await uploadVideo({ id: adId, video: form.media.video }).unwrap();
+      }
+
+      // Step 4: Update ad fields
+      const body = buildCarAdBody();
+      await updateAd({ id: adId, body }).unwrap();
+
+      // Step 5: Submit for moderation
+      await submitAd(adId).unwrap();
+
+      setIsPublished(true);
+    } catch (err) {
+      const message = getApiErrorMessage(err);
+      setPublishError(message);
+    } finally {
+      setIsPublishing(false);
+    }
+  }, [category, carForm, motoForm, commercialForm, createDraft, uploadPhotos, uploadVideo, updateAd, submitAd, buildCarAdBody]);
 
   return {
     // State
@@ -173,6 +343,8 @@ export function useListingForm() {
     commercialForm,
     errors,
     isPublished,
+    isPublishing,
+    publishError,
     hasUnsavedChanges,
     canContinue,
 

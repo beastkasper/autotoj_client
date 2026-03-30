@@ -63,6 +63,7 @@ export function HeaderActions({
             size="icon"
             onClick={() => onNavigate(item.key)}
             title={item.title}
+            aria-label={item.title}
             className={
               activeTab === item.key
                 ? "bg-[#111111] text-white hover:bg-[#111111]/90"
@@ -81,6 +82,7 @@ export function HeaderActions({
       <Button
         variant="ghost"
         onClick={handleProfileClick}
+        aria-label="Профиль"
         className={
           activeTab === "menu"
             ? "bg-[#111111] text-white hover:bg-[#111111]/90 gap-2"

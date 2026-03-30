@@ -1,7 +1,7 @@
 // Типы для формы "Добавить объявление"
 
 // ── Категория транспорта ──
-export type ListingCategory = "cars" | "moto" | "commercial";
+export type ListingCategory = "cars" | "moto" | "commercial" | "parts";
 
 // ── Контактная информация ──
 export interface ContactInfo {

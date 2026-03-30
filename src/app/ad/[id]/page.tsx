@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import {
   X,
   Heart,
@@ -23,21 +23,87 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { AdImageSection } from "@/components/ad/AdImageSection";
+import { ImageGallery } from "@/components/ad/ImageGallery";
 import { AdPriceCard } from "@/components/ad/AdPriceCard";
 import { AdSpecsTable } from "@/components/ad/AdSpecsTable";
 import { SellerCard } from "@/components/ad/SellerCard";
 import { AdActionBar } from "@/components/ad/AdActionBar";
-import { getAdById } from "@/lib/data/mockAds";
+import { useGetAdByIdQuery, useTrackAdViewMutation } from "@/lib/features/ads/adsApi";
+import {
+  useCheckFavoriteQuery,
+  useAddFavoriteMutation,
+  useRemoveFavoriteMutation,
+} from "@/lib/features/favorites/favoritesApi";
 import { formatPrice } from "@/lib/utils/formatPrice";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 
 export default function AdDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const id = params.id as string;
 
-  const ad = getAdById(id);
-  const [isFavorite, setIsFavorite] = useState(false);
+  // RTK Query — fetch from backend
+  const { data: apiAd } = useGetAdByIdQuery(id);
+  const [trackView] = useTrackAdViewMutation();
+
+  // Track view on mount
+  useEffect(() => {
+    trackView(id);
+  }, [id, trackView]);
+
+  // Map API data to local format
+  const ad = useMemo(() => {
+    if (!apiAd) return null;
+    return {
+      id: apiAd.id,
+      brand: apiAd.brand,
+      model: apiAd.model,
+      version: apiAd.version ?? undefined,
+      price: apiAd.price,
+      category: "cars" as const,
+      year: apiAd.year,
+      mileage: apiAd.mileage,
+      engineType: apiAd.fuel,
+      transmission: apiAd.transmission,
+      driveType: apiAd.drive,
+      location: apiAd.location,
+      publishedDate: apiAd.published_at ?? apiAd.created_at,
+      image: apiAd.photos[0] ?? "",
+      photos: apiAd.photos,
+      bodyType: apiAd.body,
+      color: apiAd.color,
+      condition: apiAd.condition,
+      engineVolume: apiAd.engine_volume ? `${apiAd.engine_volume}L` : undefined,
+      sellerName: apiAd.seller.name,
+      sellerType: (apiAd.seller.type === "business" ? "dealer" : apiAd.seller.type ?? "private") as "private" | "dealer",
+      sellerAdsCount: apiAd.seller.ads_count ?? 0,
+      description: apiAd.description ?? undefined,
+      equipment: apiAd.options ?? undefined,
+      vehicleStatus: (apiAd.vehicle_status === "on_order" ? "На заказ" : "В наличии") as "В наличии" | "На заказ",
+      statusNew: apiAd.condition === "Новый",
+      statusOnOrder: apiAd.vehicle_status === "on_order",
+      owners: apiAd.owners,
+      isCustomsCleared: apiAd.is_customs_cleared,
+    };
+  }, [apiAd]);
+
+  // Favorites API
+  const { data: favoriteData } = useCheckFavoriteQuery(id);
+  const [addFavorite] = useAddFavoriteMutation();
+  const [removeFavorite] = useRemoveFavoriteMutation();
+  const isFavorite = favoriteData?.is_favorite ?? false;
+
+  const handleFavoriteToggle = () => {
+    requireAuth(() => {
+      if (isFavorite) {
+        removeFavorite(id);
+      } else {
+        addFavorite(id);
+      }
+    });
+  };
 
   const title = useMemo(
     () =>
@@ -106,6 +172,36 @@ export default function AdDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F7]">
+      {apiAd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Product",
+              name: `${apiAd.brand} ${apiAd.model}${apiAd.version ? ` ${apiAd.version}` : ""}`,
+              description: apiAd.description ?? `${apiAd.brand} ${apiAd.model} ${apiAd.year}`,
+              image: apiAd.photos,
+              offers: {
+                "@type": "Offer",
+                price: apiAd.price,
+                priceCurrency: apiAd.currency || "TJS",
+                availability: "https://schema.org/InStock",
+                url: `https://autotoj.tj/ad/${apiAd.id}`,
+              },
+              brand: { "@type": "Brand", name: apiAd.brand },
+              model: apiAd.model,
+              vehicleModelDate: String(apiAd.year),
+              mileageFromOdometer: {
+                "@type": "QuantitativeValue",
+                value: apiAd.mileage,
+                unitCode: "KMT",
+              },
+            }),
+          }}
+        />
+      )}
+
       {/* ── Desktop Top Action Bar ── */}
       <div className="hidden lg:block bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
@@ -128,7 +224,7 @@ export default function AdDetailPage() {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={() => handleFavoriteToggle()}
               className={`flex items-center gap-2 text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
                 isFavorite ? "text-[#E53935]" : "text-[#111111] hover:text-[#8E8E93]"
               }`}
@@ -146,12 +242,9 @@ export default function AdDetailPage() {
           <div className="grid grid-cols-[1fr_380px] gap-8 items-start">
             {/* Left Column */}
             <div className="space-y-6">
-              <AdImageSection
-                image={ad.image}
+              <ImageGallery
+                images={ad.photos.length > 0 ? ad.photos : [ad.image]}
                 alt={title}
-                statusNew={ad.statusNew}
-                statusOnOrder={ad.statusOnOrder}
-                className="aspect-[16/10] rounded-2xl"
               />
 
               {ad.description && (
@@ -197,16 +290,28 @@ export default function AdDetailPage() {
                 title={title}
                 location={ad.location}
                 isFavorite={isFavorite}
-                onFavoriteToggle={() => setIsFavorite(!isFavorite)}
+                onFavoriteToggle={handleFavoriteToggle}
                 quickStats={quickStats}
               />
 
               <div className="space-y-3">
-                <Button className="w-full h-[52px] bg-[#E53935] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#D32F2F] font-[family-name:var(--font-manrope)]">
+                <Button
+                  onClick={() => requireAuth(() => {
+                    if (apiAd?.seller?.phone) {
+                      window.location.href = `tel:${apiAd.seller.phone}`;
+                    }
+                  })}
+                  className="w-full h-[52px] bg-[#E53935] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#D32F2F] font-[family-name:var(--font-manrope)]"
+                >
                   <Phone className="w-[18px] h-[18px]" />
                   Позвонить
                 </Button>
-                <Button className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]">
+                <Button
+                  onClick={() => requireAuth(() => {
+                    router.push(`/messages?ad=${id}`);
+                  })}
+                  className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]"
+                >
                   <MessageCircle className="w-[18px] h-[18px]" />
                   Написать
                 </Button>
@@ -248,6 +353,7 @@ export default function AdDetailPage() {
               variant="ghost"
               size="icon"
               onClick={handleShare}
+              aria-label="Поделиться"
               className="rounded-full"
             >
               <Share2 className="w-5 h-5 text-[#111111]" />
@@ -255,7 +361,8 @@ export default function AdDetailPage() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={() => handleFavoriteToggle()}
+              aria-label="В избранное"
               className="rounded-full"
             >
               <Heart
@@ -268,12 +375,9 @@ export default function AdDetailPage() {
 
       {/* ── Mobile Content ── */}
       <div className="lg:hidden pb-24">
-        <AdImageSection
-          image={ad.image}
+        <ImageGallery
+          images={ad.photos.length > 0 ? ad.photos : [ad.image]}
           alt={title}
-          statusNew={ad.statusNew}
-          statusOnOrder={ad.statusOnOrder}
-          className="aspect-[16/10]"
         />
 
         {/* Title + Price */}
@@ -350,7 +454,9 @@ export default function AdDetailPage() {
       </div>
 
       {/* Mobile Bottom CTA */}
-      <AdActionBar />
+      <AdActionBar phone={apiAd?.seller?.phone} adId={id} />
+
+      <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
     </div>
   );
 }

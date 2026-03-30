@@ -4,7 +4,7 @@
  */
 export function parseRawPhone(formatted: string): string {
   const digits = formatted.replace(/\D/g, "");
-  return `992${digits}`;
+  return `+992${digits}`;
 }
 
 /**

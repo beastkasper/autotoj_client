@@ -3,11 +3,11 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import { formatDateWithCity } from "@/lib/utils/dateFormat";
-import type { PartListing } from "@/lib/data/mockParts";
+import type { PartListing } from "@/lib/types/part";
 
 interface PartCardProps {
   part: PartListing;
-  onClick: (id: number) => void;
+  onClick: (id: string) => void;
   variant?: "desktop" | "mobile";
 }
 

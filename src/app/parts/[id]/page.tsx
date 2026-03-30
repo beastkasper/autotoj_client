@@ -22,24 +22,47 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AdImageSection } from "@/components/ad/AdImageSection";
+import { ImageGallery } from "@/components/ad/ImageGallery";
 import { AdSpecsTable } from "@/components/ad/AdSpecsTable";
 import { AdActionBar } from "@/components/ad/AdActionBar";
 import { PartCard } from "@/components/cards/PartCard";
-import {
-  getPartById,
-  getSimilarParts,
-} from "@/lib/data/mockParts";
+import { useGetPartByIdQuery } from "@/lib/features/parts/partsApi";
+import type { PartListing } from "@/lib/types/part";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 
 export default function PartDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = Number(params.id);
+  const idStr = params.id as string;
 
-  const part = getPartById(id);
-  const similarParts = useMemo(() => getSimilarParts(id), [id]);
+  // RTK Query — fetch from backend
+  const { data: apiPart } = useGetPartByIdQuery(idStr);
+
+  const part = useMemo(() => {
+    if (!apiPart) return null;
+    return {
+      id: apiPart.id || idStr,
+      title: apiPart.title ?? `${apiPart.brand ?? ""} ${apiPart.model ?? ""}`.trim(),
+      price: String(apiPart.price),
+      condition: apiPart.condition === "new" ? "Новый" as const : "Б/у" as const,
+      image: apiPart.photos[0] ?? "",
+      images: apiPart.photos,
+      city: apiPart.contact_city,
+      category: apiPart.part_type,
+      publishedDate: apiPart.published_at ?? apiPart.created_at,
+      description: apiPart.description ?? undefined,
+      sellerName: apiPart.seller?.name ?? undefined,
+      manufacturer: apiPart.brand ?? undefined,
+      compatibility: undefined,
+      partNumber: undefined,
+    };
+  }, [apiPart, idStr]);
+
+  const similarParts: PartListing[] = [];
   const [isFavorite, setIsFavorite] = useState(false);
+  const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
 
   const specs = useMemo(() => {
     if (!part) return [];
@@ -81,6 +104,28 @@ export default function PartDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#F5F5F7]">
+      {apiPart && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Product",
+              name: apiPart.title ?? `${apiPart.brand ?? ""} ${apiPart.model ?? ""}`.trim(),
+              image: apiPart.photos,
+              offers: {
+                "@type": "Offer",
+                price: apiPart.price,
+                priceCurrency: apiPart.currency || "TJS",
+                availability: "https://schema.org/InStock",
+              },
+              itemCondition: apiPart.condition === "new"
+                ? "https://schema.org/NewCondition"
+                : "https://schema.org/UsedCondition",
+            }),
+          }}
+        />
+      )}
       {/* ── Desktop Top Action Bar ── */}
       <div className="hidden lg:block bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
@@ -121,25 +166,10 @@ export default function PartDetailPage() {
           <div className="grid grid-cols-[1fr_380px] gap-8 items-start">
             {/* Left Column */}
             <div className="space-y-6">
-              <AdImageSection
-                image={part.image}
+              <ImageGallery
+                images={part.images ?? [part.image]}
                 alt={part.title}
-                className="aspect-[16/10] rounded-2xl"
               />
-
-              {/* Thumbnail strip */}
-              {part.images && part.images.length > 1 && (
-                <div className="flex gap-3">
-                  {part.images.map((img, i) => (
-                    <div
-                      key={i}
-                      className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-[#E5E5E7] border-2 border-transparent hover:border-[#111111] transition-colors cursor-pointer"
-                    >
-                      <img src={img} alt={`${part.title} ${i + 1}`} className="w-full h-full object-cover" />
-                    </div>
-                  ))}
-                </div>
-              )}
 
               {/* Specs */}
               <AdSpecsTable specs={specs} title="Характеристики" />
@@ -242,12 +272,23 @@ export default function PartDetailPage() {
 
               {/* CTA Buttons */}
               <div className="space-y-3">
-                <Button className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]">
+                <Button
+                  onClick={() => requireAuth(() => {
+                    const phone = apiPart?.contact_phone || apiPart?.seller?.phone;
+                    if (phone) {
+                      window.location.href = `tel:${phone}`;
+                    }
+                  })}
+                  className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]"
+                >
                   <Phone className="w-[18px] h-[18px]" />
                   Позвонить
                 </Button>
                 <Button
                   variant="outline"
+                  onClick={() => requireAuth(() => {
+                    router.push(`/messages?ad=${idStr}`);
+                  })}
                   className="w-full h-[52px] rounded-2xl text-[15px] font-semibold border-[#E5E5E7] text-[#111111] hover:bg-[#F5F5F7] font-[family-name:var(--font-manrope)]"
                 >
                   <MessageCircle className="w-[18px] h-[18px]" />
@@ -298,7 +339,10 @@ export default function PartDetailPage() {
 
       {/* ── Mobile Content ── */}
       <div className="lg:hidden pb-24">
-        <AdImageSection image={part.image} alt={part.title} className="aspect-[16/10]" />
+        <ImageGallery
+          images={part.images ?? [part.image]}
+          alt={part.title}
+        />
 
         {/* Title + Price */}
         <div className="px-4 mt-5">
@@ -397,7 +441,9 @@ export default function PartDetailPage() {
       </div>
 
       {/* Mobile Bottom CTA */}
-      <AdActionBar />
+      <AdActionBar phone={apiPart?.contact_phone || apiPart?.seller?.phone} adId={idStr} />
+
+      <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
     </div>
   );
 }

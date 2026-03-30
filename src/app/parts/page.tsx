@@ -2,42 +2,68 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Plus, ChevronLeft } from "lucide-react";
+import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PartCard } from "@/components/cards/PartCard";
 import { EmptyState } from "@/components/states/EmptyState";
+import { PageHeader } from "@/components/layout/page-header";
+import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { useAuth } from "@/hooks/useAuth";
+import { useGetPartsQuery } from "@/lib/features/parts/partsApi";
 import {
-  mockPartsListings,
   PART_CATEGORIES,
   CONDITION_OPTIONS,
   type PartCondition,
-} from "@/lib/data/mockParts";
+} from "@/lib/types/part";
+import type { PartsSearchParams } from "@/lib/types/api";
 
 export default function PartsPage() {
   const router = useRouter();
+  const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Все категории");
   const [selectedCondition, setSelectedCondition] = useState<PartCondition>("Все");
 
-  const filteredParts = useMemo(() => {
-    return mockPartsListings.filter((part) => {
-      const matchesSearch = part.title
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesCondition =
-        selectedCondition === "Все" || part.condition === selectedCondition;
-      return matchesSearch && matchesCondition;
-    });
+  // RTK Query — fetch from backend
+  const queryParams: PartsSearchParams = useMemo(() => {
+    const p: PartsSearchParams = {};
+    if (searchQuery) p.q = searchQuery;
+    if (selectedCondition === "Новый") p.condition = "new";
+    else if (selectedCondition === "Б/у") p.condition = "used";
+    return p;
   }, [searchQuery, selectedCondition]);
 
+  const { data: apiData } = useGetPartsQuery(queryParams);
+
+  const filteredParts = useMemo(() => {
+    if (!apiData?.parts) return [];
+    return apiData.parts.map((part) => ({
+      id: part.id,
+      title: part.title ?? `${part.brand ?? ""} ${part.model ?? ""}`.trim(),
+      price: String(part.price),
+      condition: part.condition === "new" ? "Новый" as const : "Б/у" as const,
+      image: part.photos[0] ?? "",
+      city: part.contact_city,
+      category: part.part_type,
+      publishedDate: part.created_at,
+    }));
+  }, [apiData]);
+
   const handlePartClick = useCallback(
-    (id: number) => router.push(`/parts/${id}`),
+    (id: string) => router.push(`/parts/${id}`),
     [router]
   );
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <main className="min-h-screen bg-[#F5F5F7]">
       {/* ── Desktop Filter Bar (sticky) ── */}
       <div className="hidden lg:block sticky top-[65px] z-20 bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1440px] mx-auto px-6 py-4">
@@ -58,24 +84,25 @@ export default function PartsPage() {
                     onClick={() => setSearchQuery("")}
                     className="p-1 hover:bg-[#E5E5E7] rounded-lg transition-colors"
                   >
-                    <span className="text-[#8E8E93] text-xs">✕</span>
+                    <span className="text-[#8E8E93] text-xs">&#x2715;</span>
                   </button>
                 )}
               </div>
             </div>
 
             {/* Category Select */}
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 h-10 bg-[#F5F5F7] border-none rounded-xl text-[15px] text-[#111111] focus:outline-none focus:ring-2 focus:ring-[#111111] cursor-pointer font-[family-name:var(--font-manrope)]"
-            >
-              {PART_CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="px-4 h-10 bg-[#F5F5F7] border-none rounded-xl text-[15px] text-[#111111] focus:outline-none focus:ring-2 focus:ring-[#111111] cursor-pointer font-[family-name:var(--font-manrope)] w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PART_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat} value={cat}>
+                    {cat}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Condition Toggles */}
             <div className="flex gap-2">
@@ -97,6 +124,7 @@ export default function PartsPage() {
 
             {/* Add Button */}
             <Button
+              onClick={() => requireAuth(() => router.push("/post-ad?category=parts"))}
               className="h-10 bg-[#E53935] text-white rounded-xl hover:bg-[#D32F2F] font-medium text-[15px] ml-auto font-[family-name:var(--font-manrope)]"
             >
               <Plus className="w-5 h-5" />
@@ -136,19 +164,7 @@ export default function PartsPage() {
       </div>
 
       {/* ── Mobile Header ── */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5 text-[#111111]" />
-          </button>
-          <h1 className="text-[17px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">
-            Запчасти
-          </h1>
-        </div>
-      </div>
+      <PageHeader title="Запчасти" />
 
       {/* ── Mobile Search + Filters ── */}
       <div className="lg:hidden px-4 pt-4 pb-2 space-y-3">
@@ -163,7 +179,7 @@ export default function PartsPage() {
           />
           {searchQuery && (
             <button onClick={() => setSearchQuery("")} className="p-1">
-              <span className="text-[#8E8E93] text-sm">✕</span>
+              <span className="text-[#8E8E93] text-sm">&#x2715;</span>
             </button>
           )}
         </div>
@@ -231,6 +247,7 @@ export default function PartsPage() {
           />
         )}
       </div>
-    </div>
+      <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
+    </main>
   );
 }

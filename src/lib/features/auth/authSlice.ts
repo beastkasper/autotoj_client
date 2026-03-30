@@ -3,6 +3,31 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 export type AuthMethod = "phone" | "email";
 export type AuthStep = "form" | "code";
 
+const TOKEN_KEY = "autotoj_token";
+const USER_ID_KEY = "autotoj_user_id";
+
+function getStoredValue(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredValue(key: string, value: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (value) {
+      localStorage.setItem(key, value);
+    } else {
+      localStorage.removeItem(key);
+    }
+  } catch {
+    // localStorage may be unavailable
+  }
+}
+
 interface AuthState {
   method: AuthMethod;
   contact: string;
@@ -10,6 +35,8 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   resendCountdown: number;
+  token: string | null;
+  userId: string | null;
 }
 
 const initialState: AuthState = {
@@ -19,6 +46,8 @@ const initialState: AuthState = {
   isLoading: false,
   error: null,
   resendCountdown: 0,
+  token: getStoredValue(TOKEN_KEY),
+  userId: getStoredValue(USER_ID_KEY),
 };
 
 const authSlice = createSlice({
@@ -52,8 +81,36 @@ const authSlice = createSlice({
       state.error = null;
       state.resendCountdown = 45;
     },
+    setToken(state, action: PayloadAction<string | null>) {
+      state.token = action.payload;
+      setStoredValue(TOKEN_KEY, action.payload);
+    },
+    setUserId(state, action: PayloadAction<string | null>) {
+      state.userId = action.payload;
+      setStoredValue(USER_ID_KEY, action.payload);
+    },
+    loginSuccess(state, action: PayloadAction<{ token: string; userId: string }>) {
+      state.token = action.payload.token;
+      state.userId = action.payload.userId;
+      state.step = "form";
+      state.isLoading = false;
+      state.error = null;
+      setStoredValue(TOKEN_KEY, action.payload.token);
+      setStoredValue(USER_ID_KEY, action.payload.userId);
+    },
     resetAuth() {
-      return initialState;
+      setStoredValue(TOKEN_KEY, null);
+      setStoredValue(USER_ID_KEY, null);
+      return {
+        method: "phone" as AuthMethod,
+        contact: "",
+        step: "form" as AuthStep,
+        isLoading: false,
+        error: null,
+        resendCountdown: 0,
+        token: null,
+        userId: null,
+      };
     },
   },
 });
@@ -66,6 +123,9 @@ export const {
   setError,
   setResendCountdown,
   codeSent,
+  setToken,
+  setUserId,
+  loginSuccess,
   resetAuth,
 } = authSlice.actions;
 

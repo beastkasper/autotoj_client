@@ -8,6 +8,7 @@ import { BottomSheetSelect } from "@/components/listing/bottom-sheet-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface StepContactsProps {
   form: CarListingForm;
@@ -101,24 +102,22 @@ export function StepContacts({ form, errors, onUpdate }: StepContactsProps) {
       </div>
 
       {/* Info modal */}
-      {showOnlineInfo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl mx-6 p-6 max-w-sm w-full">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[17px] font-semibold font-[family-name:var(--font-manrope)]">
-                Онлайн-показ
-              </h3>
-              <button type="button" onClick={() => setShowOnlineInfo(false)}>
-                <X className="w-5 h-5 text-[#8E8E93]" />
-              </button>
-            </div>
-            <p className="text-[15px] text-[#3C3C43] leading-relaxed font-[family-name:var(--font-manrope)]">
-              Вы можете провести видео-звонок с потенциальным покупателем и показать автомобиль
-              удалённо.
-            </p>
+      <Dialog open={showOnlineInfo} onOpenChange={setShowOnlineInfo}>
+        <DialogContent className="rounded-2xl max-w-sm p-6 border-none shadow-lg [&>button]:hidden">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[17px] font-semibold font-[family-name:var(--font-manrope)]">
+              Онлайн-показ
+            </h3>
+            <button type="button" onClick={() => setShowOnlineInfo(false)}>
+              <X className="w-5 h-5 text-[#8E8E93]" />
+            </button>
           </div>
-        </div>
-      )}
+          <p className="text-[15px] text-[#3C3C43] leading-relaxed font-[family-name:var(--font-manrope)]">
+            Вы можете провести видео-звонок с потенциальным покупателем и показать автомобиль
+            удалённо.
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -20,24 +20,61 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AdImageSection } from "@/components/ad/AdImageSection";
+import { ImageGallery } from "@/components/ad/ImageGallery";
 import { AdSpecsTable } from "@/components/ad/AdSpecsTable";
 import { AdActionBar } from "@/components/ad/AdActionBar";
 import { RentalCard } from "@/components/cards/RentalCard";
-import {
-  getRentalById,
-  getSimilarRentals,
-} from "@/lib/data/mockRentals";
+import { useGetRentalByIdQuery, useGetSimilarRentalsQuery } from "@/lib/features/rental/rentalApi";
+import type { RentalCar } from "@/lib/types/rental";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 
 export default function RentalDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = Number(params.id);
+  const idStr = params.id as string;
 
-  const car = getRentalById(id);
-  const similarCars = useMemo(() => getSimilarRentals(id), [id]);
+  // RTK Query — fetch from backend
+  const { data: apiCar } = useGetRentalByIdQuery(idStr);
+  const { data: apiSimilar } = useGetSimilarRentalsQuery({ id: idStr, limit: 6 });
+
+  const car = useMemo(() => {
+    if (!apiCar) return null;
+    return {
+      id: apiCar.id || idStr,
+      title: apiCar.title,
+      carClass: apiCar.car_class as RentalCar["carClass"],
+      year: apiCar.year,
+      transmission: apiCar.transmission === "automatic" ? "Автомат" : "Механика",
+      fuel: apiCar.fuel_type === "petrol" ? "Бензин" : apiCar.fuel_type,
+      pricePerDay: String(apiCar.price_per_day),
+      image: apiCar.photos[0] ?? "",
+      images: apiCar.photos,
+      city: apiCar.contact_city,
+      publishedDate: apiCar.published_at,
+      description: apiCar.description ?? undefined,
+      sellerName: apiCar.owner?.name ?? undefined,
+    };
+  }, [apiCar, idStr]);
+
+  const similarCars: RentalCar[] = useMemo(() => {
+    if (!apiSimilar) return [];
+    return apiSimilar.map((c) => ({
+      id: c.id,
+      title: c.title,
+      carClass: c.car_class as RentalCar["carClass"],
+      year: c.year,
+      transmission: c.transmission === "automatic" ? "Автомат" : "Механика",
+      fuel: c.fuel_type === "petrol" ? "Бензин" : c.fuel_type,
+      pricePerDay: String(c.price_per_day),
+      image: c.photos[0] ?? "",
+      city: c.contact_city,
+      publishedDate: c.published_at,
+    }));
+  }, [apiSimilar]);
   const [isFavorite, setIsFavorite] = useState(false);
+  const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
 
   const specs = useMemo(() => {
     if (!car) return [];
@@ -100,7 +137,7 @@ export default function RentalDetailPage() {
             </Button>
             <Button
               variant="ghost"
-              onClick={() => setIsFavorite(!isFavorite)}
+              onClick={() => requireAuth(() => setIsFavorite(!isFavorite))}
               className={`flex items-center gap-2 text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
                 isFavorite ? "text-[#E53935]" : "text-[#111111] hover:text-[#8E8E93]"
               }`}
@@ -118,10 +155,9 @@ export default function RentalDetailPage() {
           <div className="grid grid-cols-[1fr_380px] gap-8 items-start">
             {/* Left Column */}
             <div className="space-y-6">
-              <AdImageSection
-                image={car.image}
+              <ImageGallery
+                images={car.images?.length ? car.images : [car.image]}
                 alt={car.title}
-                className="aspect-[16/10] rounded-2xl"
               />
 
               {/* Thumbnail strip */}
@@ -226,12 +262,22 @@ export default function RentalDetailPage() {
 
               {/* CTA Buttons */}
               <div className="space-y-3">
-                <Button className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]">
+                <Button
+                  onClick={() => requireAuth(() => {
+                    if (apiCar?.owner?.phone) {
+                      window.location.href = `tel:${apiCar.owner.phone}`;
+                    }
+                  })}
+                  className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]"
+                >
                   <Phone className="w-[18px] h-[18px]" />
                   Позвонить
                 </Button>
                 <Button
                   variant="outline"
+                  onClick={() => requireAuth(() => {
+                    router.push(`/messages?ad=${idStr}`);
+                  })}
                   className="w-full h-[52px] rounded-2xl text-[15px] font-semibold border-[#E5E5E7] text-[#111111] hover:bg-[#F5F5F7] font-[family-name:var(--font-manrope)]"
                 >
                   <MessageCircle className="w-[18px] h-[18px]" />
@@ -282,7 +328,10 @@ export default function RentalDetailPage() {
 
       {/* ── Mobile Content ── */}
       <div className="lg:hidden pb-24">
-        <AdImageSection image={car.image} alt={car.title} className="aspect-[16/10]" />
+        <ImageGallery
+          images={car.images?.length ? car.images : [car.image]}
+          alt={car.title}
+        />
 
         {/* Title + Price */}
         <div className="px-4 mt-5">
@@ -373,7 +422,9 @@ export default function RentalDetailPage() {
       </div>
 
       {/* Mobile Bottom CTA */}
-      <AdActionBar />
+      <AdActionBar phone={apiCar?.owner?.phone} adId={idStr} />
+
+      <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
     </div>
   );
 }

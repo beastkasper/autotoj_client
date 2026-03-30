@@ -9,6 +9,18 @@ const MONTHS_FULL = [
 ];
 
 /**
+ * Formats a date string with full month name and year.
+ * Example: "18 января 2026"
+ */
+export function formatDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getDate()} ${MONTHS_FULL[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+/** Alias kept for backwards compatibility */
+export const formatDateRu = formatDate;
+
+/**
  * Formats a date string with full month name, year and city.
  * Example: "18 января 2026, Душанбе"
  */

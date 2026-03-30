@@ -2,11 +2,11 @@
 
 import React from "react";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
-import type { RentalCar } from "@/lib/data/mockRentals";
+import type { RentalCar } from "@/lib/types/rental";
 
 interface RentalCardProps {
   car: RentalCar;
-  onClick: (id: number) => void;
+  onClick: (id: string) => void;
   variant?: "desktop" | "mobile";
 }
 

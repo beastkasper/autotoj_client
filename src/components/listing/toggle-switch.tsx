@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Info, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface ToggleSwitchProps {
   label: string;
@@ -64,23 +65,21 @@ export function ToggleSwitch({
       </div>
 
       {/* Info modal */}
-      {showInfo && infoText && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white rounded-2xl mx-6 p-6 max-w-sm w-full">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-[17px] font-semibold font-[family-name:var(--font-manrope)]">
-                {label}
-              </h3>
-              <button type="button" onClick={() => setShowInfo(false)}>
-                <X className="w-5 h-5 text-[#8E8E93]" />
-              </button>
-            </div>
-            <p className="text-[15px] text-[#3C3C43] leading-relaxed font-[family-name:var(--font-manrope)]">
-              {infoText}
-            </p>
+      <Dialog open={showInfo && !!infoText} onOpenChange={setShowInfo}>
+        <DialogContent className="rounded-2xl max-w-sm p-6 border-none shadow-lg [&>button]:hidden">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[17px] font-semibold font-[family-name:var(--font-manrope)]">
+              {label}
+            </h3>
+            <button type="button" onClick={() => setShowInfo(false)}>
+              <X className="w-5 h-5 text-[#8E8E93]" />
+            </button>
           </div>
-        </div>
-      )}
+          <p className="text-[15px] text-[#3C3C43] leading-relaxed font-[family-name:var(--font-manrope)]">
+            {infoText}
+          </p>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

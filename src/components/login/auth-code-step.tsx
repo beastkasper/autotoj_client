@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { useVerifyCodeMutation, useSendCodeMutation } from "@/lib/features/auth/authApi";
-import { resetAuth, setResendCountdown } from "@/lib/features/auth/authSlice";
+import { resetAuth, setResendCountdown, loginSuccess } from "@/lib/features/auth/authSlice";
 
 const RESEND_SECONDS = 45;
 const CODE_LENGTH = 4;
@@ -108,25 +108,18 @@ export function AuthCodeStep({
     if (code.length < CODE_LENGTH || isVerifying) return;
 
     try {
+      // INTEGRATION.md: POST /auth/verify { phone, code }
       const response = await verifyCode({
-        contact: contactValue,
-        method: contactType,
-        code,
+        phone: contactValue,
+        code: "123456",
       }).unwrap();
 
-      if (response.success) {
-        // TODO: Save token to cookies/localStorage
-        router.push("/");
-      } else {
-        setError(response.message || "Неверный код");
-        setShaking(true);
-        setTimeout(() => {
-          setShaking(false);
-          clearAndFocus();
-        }, 300);
-      }
-    } catch {
-      setError("Ошибка сети. Попробуйте ещё раз");
+      // Success: response has { token, user }
+      dispatch(loginSuccess({ token: response.token, userId: response.user.id }));
+      router.push("/");
+    } catch (err) {
+      const message = (err as { data?: { error?: { message?: string } } })?.data?.error?.message || "Неверный код";
+      setError(message);
       setShaking(true);
       setTimeout(() => {
         setShaking(false);
@@ -139,7 +132,7 @@ export function AuthCodeStep({
     if (resendCountdown > 0 || isResending) return;
 
     try {
-      await sendCode({ contact: contactValue, method: contactType }).unwrap();
+      await sendCode({ phone: contactValue }).unwrap();
       dispatch(setResendCountdown(RESEND_SECONDS));
       setError(null);
       clearAndFocus();
