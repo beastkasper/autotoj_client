@@ -10,6 +10,7 @@ import {
   useGetServiceProvidersQuery,
   useGetServiceCategoriesQuery,
 } from "@/lib/features/services/servicesApi";
+import { ServiceProvidersSkeleton } from "@/components/skeletons/services-skeleton";
 
 const SORT_OPTIONS = [
   { value: "rating", label: "По рейтингу" },
@@ -151,11 +152,7 @@ export default function ServiceProvidersPage() {
       </div>
 
       {/* ── Loading ── */}
-      {isLoading && (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[#E5E5E7] border-t-[#111111] rounded-full animate-spin" />
-        </div>
-      )}
+      {isLoading && <ServiceProvidersSkeleton />}
 
       {/* ── Providers List ── */}
       {!isLoading && providers.length > 0 && (

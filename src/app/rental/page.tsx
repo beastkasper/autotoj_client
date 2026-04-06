@@ -12,6 +12,7 @@ import { SearchInput } from "@/components/search/search-input";
 import { FilterChip } from "@/components/search/filter-chip";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { useAuth } from "@/hooks/useAuth";
+import { GridPageSkeleton } from "@/components/skeletons/grid-page-skeleton";
 import { useGetRentalsQuery } from "@/lib/features/rental/rentalApi";
 import {
   CAR_CLASSES,
@@ -39,7 +40,7 @@ export default function RentalPage() {
     return p;
   }, [searchQuery, selectedClass, selectedCity]);
 
-  const { data: apiData } = useGetRentalsQuery(queryParams);
+  const { data: apiData, isLoading } = useGetRentalsQuery(queryParams);
 
   const filteredCars: RentalCar[] = useMemo(() => {
     if (!apiData?.cars) return [];
@@ -144,7 +145,9 @@ export default function RentalPage() {
 
       {/* ── Desktop Grid ── */}
       <div className="hidden lg:block max-w-[1440px] mx-auto px-6 py-6">
-        {filteredCars.length > 0 ? (
+        {isLoading ? (
+          <GridPageSkeleton />
+        ) : filteredCars.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredCars.map((car) => (
               <RentalCard key={car.id} car={car} onClick={handleCarClick} variant="desktop" />
@@ -210,7 +213,9 @@ export default function RentalPage() {
 
       {/* ── Mobile Grid ── */}
       <div className="lg:hidden px-4 pb-6">
-        {filteredCars.length > 0 ? (
+        {isLoading ? (
+          <GridPageSkeleton count={6} />
+        ) : filteredCars.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {filteredCars.map((car) => (
               <RentalCard key={car.id} car={car} onClick={handleCarClick} variant="mobile" />

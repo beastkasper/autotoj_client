@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppDispatch } from "@/hooks/hooks";
+import { ProfileSkeleton } from "@/components/skeletons/profile-skeleton";
 import { resetAuth } from "@/lib/features/auth/authSlice";
 import {
   useGetProfileQuery,
@@ -104,11 +105,7 @@ export default function ProfilePage() {
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-8 h-8 border-2 border-[#111] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   const camBtn = (onClick: () => void, lg: boolean) => (

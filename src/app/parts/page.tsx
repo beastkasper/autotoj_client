@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/states/EmptyState";
 import { PageHeader } from "@/components/layout/page-header";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { useAuth } from "@/hooks/useAuth";
+import { GridPageSkeleton } from "@/components/skeletons/grid-page-skeleton";
 import { useGetPartsQuery } from "@/lib/features/parts/partsApi";
 import {
   PART_CATEGORIES,
@@ -41,7 +42,7 @@ export default function PartsPage() {
     return p;
   }, [searchQuery, selectedCondition]);
 
-  const { data: apiData } = useGetPartsQuery(queryParams);
+  const { data: apiData, isLoading } = useGetPartsQuery(queryParams);
 
   const filteredParts = useMemo(() => {
     if (!apiData?.parts) return [];
@@ -143,7 +144,9 @@ export default function PartsPage() {
 
       {/* ── Desktop Grid ── */}
       <div className="hidden lg:block max-w-[1440px] mx-auto px-6 py-6">
-        {filteredParts.length > 0 ? (
+        {isLoading ? (
+          <GridPageSkeleton />
+        ) : filteredParts.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredParts.map((part) => (
               <PartCard
@@ -228,7 +231,9 @@ export default function PartsPage() {
 
       {/* ── Mobile Grid ── */}
       <div className="lg:hidden px-4 pb-6">
-        {filteredParts.length > 0 ? (
+        {isLoading ? (
+          <GridPageSkeleton count={6} />
+        ) : filteredParts.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {filteredParts.map((part) => (
               <PartCard

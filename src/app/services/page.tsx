@@ -6,6 +6,7 @@ import { useGetServiceCategoriesQuery } from "@/lib/features/services/servicesAp
 import { EmptyState } from "@/components/states/EmptyState";
 import { PageHeader } from "@/components/layout/page-header";
 import { DesktopPageHeader } from "@/components/layout/desktop-page-header";
+import { ServicesCategoriesSkeleton } from "@/components/skeletons/services-skeleton";
 
 /** Icon map -- maps API icon key to a display emoji/label */
 const CATEGORY_ICONS: Record<string, string> = {
@@ -36,11 +37,7 @@ export default function ServicesPage() {
       <DesktopPageHeader title="Сервисы" subtitle="Выберите категорию услуг" />
 
       {/* ── Loading ── */}
-      {isLoading && (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-[#E5E5E7] border-t-[#111111] rounded-full animate-spin" />
-        </div>
-      )}
+      {isLoading && <ServicesCategoriesSkeleton />}
 
       {/* ── Categories Grid ── */}
       {!isLoading && categories && categories.length > 0 && (

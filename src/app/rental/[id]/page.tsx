@@ -29,6 +29,7 @@ import type { RentalCar } from "@/lib/types/rental";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { DetailPageSkeleton } from "@/components/skeletons/detail-page-skeleton";
 
 export default function RentalDetailPage() {
   const params = useParams();
@@ -36,7 +37,7 @@ export default function RentalDetailPage() {
   const idStr = params.id as string;
 
   // RTK Query — fetch from backend
-  const { data: apiCar } = useGetRentalByIdQuery(idStr);
+  const { data: apiCar, isLoading } = useGetRentalByIdQuery(idStr);
   const { data: apiSimilar } = useGetSimilarRentalsQuery({ id: idStr, limit: 6 });
 
   const car = useMemo(() => {
@@ -85,6 +86,10 @@ export default function RentalDetailPage() {
     if (car.carClass) result.push({ icon: CircleDot, label: "Класс", value: car.carClass });
     return result;
   }, [car]);
+
+  if (isLoading) {
+    return <DetailPageSkeleton />;
+  }
 
   if (!car) {
     return (

@@ -31,6 +31,7 @@ import type { PartListing } from "@/lib/types/part";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { DetailPageSkeleton } from "@/components/skeletons/detail-page-skeleton";
 
 export default function PartDetailPage() {
   const params = useParams();
@@ -38,7 +39,7 @@ export default function PartDetailPage() {
   const idStr = params.id as string;
 
   // RTK Query — fetch from backend
-  const { data: apiPart } = useGetPartByIdQuery(idStr);
+  const { data: apiPart, isLoading } = useGetPartByIdQuery(idStr);
 
   const part = useMemo(() => {
     if (!apiPart) return null;
@@ -74,6 +75,10 @@ export default function PartDetailPage() {
     if (part.partNumber) result.push({ icon: Hash, label: "Артикул", value: part.partNumber });
     return result;
   }, [part]);
+
+  if (isLoading) {
+    return <DetailPageSkeleton />;
+  }
 
   if (!part) {
     return (

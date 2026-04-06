@@ -37,6 +37,7 @@ import {
 import { formatPrice } from "@/lib/utils/formatPrice";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { DetailPageSkeleton } from "@/components/skeletons/detail-page-skeleton";
 
 export default function AdDetailPage() {
   const params = useParams();
@@ -45,7 +46,7 @@ export default function AdDetailPage() {
   const id = params.id as string;
 
   // RTK Query — fetch from backend
-  const { data: apiAd } = useGetAdByIdQuery(id);
+  const { data: apiAd, isLoading } = useGetAdByIdQuery(id);
   const [trackView] = useTrackAdViewMutation();
 
   // Track view on mount
@@ -142,6 +143,10 @@ export default function AdDetailPage() {
     if (ad.engineType) qs.push(ad.engineType);
     return qs;
   }, [ad]);
+
+  if (isLoading) {
+    return <DetailPageSkeleton />;
+  }
 
   if (!ad) {
     return (

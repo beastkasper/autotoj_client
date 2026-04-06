@@ -1,9 +1,10 @@
+import { LoadingState } from "@/components/states/LoadingState";
+
 export default function Loading() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950">
-      <div className="flex flex-col items-center gap-4">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-zinc-700 border-t-indigo-500" />
-        <p className="text-sm text-zinc-500">Загрузка...</p>
+    <div className="min-h-screen bg-white pb-20 lg:pb-8">
+      <div className="max-w-[1440px] mx-auto lg:px-6 lg:py-6 pt-8">
+        <LoadingState />
       </div>
     </div>
   );
