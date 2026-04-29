@@ -20,58 +20,59 @@ export interface MediaData {
   videoPreviewUrl: string | null;
 }
 
-// ── Форма легковых (18 шагов) ──
+// ── Форма легковых (21 шаг — flow выровнен с мобильным) ──
 export interface CarListingForm {
-  // Шаг 1: Статус
-  status: string;
-  isNotCustomsCleared: boolean;
-  supplyCountry: string;
-
-  // Шаг 2: VIN
-  vin: string;
-
-  // Шаг 3-4: Марка / Модель
+  // 1. Brand
   brand: string;
   model: string;
   customBrand: string;
   customModel: string;
 
-  // Шаг 5-6: Год / Поколение
+  // 3-4. Year / Generation
   year: number | null;
   generation: string;
 
-  // Шаг 7-9: Кузов / Двигатель / Привод
+  // 5-7. Body / Engine (fuel) / Drive
   bodyType: string;
   engineType: string;
   driveType: string;
 
-  // Шаг 10: Модификация
-  modification: string;
+  // 8. Transmission
+  transmission: string;
 
-  // Шаг 11: Цвет
+  // 9-10. Engine volume / Power
+  engineVolume: string;
+  enginePower: string;
+
+  // 11-13. Color / Condition / Steering
   color: string;
+  condition: string;
+  steeringWheel: string;
 
-  // Шаг 12: Медиа
+  // 14. Photos / Video
   media: MediaData;
 
-  // Шаг 13: Комплектация
+  // 15. Equipment
   equipment: string[];
 
-  // Шаг 14: История
+  // 16. History
   mileage: string;
   pts: string;
   owners: string;
   hasAccident: boolean;
 
-  // Шаг 15: Описание
+  // 17. VIN (optional, late)
+  vin: string;
+
+  // 18. Description
   description: string;
 
-  // Шаг 16: Цена
+  // 19. Price
   price: string;
   exchangePossible: boolean;
   negotiable: boolean;
 
-  // Шаг 17: Контакты
+  // 20. Contacts
   contacts: ContactInfo;
 }
 
@@ -206,10 +207,6 @@ export const INITIAL_CONTACTS: ContactInfo = {
 };
 
 export const INITIAL_CAR_FORM: CarListingForm = {
-  status: "",
-  isNotCustomsCleared: false,
-  supplyCountry: "",
-  vin: "",
   brand: "",
   model: "",
   customBrand: "",
@@ -219,14 +216,19 @@ export const INITIAL_CAR_FORM: CarListingForm = {
   bodyType: "",
   engineType: "",
   driveType: "",
-  modification: "",
+  transmission: "",
+  engineVolume: "",
+  enginePower: "",
   color: "",
+  condition: "",
+  steeringWheel: "",
   media: { ...INITIAL_MEDIA },
   equipment: [],
   mileage: "",
   pts: "",
   owners: "",
   hasAccident: false,
+  vin: "",
   description: "",
   price: "",
   exchangePossible: false,

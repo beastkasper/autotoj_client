@@ -1,13 +1,13 @@
 "use client";
 
 import type { CommercialListingForm, ValidationErrors, ContactInfo, MediaData } from "@/lib/types/listing";
+import { YEARS, OWNERS_OPTIONS } from "@/lib/data/listing-constants";
 import {
-  COMMERCIAL_BRANDS, COMMERCIAL_MODELS, COMMERCIAL_BODY_TYPES,
-  COMMERCIAL_DRIVE_TYPES, COMMERCIAL_ENGINE_TYPES, COMMERCIAL_TRANSMISSIONS,
-  COMMERCIAL_EQUIPMENT, COMMERCIAL_AIRBAGS, COMMERCIAL_WINDOWS, COMMERCIAL_RADIO,
-  STEERING_OPTIONS, COLORS, YEARS,
-  VEHICLE_STATUSES, PTS_OPTIONS, OWNERS_OPTIONS, CITIES,
-} from "@/lib/data/listing-constants";
+  useGetBrandsQuery,
+  useGetDictsQuery,
+  useGetModelsQuery,
+} from "@/lib/features/dicts/dictsApi";
+import { useMemo } from "react";
 import {
   Accordion, AccordionItem, AccordionTrigger, AccordionContent,
 } from "@/components/ui/accordion";
@@ -29,7 +29,76 @@ interface CommercialFormProps {
   onUpdate: <K extends keyof CommercialListingForm>(key: K, value: CommercialListingForm[K]) => void;
 }
 
+const COMMERCIAL_CUSTOM_CITY_ID = "__custom__";
+
+const VEHICLE_STATUS_OPTIONS = [
+  { id: "available", label: "В наличии" },
+  { id: "in_transit", label: "В пути" },
+  { id: "on_order", label: "На заказ" },
+];
+
 export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) {
+  const { data: dicts } = useGetDictsQuery();
+  const { data: brands } = useGetBrandsQuery({ type: "commercial" });
+  const { data: brandModels } = useGetModelsQuery(
+    { brand_id: form.brand },
+    { skip: !form.brand }
+  );
+
+  const brandOptions = useMemo(
+    () => (brands ?? []).map((b) => ({ id: b.id, label: b.name })),
+    [brands]
+  );
+  const modelOptions = useMemo(
+    () => (brandModels ?? []).map((m) => ({ id: m.id, label: m.name })),
+    [brandModels]
+  );
+  const bodyOptions = useMemo(
+    () => (dicts?.commercial_body_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const driveOptions = useMemo(
+    () => (dicts?.commercial_drive_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const engineOptions = useMemo(
+    () => (dicts?.commercial_engine_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const transmissionOptions = useMemo(
+    () => (dicts?.commercial_transmission_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const equipmentItems = dicts?.commercial_equipment ?? [];
+  const airbagOptions = useMemo(
+    () => (dicts?.commercial_airbags ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const windowsOptions = useMemo(
+    () => (dicts?.commercial_windows ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const radioOptions = useMemo(
+    () => (dicts?.commercial_radio ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const steeringOptions = useMemo(
+    () => (dicts?.steering_positions ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const ptsOptions = useMemo(
+    () => (dicts?.pts_options ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const colors = dicts?.colors ?? [];
+  const cityOptions = useMemo(
+    () => [
+      ...(dicts?.cities ?? []).map((c) => ({ id: c.id, label: c.name })),
+      { id: COMMERCIAL_CUSTOM_CITY_ID, label: "Другой" },
+    ],
+    [dicts]
+  );
+
   const updateContact = useCallback(
     <K extends keyof ContactInfo>(key: K, value: ContactInfo[K]) => {
       onUpdate("contacts", { ...form.contacts, [key]: value });
@@ -93,8 +162,8 @@ export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) 
               Основная информация *
             </AccordionTrigger>
             <AccordionContent className="space-y-4">
-              <BottomSheetSelect label="Марка *" value={form.customBrand || form.brand} options={COMMERCIAL_BRANDS} onSelect={(v) => { onUpdate("brand", v); onUpdate("customBrand", ""); onUpdate("model", ""); }} searchable allowCustom customLabel="Добавить марку" onAddCustom={(v) => { onUpdate("customBrand", v); onUpdate("brand", ""); }} error={errors.brand} />
-              <BottomSheetSelect label="Модель *" value={form.customModel || form.model} options={form.brand ? COMMERCIAL_MODELS[form.brand] || [] : []} onSelect={(v) => { onUpdate("model", v); onUpdate("customModel", ""); }} searchable allowCustom customLabel="Добавить модель" onAddCustom={(v) => { onUpdate("customModel", v); onUpdate("model", ""); }} error={errors.model} />
+              <BottomSheetSelect label="Марка *" value={form.brand} options={brandOptions} onSelect={(v) => { onUpdate("brand", v); onUpdate("customBrand", ""); onUpdate("model", ""); onUpdate("customModel", ""); }} searchable allowCustom customLabel="Добавить марку" onAddCustom={(v) => { onUpdate("customBrand", v); onUpdate("brand", ""); onUpdate("model", ""); onUpdate("customModel", ""); }} error={errors.brand} />
+              <BottomSheetSelect label="Модель *" value={form.model} options={modelOptions} onSelect={(v) => { onUpdate("model", v); onUpdate("customModel", ""); }} searchable allowCustom customLabel="Добавить модель" onAddCustom={(v) => { onUpdate("customModel", v); onUpdate("model", ""); }} error={errors.model} />
               <div>
                 <label className="block text-[13px] text-[#8E8E93] mb-1.5 font-[family-name:var(--font-manrope)]">Грузоподъёмность, т</label>
                 <input type="number" step="0.1" min="0.5" max="5" value={form.loadCapacity} onChange={(e) => onUpdate("loadCapacity", e.target.value)} placeholder="Грузоподъёмность, т" className="w-full h-12 px-4 rounded-xl border border-[#C7C7CC] text-[15px] font-[family-name:var(--font-manrope)] outline-none focus:border-black" />
@@ -116,7 +185,7 @@ export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) 
               Тип кузова
             </AccordionTrigger>
             <AccordionContent>
-              <BottomSheetSelect label="Тип кузова" value={form.bodyType} options={COMMERCIAL_BODY_TYPES} onSelect={(v) => onUpdate("bodyType", v)} />
+              <BottomSheetSelect label="Тип кузова" value={form.bodyType} options={bodyOptions} onSelect={(v) => onUpdate("bodyType", v)} />
             </AccordionContent>
           </div>
         </AccordionItem>
@@ -128,13 +197,13 @@ export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) 
               Технические характеристики
             </AccordionTrigger>
             <AccordionContent className="space-y-4">
-              <BottomSheetSelect label="Привод" value={form.driveType} options={COMMERCIAL_DRIVE_TYPES} onSelect={(v) => onUpdate("driveType", v)} />
-              <BottomSheetSelect label="Двигатель" value={form.engineType} options={COMMERCIAL_ENGINE_TYPES} onSelect={(v) => onUpdate("engineType", v)} />
-              <BottomSheetSelect label="КПП" value={form.transmission} options={COMMERCIAL_TRANSMISSIONS} onSelect={(v) => onUpdate("transmission", v)} />
+              <BottomSheetSelect label="Привод" value={form.driveType} options={driveOptions} onSelect={(v) => onUpdate("driveType", v)} />
+              <BottomSheetSelect label="Двигатель" value={form.engineType} options={engineOptions} onSelect={(v) => onUpdate("engineType", v)} />
+              <BottomSheetSelect label="КПП" value={form.transmission} options={transmissionOptions} onSelect={(v) => onUpdate("transmission", v)} />
               <input type="text" inputMode="numeric" value={form.seats} onChange={(e) => onUpdate("seats", e.target.value.replace(/\D/g, ""))} placeholder="Количество мест" className="w-full h-12 px-4 rounded-xl border border-[#C7C7CC] text-[15px] font-[family-name:var(--font-manrope)] outline-none focus:border-black" />
               <input type="number" step="0.1" min="0.8" max="10" value={form.engineVolume} onChange={(e) => onUpdate("engineVolume", e.target.value)} placeholder="Объём, л" className="w-full h-12 px-4 rounded-xl border border-[#C7C7CC] text-[15px] font-[family-name:var(--font-manrope)] outline-none focus:border-black" />
               <input type="text" inputMode="numeric" value={form.power} onChange={(e) => onUpdate("power", e.target.value.replace(/\D/g, ""))} placeholder="Мощность, л.с." className="w-full h-12 px-4 rounded-xl border border-[#C7C7CC] text-[15px] font-[family-name:var(--font-manrope)] outline-none focus:border-black" />
-              <BottomSheetSelect label="Руль" value={form.steering} options={STEERING_OPTIONS} onSelect={(v) => onUpdate("steering", v)} />
+              <BottomSheetSelect label="Руль" value={form.steering} options={steeringOptions} onSelect={(v) => onUpdate("steering", v)} />
             </AccordionContent>
           </div>
         </AccordionItem>
@@ -147,9 +216,10 @@ export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) 
             </AccordionTrigger>
             <AccordionContent>
               <div className="flex flex-wrap gap-2">
-                {COLORS.map((c) => (
-                  <button key={c} type="button" onClick={() => toggleColor(c)} className={cn("px-3 py-2 rounded-lg text-[14px] font-[family-name:var(--font-manrope)] border transition-all", form.colors.includes(c) ? "bg-black text-white border-black" : "bg-white text-black border-[#D1D1D6]")}>
-                    {c}
+                {colors.map((c) => (
+                  <button key={c.id} type="button" onClick={() => toggleColor(c.id)} className={cn("flex items-center gap-2 px-3 py-2 rounded-lg text-[14px] font-[family-name:var(--font-manrope)] border transition-all", form.colors.includes(c.id) ? "bg-black text-white border-black" : "bg-white text-black border-[#D1D1D6]")}>
+                    {c.hex && <span className="w-4 h-4 rounded-full border border-[#E5E5EA] shrink-0" style={{ backgroundColor: c.hex }} />}
+                    <span>{c.name}</span>
                   </button>
                 ))}
               </div>
@@ -164,7 +234,7 @@ export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) 
               Документы
             </AccordionTrigger>
             <AccordionContent className="space-y-4">
-              <BottomSheetSelect label="ПТС" value={form.pts} options={PTS_OPTIONS} onSelect={(v) => onUpdate("pts", v)} />
+              <BottomSheetSelect label="ПТС" value={form.pts} options={ptsOptions} onSelect={(v) => onUpdate("pts", v)} />
               <BottomSheetSelect label="Владельцев" value={form.owners} options={OWNERS_OPTIONS} onSelect={(v) => onUpdate("owners", v)} />
               <ToggleSwitch label="Не растаможен" checked={form.isNotCustomsCleared} onChange={(v) => onUpdate("isNotCustomsCleared", v)} />
               <label className="flex items-center gap-3 cursor-pointer">
@@ -183,16 +253,16 @@ export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) 
             </AccordionTrigger>
             <AccordionContent className="space-y-4">
               <div className="space-y-2.5">
-                {COMMERCIAL_EQUIPMENT.map((item) => (
-                  <label key={item} className="flex items-center gap-3 cursor-pointer">
-                    <Checkbox checked={form.equipment.includes(item)} onCheckedChange={() => toggleEquipment(item)} className="w-5 h-5 rounded-[6px] border-2 border-[#D1D1D6] data-[state=checked]:bg-black data-[state=checked]:border-black" />
-                    <span className="text-[15px] font-[family-name:var(--font-manrope)]">{item}</span>
+                {equipmentItems.map((item) => (
+                  <label key={item.id} className="flex items-center gap-3 cursor-pointer">
+                    <Checkbox checked={form.equipment.includes(item.id)} onCheckedChange={() => toggleEquipment(item.id)} className="w-5 h-5 rounded-[6px] border-2 border-[#D1D1D6] data-[state=checked]:bg-black data-[state=checked]:border-black" />
+                    <span className="text-[15px] font-[family-name:var(--font-manrope)]">{item.name}</span>
                   </label>
                 ))}
               </div>
-              <BottomSheetSelect label="Подушки безопасности" value={form.airbags} options={COMMERCIAL_AIRBAGS} onSelect={(v) => onUpdate("airbags", v)} />
-              <BottomSheetSelect label="Стеклоподъёмники" value={form.windows} options={COMMERCIAL_WINDOWS} onSelect={(v) => onUpdate("windows", v)} />
-              <BottomSheetSelect label="Магнитола" value={form.radio} options={COMMERCIAL_RADIO} onSelect={(v) => onUpdate("radio", v)} />
+              <BottomSheetSelect label="Подушки безопасности" value={form.airbags} options={airbagOptions} onSelect={(v) => onUpdate("airbags", v)} />
+              <BottomSheetSelect label="Стеклоподъёмники" value={form.windows} options={windowsOptions} onSelect={(v) => onUpdate("windows", v)} />
+              <BottomSheetSelect label="Магнитола" value={form.radio} options={radioOptions} onSelect={(v) => onUpdate("radio", v)} />
             </AccordionContent>
           </div>
         </AccordionItem>
@@ -204,8 +274,8 @@ export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) 
               Статус транспорта
             </AccordionTrigger>
             <AccordionContent className="space-y-4">
-              <SegmentedControl options={VEHICLE_STATUSES} value={form.status} onChange={(v) => onUpdate("status", v)} />
-              {form.status === "На заказ" && (
+              <SegmentedControl options={VEHICLE_STATUS_OPTIONS} value={form.status} onChange={(v) => onUpdate("status", v)} />
+              {form.status === "on_order" && (
                 <input type="text" value={form.supplyCountry} onChange={(e) => onUpdate("supplyCountry", e.target.value)} placeholder="Страна поставки" className="w-full h-12 px-4 rounded-xl border border-[#C7C7CC] text-[15px] font-[family-name:var(--font-manrope)] outline-none focus:border-black" />
               )}
             </AccordionContent>
@@ -265,7 +335,7 @@ export function CommercialForm({ form, errors, onUpdate }: CommercialFormProps) 
                 {errors.name && <p className="mt-1 text-[12px] text-[#E53935]">{errors.name}</p>}
               </div>
               <PhoneInput value={form.contacts.phone} onChange={(v) => updateContact("phone", v)} error={errors.phone} />
-              <BottomSheetSelect label="Город *" value={form.contacts.city} options={CITIES} onSelect={(v) => updateContact("city", v)} error={errors.city} />
+              <BottomSheetSelect label="Город *" value={form.contacts.city} options={cityOptions} onSelect={(v) => updateContact("city", v)} error={errors.city} />
             </AccordionContent>
           </div>
         </AccordionItem>

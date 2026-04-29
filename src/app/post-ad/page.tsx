@@ -16,9 +16,7 @@ import { CategorySelectSheet } from "@/components/listing/category-select-sheet"
 import { MotoSubcategorySheet } from "@/components/listing/moto-subcategory-sheet";
 import { CommercialSubcategorySheet } from "@/components/listing/commercial-subcategory-sheet";
 
-// Car steps
-import { StepStatus } from "@/components/listing/car-steps/step-status";
-import { StepVin } from "@/components/listing/car-steps/step-vin";
+// Car steps (21-step flow matching mobile wizard)
 import { StepBrand } from "@/components/listing/car-steps/step-brand";
 import { StepModel } from "@/components/listing/car-steps/step-model";
 import { StepYear } from "@/components/listing/car-steps/step-year";
@@ -26,11 +24,16 @@ import { StepGeneration } from "@/components/listing/car-steps/step-generation";
 import { StepBodyType } from "@/components/listing/car-steps/step-body-type";
 import { StepEngine } from "@/components/listing/car-steps/step-engine";
 import { StepDrive } from "@/components/listing/car-steps/step-drive";
-import { StepModification } from "@/components/listing/car-steps/step-modification";
+import { StepTransmission } from "@/components/listing/car-steps/step-transmission";
+import { StepEngineVolume } from "@/components/listing/car-steps/step-engine-volume";
+import { StepPower } from "@/components/listing/car-steps/step-power";
 import { StepColor } from "@/components/listing/car-steps/step-color";
+import { StepCondition } from "@/components/listing/car-steps/step-condition";
+import { StepSteering } from "@/components/listing/car-steps/step-steering";
 import { StepMedia } from "@/components/listing/car-steps/step-media";
 import { StepEquipment } from "@/components/listing/car-steps/step-equipment";
 import { StepHistory } from "@/components/listing/car-steps/step-history";
+import { StepVin } from "@/components/listing/car-steps/step-vin";
 import { StepDescription } from "@/components/listing/car-steps/step-description";
 import { StepPrice } from "@/components/listing/car-steps/step-price";
 import { StepContacts } from "@/components/listing/car-steps/step-contacts";
@@ -343,10 +346,10 @@ export default function PostAdPage() {
     );
   }
 
-  // ── Car wizard ──
+  // ── Car wizard (21 steps, ordering matches mobile) ──
   if (form.category === "cars") {
     const isOptional = isCarStepOptional(form.currentStep);
-    const isPreview = form.currentStep === 18;
+    const isPreview = form.currentStep === 21;
 
     return (
       <div className="min-h-screen bg-[#F5F5F7] flex flex-col">
@@ -371,24 +374,27 @@ export default function PostAdPage() {
 
         <div className="flex-1 overflow-y-auto pb-24">
           <div className="max-w-[720px] mx-auto">
-            {form.currentStep === 1 && <StepStatus form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 2 && <StepVin form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 3 && <StepBrand form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 4 && <StepModel form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 5 && <StepYear form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 6 && <StepGeneration form={form.carForm} onUpdate={form.updateCarField} />}
-            {form.currentStep === 7 && <StepBodyType form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 8 && <StepEngine form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 9 && <StepDrive form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 10 && <StepModification form={form.carForm} onUpdate={form.updateCarField} />}
+            {form.currentStep === 1 && <StepBrand form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 2 && <StepModel form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 3 && <StepYear form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 4 && <StepGeneration form={form.carForm} onUpdate={form.updateCarField} />}
+            {form.currentStep === 5 && <StepBodyType form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 6 && <StepEngine form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 7 && <StepDrive form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 8 && <StepTransmission form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 9 && <StepEngineVolume form={form.carForm} onUpdate={form.updateCarField} />}
+            {form.currentStep === 10 && <StepPower form={form.carForm} onUpdate={form.updateCarField} />}
             {form.currentStep === 11 && <StepColor form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 12 && <StepMedia form={form.carForm} onUpdate={form.updateCarField} />}
-            {form.currentStep === 13 && <StepEquipment form={form.carForm} onUpdate={form.updateCarField} />}
-            {form.currentStep === 14 && <StepHistory form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 15 && <StepDescription form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 16 && <StepPrice form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 17 && <StepContacts form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
-            {form.currentStep === 18 && <StepPreview form={form.carForm} />}
+            {form.currentStep === 12 && <StepCondition form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 13 && <StepSteering form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 14 && <StepMedia form={form.carForm} onUpdate={form.updateCarField} />}
+            {form.currentStep === 15 && <StepEquipment form={form.carForm} onUpdate={form.updateCarField} />}
+            {form.currentStep === 16 && <StepHistory form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 17 && <StepVin form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 18 && <StepDescription form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 19 && <StepPrice form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 20 && <StepContacts form={form.carForm} errors={form.errors} onUpdate={form.updateCarField} />}
+            {form.currentStep === 21 && <StepPreview form={form.carForm} />}
           </div>
         </div>
 

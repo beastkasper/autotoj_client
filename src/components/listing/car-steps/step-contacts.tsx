@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { CarListingForm, ValidationErrors, ContactInfo } from "@/lib/types/listing";
-import { CITIES } from "@/lib/data/listing-constants";
+import { useGetDictsQuery } from "@/lib/features/dicts/dictsApi";
 import { PhoneInput } from "@/components/listing/phone-input";
 import { BottomSheetSelect } from "@/components/listing/bottom-sheet-select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,8 +16,19 @@ interface StepContactsProps {
   onUpdate: <K extends keyof CarListingForm>(key: K, value: CarListingForm[K]) => void;
 }
 
+const CUSTOM_CITY_ID = "__custom__";
+
 export function StepContacts({ form, errors, onUpdate }: StepContactsProps) {
   const [showOnlineInfo, setShowOnlineInfo] = useState(false);
+  const { data: dicts, isLoading } = useGetDictsQuery();
+
+  const cityOptions = useMemo(
+    () => [
+      ...(dicts?.cities ?? []).map((c) => ({ id: c.id, label: c.name })),
+      { id: CUSTOM_CITY_ID, label: "Другой" },
+    ],
+    [dicts]
+  );
 
   const updateContact = <K extends keyof ContactInfo>(key: K, value: ContactInfo[K]) => {
     onUpdate("contacts", { ...form.contacts, [key]: value });
@@ -62,14 +73,14 @@ export function StepContacts({ form, errors, onUpdate }: StepContactsProps) {
       {/* City */}
       <BottomSheetSelect
         label="Город *"
-        placeholder="Выберите город"
+        placeholder={isLoading ? "Загрузка..." : "Выберите город"}
         value={form.contacts.city}
-        options={CITIES}
+        options={cityOptions}
         onSelect={(v) => updateContact("city", v)}
         error={errors.city}
       />
 
-      {form.contacts.city === "Другой" && (
+      {form.contacts.city === CUSTOM_CITY_ID && (
         <div>
           <label className="block text-[13px] text-[#8E8E93] mb-1.5 font-[family-name:var(--font-manrope)]">
             Укажите город

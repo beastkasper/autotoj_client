@@ -1,7 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import type { CarListingForm, ValidationErrors } from "@/lib/types/listing";
-import { CAR_DRIVE_TYPES } from "@/lib/data/listing-constants";
+import { useGetDictsQuery } from "@/lib/features/dicts/dictsApi";
 import { BottomSheetSelect } from "@/components/listing/bottom-sheet-select";
 
 interface StepDriveProps {
@@ -11,6 +12,13 @@ interface StepDriveProps {
 }
 
 export function StepDrive({ form, errors, onUpdate }: StepDriveProps) {
+  const { data: dicts, isLoading } = useGetDictsQuery();
+
+  const options = useMemo(
+    () => (dicts?.drive_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+
   return (
     <div className="flex flex-col gap-5 p-4">
       <h2 className="text-[20px] font-bold font-[family-name:var(--font-manrope)]">
@@ -19,9 +27,9 @@ export function StepDrive({ form, errors, onUpdate }: StepDriveProps) {
 
       <BottomSheetSelect
         label="Выберите тип привода *"
-        placeholder="Выберите тип привода"
+        placeholder={isLoading ? "Загрузка..." : "Выберите тип привода"}
         value={form.driveType}
-        options={CAR_DRIVE_TYPES}
+        options={options}
         onSelect={(v) => onUpdate("driveType", v)}
         error={errors.driveType}
       />

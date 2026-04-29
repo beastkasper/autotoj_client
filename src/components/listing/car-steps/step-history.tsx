@@ -1,7 +1,9 @@
 "use client";
 
+import { useMemo } from "react";
 import type { CarListingForm, ValidationErrors } from "@/lib/types/listing";
-import { PTS_OPTIONS, OWNERS_OPTIONS } from "@/lib/data/listing-constants";
+import { OWNERS_OPTIONS } from "@/lib/data/listing-constants";
+import { useGetDictsQuery } from "@/lib/features/dicts/dictsApi";
 import { BottomSheetSelect } from "@/components/listing/bottom-sheet-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
@@ -13,6 +15,12 @@ interface StepHistoryProps {
 }
 
 export function StepHistory({ form, errors, onUpdate }: StepHistoryProps) {
+  const { data: dicts } = useGetDictsQuery();
+  const ptsOptions = useMemo(
+    () => (dicts?.pts_options ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+
   return (
     <div className="flex flex-col gap-5 p-4">
       <h2 className="text-[20px] font-bold font-[family-name:var(--font-manrope)]">
@@ -47,7 +55,7 @@ export function StepHistory({ form, errors, onUpdate }: StepHistoryProps) {
         label="ПТС *"
         placeholder="Выберите ПТС"
         value={form.pts}
-        options={PTS_OPTIONS}
+        options={ptsOptions}
         onSelect={(v) => onUpdate("pts", v)}
         error={errors.pts}
       />

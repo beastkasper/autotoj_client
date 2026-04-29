@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useState } from "react";
 import { Provider } from "react-redux";
 import { makeStore, type AppStore } from "@/lib/store";
 
@@ -9,11 +9,8 @@ interface StoreProviderProps {
 }
 
 export default function StoreProvider({ children }: StoreProviderProps) {
-  const storeRef = useRef<AppStore | null>(null);
-
-  if (!storeRef.current) {
-    storeRef.current = makeStore();
-  }
-
-  return <Provider store={storeRef.current}>{children}</Provider>;
+  // Lazy initializer ensures the store is constructed exactly once per
+  // provider instance without touching a ref during render.
+  const [store] = useState<AppStore>(() => makeStore());
+  return <Provider store={store}>{children}</Provider>;
 }

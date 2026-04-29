@@ -4,20 +4,20 @@ import type { CarListingForm, ValidationErrors } from "@/lib/types/listing";
 import { useGetDictsQuery } from "@/lib/features/dicts/dictsApi";
 import { cn } from "@/lib/utils";
 
-interface StepColorProps {
+interface StepConditionProps {
   form: CarListingForm;
   errors: ValidationErrors;
   onUpdate: <K extends keyof CarListingForm>(key: K, value: CarListingForm[K]) => void;
 }
 
-export function StepColor({ form, errors, onUpdate }: StepColorProps) {
+export function StepCondition({ form, errors, onUpdate }: StepConditionProps) {
   const { data: dicts, isLoading } = useGetDictsQuery();
-  const colors = dicts?.colors ?? [];
+  const conditions = dicts?.conditions ?? [];
 
   return (
     <div className="flex flex-col gap-5 p-4">
       <h2 className="text-[20px] font-bold font-[family-name:var(--font-manrope)]">
-        Цвет
+        Состояние
       </h2>
 
       {isLoading ? (
@@ -26,36 +26,30 @@ export function StepColor({ form, errors, onUpdate }: StepColorProps) {
         </p>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {colors.map((color) => {
-            const isSelected = form.color === color.id;
+          {conditions.map((c) => {
+            const isSelected = form.condition === c.id;
             return (
               <button
-                key={color.id}
+                key={c.id}
                 type="button"
-                onClick={() => onUpdate("color", color.id)}
+                onClick={() => onUpdate("condition", c.id)}
                 className={cn(
-                  "flex items-center gap-2 h-12 px-3 rounded-xl border text-[15px] font-[family-name:var(--font-manrope)] transition-all",
+                  "h-12 rounded-xl border text-[15px] font-[family-name:var(--font-manrope)] transition-all",
                   isSelected
                     ? "bg-black text-white border-black font-semibold"
                     : "bg-white text-black border-[#D1D1D6] active:bg-[#F2F2F7]"
                 )}
               >
-                {color.hex && (
-                  <span
-                    className="w-5 h-5 rounded-full border border-[#E5E5EA] shrink-0"
-                    style={{ backgroundColor: color.hex }}
-                  />
-                )}
-                <span className="truncate">{color.name}</span>
+                {c.name}
               </button>
             );
           })}
         </div>
       )}
 
-      {errors.color && (
+      {errors.condition && (
         <p className="text-[12px] text-[#E53935] font-[family-name:var(--font-manrope)]">
-          {errors.color}
+          {errors.condition}
         </p>
       )}
     </div>

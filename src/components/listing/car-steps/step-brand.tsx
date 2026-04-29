@@ -1,7 +1,8 @@
 "use client";
 
+import { useMemo } from "react";
 import type { CarListingForm, ValidationErrors } from "@/lib/types/listing";
-import { CAR_BRANDS } from "@/lib/data/listing-constants";
+import { useGetBrandsQuery } from "@/lib/features/dicts/dictsApi";
 import { BottomSheetSelect } from "@/components/listing/bottom-sheet-select";
 
 interface StepBrandProps {
@@ -11,6 +12,13 @@ interface StepBrandProps {
 }
 
 export function StepBrand({ form, errors, onUpdate }: StepBrandProps) {
+  const { data: brands, isLoading } = useGetBrandsQuery({ type: "cars" });
+
+  const options = useMemo(
+    () => (brands ?? []).map((b) => ({ id: b.id, label: b.name })),
+    [brands]
+  );
+
   return (
     <div className="flex flex-col gap-5 p-4">
       <h2 className="text-[20px] font-bold font-[family-name:var(--font-manrope)]">
@@ -19,14 +27,15 @@ export function StepBrand({ form, errors, onUpdate }: StepBrandProps) {
 
       <BottomSheetSelect
         label="Выберите марку *"
-        placeholder="Выберите марку"
-        value={form.customBrand || form.brand}
-        options={CAR_BRANDS}
+        placeholder={isLoading ? "Загрузка..." : "Выберите марку"}
+        value={form.brand}
+        options={options}
         onSelect={(v) => {
           onUpdate("brand", v);
           onUpdate("customBrand", "");
           onUpdate("model", "");
           onUpdate("customModel", "");
+          onUpdate("generation", "");
         }}
         searchable
         searchPlaceholder="Поиск марки..."
@@ -37,6 +46,7 @@ export function StepBrand({ form, errors, onUpdate }: StepBrandProps) {
           onUpdate("brand", "");
           onUpdate("model", "");
           onUpdate("customModel", "");
+          onUpdate("generation", "");
         }}
         error={errors.brand}
       />
