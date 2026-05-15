@@ -36,6 +36,7 @@ import {
 } from "@/lib/features/favorites/favoritesApi";
 import { formatPrice } from "@/lib/utils/formatPrice";
 import { useAuth } from "@/hooks/useAuth";
+import { useOpenChat } from "@/hooks/useOpenChat";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { DetailPageSkeleton } from "@/components/skeletons/detail-page-skeleton";
 
@@ -43,6 +44,7 @@ export default function AdDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
+  const { openChat, isOpening } = useOpenChat();
   const id = params.id as string;
 
   // RTK Query — fetch from backend
@@ -312,9 +314,8 @@ export default function AdDetailPage() {
                   Позвонить
                 </Button>
                 <Button
-                  onClick={() => requireAuth(() => {
-                    router.push(`/messages?ad=${id}`);
-                  })}
+                  onClick={() => openChat(id)}
+                  disabled={isOpening}
                   className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]"
                 >
                   <MessageCircle className="w-[18px] h-[18px]" />
@@ -378,8 +379,8 @@ export default function AdDetailPage() {
         </div>
       </div>
 
-      {/* ── Mobile Content ── */}
-      <div className="lg:hidden pb-24">
+      {/* ── Mobile + Tablet Content ── */}
+      <div className="lg:hidden pb-[160px] md:pb-[176px] md:max-w-3xl md:mx-auto">
         <ImageGallery
           images={ad.photos.length > 0 ? ad.photos : [ad.image]}
           alt={title}

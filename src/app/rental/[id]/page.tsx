@@ -28,6 +28,7 @@ import { useGetRentalByIdQuery, useGetSimilarRentalsQuery } from "@/lib/features
 import type { RentalCar } from "@/lib/types/rental";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import { useAuth } from "@/hooks/useAuth";
+import { useOpenChat } from "@/hooks/useOpenChat";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { DetailPageSkeleton } from "@/components/skeletons/detail-page-skeleton";
 
@@ -76,6 +77,7 @@ export default function RentalDetailPage() {
   }, [apiSimilar]);
   const [isFavorite, setIsFavorite] = useState(false);
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
+  const { openChat, isOpening } = useOpenChat();
 
   const specs = useMemo(() => {
     if (!car) return [];
@@ -280,9 +282,8 @@ export default function RentalDetailPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => requireAuth(() => {
-                    router.push(`/messages?ad=${idStr}`);
-                  })}
+                  onClick={() => openChat(idStr)}
+                  disabled={isOpening}
                   className="w-full h-[52px] rounded-2xl text-[15px] font-semibold border-[#E5E5E7] text-[#111111] hover:bg-[#F5F5F7] font-[family-name:var(--font-manrope)]"
                 >
                   <MessageCircle className="w-[18px] h-[18px]" />
@@ -331,8 +332,8 @@ export default function RentalDetailPage() {
         </div>
       </div>
 
-      {/* ── Mobile Content ── */}
-      <div className="lg:hidden pb-24">
+      {/* ── Mobile + Tablet Content ── */}
+      <div className="lg:hidden pb-[160px] md:pb-[176px] md:max-w-3xl md:mx-auto">
         <ImageGallery
           images={car.images?.length ? car.images : [car.image]}
           alt={car.title}

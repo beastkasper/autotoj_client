@@ -97,8 +97,8 @@ export default function FavoritesPage() {
         }
       />
 
-      {/* ── Mobile Grid ── */}
-      <div className="lg:hidden px-4 py-4 pb-6">
+      {/* ── Mobile + Tablet Grid ── */}
+      <div className="lg:hidden px-4 md:px-6 py-4 pb-24">
         {isLoading ? (
           <ContentGrid mobileCols={2}>
             <SkeletonGrid count={6} />

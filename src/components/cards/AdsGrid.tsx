@@ -38,8 +38,10 @@ export const AdsGrid = React.memo(function AdsGrid({
         ))}
       </div>
 
-      {/* Mobile */}
-      <div className={`lg:hidden grid grid-cols-${mobileCols} gap-3 px-4 mt-8`}>
+      {/* Mobile + Tablet */}
+      <div
+        className={`lg:hidden grid grid-cols-${mobileCols} md:grid-cols-3 gap-3 md:gap-4 px-4 md:px-6 mt-8`}
+      >
         {ads.map((ad) => (
           <AdCard
             key={ad.id}

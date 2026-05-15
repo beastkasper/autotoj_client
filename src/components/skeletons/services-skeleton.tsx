@@ -26,8 +26,8 @@ export function ServicesCategoriesSkeleton() {
         </div>
       </div>
 
-      {/* Mobile */}
-      <div className="lg:hidden px-4 py-4 space-y-2">
+      {/* Mobile + Tablet */}
+      <div className="lg:hidden px-4 md:px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
@@ -76,8 +76,8 @@ export function ServiceProvidersSkeleton() {
         </div>
       </div>
 
-      {/* Mobile */}
-      <div className="lg:hidden px-4 pb-6 space-y-2">
+      {/* Mobile + Tablet */}
+      <div className="lg:hidden px-4 md:px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}

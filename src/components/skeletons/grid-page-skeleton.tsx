@@ -26,8 +26,8 @@ export function GridPageSkeleton({ count = 8 }: GridPageSkeletonProps) {
         ))}
       </div>
 
-      {/* Mobile */}
-      <div className="lg:hidden grid grid-cols-2 gap-3">
+      {/* Mobile + Tablet */}
+      <div className="lg:hidden grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {Array.from({ length: count }).map((_, i) => (
           <div
             key={i}

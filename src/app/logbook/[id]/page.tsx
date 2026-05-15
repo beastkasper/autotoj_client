@@ -95,8 +95,8 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="min-h-screen bg-[#F5F5F7]">
-      {/* ── Mobile Version ── */}
-      <div className="lg:hidden pb-20 bg-white min-h-screen">
+      {/* ── Mobile + Tablet Version ── */}
+      <div className="lg:hidden pb-20 md:pb-12 bg-white min-h-screen md:max-w-3xl md:mx-auto">
         <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
           <div className="flex items-center justify-between p-4">
             <button onClick={() => router.back()} className="p-2 -ml-2 hover:bg-[#F2F2F7] rounded-full transition-colors">

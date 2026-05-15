@@ -188,26 +188,24 @@ export default function MyAdsPage() {
         <MyAdsTabs activeTab={activeTab} onTabChange={setActiveTab} variant="mobile" />
       </div>
 
-      {/* Mobile Cards */}
-      <div className="lg:hidden px-4 py-4 pb-20 space-y-3">
+      {/* Mobile + Tablet Cards */}
+      <div className="lg:hidden px-4 md:px-6 py-4 pb-24 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         {isLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="bg-white rounded-xl overflow-hidden border border-[#E5E5E7] animate-pulse"
-              >
-                <div className="flex">
-                  <div className="w-32 h-32 bg-[#E5E5E7]" />
-                  <div className="flex-1 p-3 space-y-2">
-                    <div className="h-4 bg-[#E5E5E7] rounded w-3/4" />
-                    <div className="h-3 bg-[#E5E5E7] rounded w-1/2" />
-                    <div className="h-5 bg-[#E5E5E7] rounded w-1/3" />
-                  </div>
+          Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="bg-white rounded-xl overflow-hidden border border-[#E5E5E7] animate-pulse"
+            >
+              <div className="flex">
+                <div className="w-32 h-32 bg-[#E5E5E7]" />
+                <div className="flex-1 p-3 space-y-2">
+                  <div className="h-4 bg-[#E5E5E7] rounded w-3/4" />
+                  <div className="h-3 bg-[#E5E5E7] rounded w-1/2" />
+                  <div className="h-5 bg-[#E5E5E7] rounded w-1/3" />
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         ) : ads.length > 0 ? (
           ads.map((ad) => (
             <MyAdCardMobile
@@ -225,27 +223,29 @@ export default function MyAdsPage() {
             />
           ))
         ) : (
-          <EmptyState
-            icon={Package}
-            title={
-              activeTab === "active"
-                ? "У вас пока нет активных объявлений"
-                : "Пауза объявлений"
-            }
-            description={
-              activeTab === "active"
-                ? "Создайте новое объявление, чтобы начать продажу"
-                : "Здесь будут храниться объявления на паузе"
-            }
-            action={
-              activeTab === "active"
-                ? {
-                    label: "Разместить объявление",
-                    onClick: () => router.push("/post-ad"),
-                  }
-                : undefined
-            }
-          />
+          <div className="md:col-span-2">
+            <EmptyState
+              icon={Package}
+              title={
+                activeTab === "active"
+                  ? "У вас пока нет активных объявлений"
+                  : "Пауза объявлений"
+              }
+              description={
+                activeTab === "active"
+                  ? "Создайте новое объявление, чтобы начать продажу"
+                  : "Здесь будут храниться объявления на паузе"
+              }
+              action={
+                activeTab === "active"
+                  ? {
+                      label: "Разместить объявление",
+                      onClick: () => router.push("/post-ad"),
+                    }
+                  : undefined
+              }
+            />
+          </div>
         )}
       </div>
 

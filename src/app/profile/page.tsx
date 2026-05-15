@@ -185,8 +185,8 @@ export default function ProfilePage() {
       <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
       <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={handleBannerFile} />
 
-      {/* Mobile */}
-      <div className="lg:hidden min-h-screen bg-white">
+      {/* Mobile + Tablet */}
+      <div className="lg:hidden min-h-screen bg-white md:max-w-3xl md:mx-auto">
         <PageHeader
           title="Профиль"
           rightAction={

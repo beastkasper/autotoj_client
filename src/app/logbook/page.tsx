@@ -126,8 +126,8 @@ export default function LogbookPage() {
       {/* Loading */}
       {isLoading && (
         <>
-          <div className="lg:hidden p-4 space-y-3">
-            {[1, 2, 3].map((i) => (
+          <div className="lg:hidden p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="bg-white border border-[#E5E5E7] rounded-xl p-4 animate-pulse">
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-[#F2F2F7]" />
@@ -174,9 +174,9 @@ export default function LogbookPage() {
         />
       )}
 
-      {/* Mobile Posts */}
+      {/* Mobile + Tablet Posts */}
       {!isLoading && posts.length > 0 && (
-        <div className="lg:hidden p-4 space-y-3">
+        <div className="lg:hidden px-4 md:px-6 pt-4 pb-24 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {posts.map((post) => (
             <LogbookPostCard key={post.id} post={post} variant="mobile" onClick={handlePostClick} />
           ))}

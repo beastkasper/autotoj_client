@@ -72,13 +72,13 @@ export default function ServicesPage() {
             </div>
           </div>
 
-          {/* Mobile */}
-          <div className="lg:hidden px-4 py-4 space-y-2">
+          {/* Mobile + Tablet */}
+          <div className="lg:hidden px-4 md:px-6 pt-4 pb-24 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => router.push(`/services/${cat.id}`)}
-                className="w-full bg-white rounded-2xl px-4 py-4 flex items-center justify-between active:scale-[0.98] transition-transform"
+                className="w-full bg-white rounded-2xl px-4 py-4 md:p-5 flex items-center justify-between active:scale-[0.98] transition-transform"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import StoreProvider from "@/components/providers/StoreProvider";
 import { DesktopHeader } from "@/components/header/DesktopHeader";
+import { MobileBottomNav } from "@/components/header/MobileBottomNav";
 import { DesktopFooter } from "@/components/footer/DesktopFooter";
 import "./globals.css";
 
@@ -79,6 +80,7 @@ export default function RootLayout({
           />
           <DesktopHeader />
           {children}
+          <MobileBottomNav />
           <DesktopFooter />
         </StoreProvider>
       </body>

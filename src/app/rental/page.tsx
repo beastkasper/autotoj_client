@@ -163,7 +163,19 @@ export default function RentalPage() {
       </div>
 
       {/* ── Mobile Header ── */}
-      <PageHeader title="Авто прокат" />
+      <PageHeader
+        title="Авто прокат"
+        rightAction={
+          <button
+            onClick={() => requireAuth(() => setShowAddForm(true))}
+            aria-label="Добавить автомобиль"
+            className="flex items-center gap-1 h-9 px-3 bg-[#E53935] text-white rounded-lg hover:bg-[#D32F2F] active:scale-95 transition-all font-[family-name:var(--font-manrope)]"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-[14px] font-medium">Добавить</span>
+          </button>
+        }
+      />
 
       {/* ── Mobile Search + Filters ── */}
       <div className="lg:hidden px-4 pt-4 pb-2 space-y-3">
@@ -211,12 +223,12 @@ export default function RentalPage() {
         </div>
       </div>
 
-      {/* ── Mobile Grid ── */}
-      <div className="lg:hidden px-4 pb-6">
+      {/* ── Mobile + Tablet Grid ── */}
+      <div className="lg:hidden px-4 md:px-6 pb-24">
         {isLoading ? (
           <GridPageSkeleton count={6} />
         ) : filteredCars.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {filteredCars.map((car) => (
               <RentalCard key={car.id} car={car} onClick={handleCarClick} variant="mobile" />
             ))}
@@ -229,15 +241,6 @@ export default function RentalPage() {
           />
         )}
       </div>
-
-      {/* ── Mobile FAB ── */}
-      <button
-        type="button"
-        onClick={() => requireAuth(() => setShowAddForm(true))}
-        className="lg:hidden fixed bottom-6 right-4 z-30 w-14 h-14 rounded-full bg-[#E53935] text-white flex items-center justify-center shadow-lg hover:bg-[#D32F2F] active:scale-95 transition-all"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
 
       {/* ── Add Form Overlay ── */}
       {showAddForm && (

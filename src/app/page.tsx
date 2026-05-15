@@ -124,7 +124,7 @@ export default function HomePage() {
 
   return (
     <main
-      className="pb-20 lg:pb-8 bg-white"
+      className="pb-24 lg:pb-8 bg-white"
       ref={scrollRef}
       {...touchHandlers}
     >

@@ -167,7 +167,19 @@ export default function PartsPage() {
       </div>
 
       {/* ── Mobile Header ── */}
-      <PageHeader title="Запчасти" />
+      <PageHeader
+        title="Запчасти"
+        rightAction={
+          <button
+            onClick={() => requireAuth(() => router.push("/post-ad?category=parts"))}
+            aria-label="Добавить объявление"
+            className="flex items-center gap-1 h-9 px-3 bg-[#E53935] text-white rounded-lg hover:bg-[#D32F2F] active:scale-95 transition-all font-[family-name:var(--font-manrope)]"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="text-[14px] font-medium">Добавить</span>
+          </button>
+        }
+      />
 
       {/* ── Mobile Search + Filters ── */}
       <div className="lg:hidden px-4 pt-4 pb-2 space-y-3">
@@ -229,12 +241,12 @@ export default function PartsPage() {
         </p>
       </div>
 
-      {/* ── Mobile Grid ── */}
-      <div className="lg:hidden px-4 pb-6">
+      {/* ── Mobile + Tablet Grid ── */}
+      <div className="lg:hidden px-4 md:px-6 pb-24">
         {isLoading ? (
           <GridPageSkeleton count={6} />
         ) : filteredParts.length > 0 ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {filteredParts.map((part) => (
               <PartCard
                 key={part.id}

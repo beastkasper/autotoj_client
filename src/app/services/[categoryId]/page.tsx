@@ -219,8 +219,8 @@ export default function ServiceProvidersPage() {
             </div>
           </div>
 
-          {/* Mobile */}
-          <div className="lg:hidden px-4 pb-6 space-y-2">
+          {/* Mobile + Tablet */}
+          <div className="lg:hidden px-4 md:px-6 pb-24 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
             {providers.map((provider) => (
               <button
                 key={provider.id}

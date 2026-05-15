@@ -11,6 +11,7 @@ import "./features/dicts/dictsApi";
 import "./features/favorites/favoritesApi";
 import "./features/profile/profileApi";
 import "./features/services/servicesApi";
+import "./features/chats/chatsApi";
 
 export const makeStore = () =>
   configureStore({

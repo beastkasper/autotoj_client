@@ -30,6 +30,7 @@ import { useGetPartByIdQuery } from "@/lib/features/parts/partsApi";
 import type { PartListing } from "@/lib/types/part";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import { useAuth } from "@/hooks/useAuth";
+import { useOpenChat } from "@/hooks/useOpenChat";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { DetailPageSkeleton } from "@/components/skeletons/detail-page-skeleton";
 
@@ -38,7 +39,6 @@ export default function PartDetailPage() {
   const router = useRouter();
   const idStr = params.id as string;
 
-  // RTK Query — fetch from backend
   const { data: apiPart, isLoading } = useGetPartByIdQuery(idStr);
 
   const part = useMemo(() => {
@@ -64,6 +64,7 @@ export default function PartDetailPage() {
   const similarParts: PartListing[] = [];
   const [isFavorite, setIsFavorite] = useState(false);
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
+  const { openChat, isOpening } = useOpenChat();
 
   const specs = useMemo(() => {
     if (!part) return [];
@@ -95,7 +96,7 @@ export default function PartDetailPage() {
             className="px-6 py-3 bg-[#111111] text-white rounded-2xl text-[14px] font-medium hover:bg-[#333]"
           >
             Вернуться к запчастям
-          </Button>
+          </Button>w
         </div>
       </div>
     );
@@ -291,9 +292,8 @@ export default function PartDetailPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => requireAuth(() => {
-                    router.push(`/messages?ad=${idStr}`);
-                  })}
+                  onClick={() => openChat(idStr)}
+                  disabled={isOpening}
                   className="w-full h-[52px] rounded-2xl text-[15px] font-semibold border-[#E5E5E7] text-[#111111] hover:bg-[#F5F5F7] font-[family-name:var(--font-manrope)]"
                 >
                   <MessageCircle className="w-[18px] h-[18px]" />
@@ -343,7 +343,7 @@ export default function PartDetailPage() {
       </div>
 
       {/* ── Mobile Content ── */}
-      <div className="lg:hidden pb-24">
+      <div className="lg:hidden pb-[160px] md:pb-[176px] md:max-w-3xl md:mx-auto">
         <ImageGallery
           images={part.images ?? [part.image]}
           alt={part.title}
