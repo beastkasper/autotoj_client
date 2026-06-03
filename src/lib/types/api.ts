@@ -289,6 +289,7 @@ export interface DictsResponse {
   vehicle_types: VehicleType[];
   brands: Brand[];
   models: Model[];
+  // Cars / shared
   fuel_types: DictItem[];
   transmission_types: DictItem[];
   drive_types: DictItem[];
@@ -297,6 +298,24 @@ export interface DictsResponse {
   cities: City[];
   conditions: DictItem[];
   options: DictItem[];
+  pts_options?: DictItem[];
+  steering_positions?: DictItem[];
+  // Moto
+  moto_motorcycle_types?: DictItem[];
+  moto_engine_types?: DictItem[];
+  moto_drive_types?: DictItem[];
+  moto_transmission_types?: DictItem[];
+  moto_cylinder_layouts?: DictItem[];
+  moto_strokes?: DictItem[];
+  // Commercial
+  commercial_body_types?: DictItem[];
+  commercial_engine_types?: DictItem[];
+  commercial_drive_types?: DictItem[];
+  commercial_transmission_types?: DictItem[];
+  commercial_equipment?: DictItem[];
+  commercial_airbags?: DictItem[];
+  commercial_windows?: DictItem[];
+  commercial_radio?: DictItem[];
 }
 
 // ── Auth ──
@@ -438,6 +457,8 @@ export interface AdUpdateBody {
   pts?: string;
   owners?: number;
   is_damaged?: boolean;
+  modification?: string;
+  steering_wheel?: string;
 }
 
 // ── Reports ──

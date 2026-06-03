@@ -28,7 +28,7 @@ import {
 } from "@/lib/features/ads/adsApi";
 import type { AdUpdateBody } from "@/lib/types/api";
 
-const CAR_TOTAL_STEPS = 18;
+const CAR_TOTAL_STEPS = 21;
 
 function getApiErrorMessage(err: unknown): string {
   if (
@@ -48,73 +48,7 @@ function getApiErrorMessage(err: unknown): string {
   return "Произошла ошибка при публикации";
 }
 
-// Map car form condition to API value
-function mapCondition(status: string): string | undefined {
-  if (status === "Новый") return "new";
-  if (status === "С пробегом") return "used";
-  return undefined;
-}
-
-// Map fuel type to API value
-function mapFuel(engineType: string): string | undefined {
-  const map: Record<string, string> = {
-    "Бензин": "petrol",
-    "Дизель": "diesel",
-    "Гибрид": "hybrid",
-    "Электро": "electric",
-    "Газ": "gas",
-  };
-  return map[engineType];
-}
-
-// Map transmission to API value
-function mapTransmission(transmission: string): string | undefined {
-  const map: Record<string, string> = {
-    "Автомат": "automatic",
-    "Механика": "manual",
-    "Робот": "robot",
-    "Вариатор": "cvt",
-  };
-  return map[transmission];
-}
-
-// Map drive type to API value
-function mapDrive(drive: string): string | undefined {
-  const map: Record<string, string> = {
-    "Передний": "fwd",
-    "Задний": "rwd",
-    "Полный": "awd",
-  };
-  return map[drive];
-}
-
-// Map body type to API value
-function mapBody(bodyType: string): string | undefined {
-  const map: Record<string, string> = {
-    "Седан": "sedan",
-    "Хэтчбек": "hatchback",
-    "Универсал": "wagon",
-    "Внедорожник": "suv",
-    "Кроссовер": "crossover",
-    "Купе": "coupe",
-    "Кабриолет": "convertible",
-    "Минивэн": "minivan",
-    "Пикап": "pickup",
-    "Лифтбек": "liftback",
-    "Фургон": "van",
-  };
-  return map[bodyType];
-}
-
-// Map vehicle status
-function mapVehicleStatus(status: string): string | undefined {
-  const map: Record<string, string> = {
-    "В наличии": "available",
-    "В пути": "in_transit",
-    "На заказ": "on_order",
-  };
-  return map[status];
-}
+const CUSTOM_CITY_ID = "__custom__";
 
 export function useListingForm() {
   const [category, setCategory] = useState<ListingCategory | null>(null);
@@ -237,7 +171,6 @@ export function useListingForm() {
   const hasUnsavedChanges = useMemo(() => {
     if (category === "cars") {
       return (
-        carForm.status !== "" ||
         carForm.brand !== "" ||
         carForm.model !== "" ||
         carForm.vin !== "" ||
@@ -261,33 +194,45 @@ export function useListingForm() {
   }, [category, currentStep, carForm]);
 
   // ── Build API body from car form ──
+  // Form fields already hold API-shaped values (UUIDs for brand/model/generation,
+  // slugs for body/fuel/drive/color/options/city/status), so this is a 1:1 copy.
   const buildCarAdBody = useCallback((): AdUpdateBody => {
     const body: AdUpdateBody = {
       vehicle_type: "car",
     };
 
     if (carForm.brand) body.brand_id = carForm.brand;
+    else if (carForm.customBrand) body.brand_id = carForm.customBrand;
     if (carForm.model) body.model_id = carForm.model;
+    else if (carForm.customModel) body.model_id = carForm.customModel;
+    if (carForm.generation) body.generation_id = carForm.generation;
     if (carForm.year) body.year = carForm.year;
-    if (carForm.bodyType) body.body = mapBody(carForm.bodyType);
-    if (carForm.status) body.condition = mapCondition(carForm.status);
+    if (carForm.bodyType) body.body = carForm.bodyType;
     if (carForm.mileage) body.mileage = Number(carForm.mileage);
-    if (carForm.engineType) body.fuel = mapFuel(carForm.engineType);
-    if (carForm.driveType) body.drive = mapDrive(carForm.driveType);
+    if (carForm.engineType) body.fuel = carForm.engineType;
+    if (carForm.driveType) body.drive = carForm.driveType;
+    if (carForm.transmission) body.transmission = carForm.transmission;
+    if (carForm.engineVolume) body.engine_volume = parseFloat(carForm.engineVolume);
+    if (carForm.enginePower) body.power = parseInt(carForm.enginePower, 10);
     if (carForm.color) body.color = carForm.color;
+    if (carForm.condition) body.condition = carForm.condition;
+    if (carForm.steeringWheel) body.steering_wheel = carForm.steeringWheel;
     if (carForm.vin) body.vin = carForm.vin;
     if (carForm.price) body.price = Number(carForm.price);
     if (carForm.description) body.description = carForm.description;
     if (carForm.equipment.length > 0) body.options = carForm.equipment;
-    if (carForm.modification) body.transmission = mapTransmission(carForm.modification) ?? carForm.modification;
-    if (carForm.generation) body.generation_id = carForm.generation;
     if (carForm.contacts.name) body.contact_name = carForm.contacts.name;
     if (carForm.contacts.phone) body.contact_phone = carForm.contacts.phone;
-    if (carForm.contacts.city) body.city_id = carForm.contacts.city;
+    if (carForm.contacts.city === CUSTOM_CITY_ID) {
+      if (carForm.contacts.customCity) body.city_id = carForm.contacts.customCity;
+    } else if (carForm.contacts.city) {
+      body.city_id = carForm.contacts.city;
+    }
     body.negotiable = carForm.negotiable;
     body.can_exchange = carForm.exchangePossible;
-    body.vehicle_status = mapVehicleStatus(carForm.status) ?? "available";
-    body.is_customs_cleared = !carForm.isNotCustomsCleared;
+    // Mobile-aligned defaults: vehicle_status / customs aren't collected in the wizard.
+    body.vehicle_status = "available";
+    body.is_customs_cleared = true;
     if (carForm.pts) body.pts = carForm.pts;
     if (carForm.owners) body.owners = Number(carForm.owners);
     body.is_damaged = carForm.hasAccident;

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { CarListingForm } from "@/lib/types/listing";
-import { EQUIPMENT_CATEGORIES } from "@/lib/data/listing-constants";
+import { useGetDictsQuery } from "@/lib/features/dicts/dictsApi";
+import type { DictItem } from "@/lib/types/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -11,13 +12,39 @@ interface StepEquipmentProps {
   onUpdate: <K extends keyof CarListingForm>(key: K, value: CarListingForm[K]) => void;
 }
 
+const CATEGORY_LABELS: Record<string, string> = {
+  safety: "Безопасность",
+  comfort: "Комфорт",
+  tech: "Мультимедиа и техника",
+  exterior: "Экстерьер",
+  interior: "Интерьер",
+  utility: "Дополнительно",
+};
+
+const CATEGORY_ORDER = ["safety", "comfort", "tech", "exterior", "interior", "utility"];
+
 export function StepEquipment({ form, onUpdate }: StepEquipmentProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const { data: dicts } = useGetDictsQuery();
 
-  const toggleItem = (item: string) => {
-    const next = form.equipment.includes(item)
-      ? form.equipment.filter((e) => e !== item)
-      : [...form.equipment, item];
+  const grouped = useMemo(() => {
+    const map = new Map<string, DictItem[]>();
+    for (const opt of dicts?.options ?? []) {
+      const key = opt.category ?? "utility";
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(opt);
+    }
+    return CATEGORY_ORDER.flatMap((key) => {
+      const items = map.get(key);
+      if (!items?.length) return [];
+      return [{ key, title: CATEGORY_LABELS[key] ?? key, items }];
+    });
+  }, [dicts]);
+
+  const toggleItem = (id: string) => {
+    const next = form.equipment.includes(id)
+      ? form.equipment.filter((e) => e !== id)
+      : [...form.equipment, id];
     onUpdate("equipment", next);
   };
 
@@ -34,29 +61,29 @@ export function StepEquipment({ form, onUpdate }: StepEquipmentProps) {
         Необязательное. Отметьте опции вашего автомобиля.
       </p>
 
-      {Object.entries(EQUIPMENT_CATEGORIES).map(([key, cat]) => {
+      {grouped.map(({ key, title, items }) => {
         const isExpanded = expandedCategories[key];
-        const visibleItems = isExpanded ? cat.items : cat.items.slice(0, 6);
-        const hasMore = cat.items.length > 6;
+        const visibleItems = isExpanded ? items : items.slice(0, 6);
+        const hasMore = items.length > 6;
 
         return (
           <div key={key} className="space-y-3">
             <h3 className="text-[16px] font-semibold font-[family-name:var(--font-manrope)]">
-              {cat.title}
+              {title}
             </h3>
             <div className="space-y-2.5">
               {visibleItems.map((item) => (
                 <label
-                  key={item}
+                  key={item.id}
                   className="flex items-center gap-3 cursor-pointer active:opacity-60"
                 >
                   <Checkbox
-                    checked={form.equipment.includes(item)}
-                    onCheckedChange={() => toggleItem(item)}
+                    checked={form.equipment.includes(item.id)}
+                    onCheckedChange={() => toggleItem(item.id)}
                     className="w-5 h-5 rounded-[6px] border-2 border-[#D1D1D6] data-[state=checked]:bg-black data-[state=checked]:border-black"
                   />
                   <span className="text-[15px] text-[#1C1C1E] font-[family-name:var(--font-manrope)]">
-                    {item}
+                    {item.name}
                   </span>
                 </label>
               ))}

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { ArrowLeft, X as XIcon, Camera, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { PartsFormData, PartsValidationErrors } from "@/lib/types/parts-listing";
-import { CITIES } from "@/lib/data/parts-constants";
+import { useGetDictsQuery } from "@/lib/features/dicts/dictsApi";
 import { BottomSheetSelect } from "@/components/listing/bottom-sheet-select";
 import { ConfirmDialog } from "@/components/listing/confirm-dialog";
 
@@ -47,6 +47,12 @@ export function PartsFormWrapper({
   const [showConfirmExit, setShowConfirmExit] = useState(false);
 
   const formRef = useRef<HTMLDivElement>(null);
+
+  const { data: dicts } = useGetDictsQuery();
+  const cityOptions = useMemo(
+    () => (dicts?.cities ?? []).map((c) => ({ id: c.id, label: c.name })),
+    [dicts]
+  );
 
   const toggleSection = useCallback((section: string) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -333,7 +339,7 @@ export function PartsFormWrapper({
               <BottomSheetSelect
                 label="Город"
                 value={formData.city}
-                options={CITIES as unknown as string[]}
+                options={cityOptions}
                 onSelect={(v) => onUpdateForm({ city: v })}
                 error={errors.city}
               />

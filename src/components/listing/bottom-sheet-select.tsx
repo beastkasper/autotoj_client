@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, X, Search, Check, Plus } from "lucide-react";
 import {
@@ -12,11 +12,13 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
+export type BottomSheetOption = string | { id: string; label: string };
+
 interface BottomSheetSelectProps {
   label: string;
   placeholder?: string;
   value: string;
-  options: readonly string[] | string[];
+  options: readonly BottomSheetOption[] | BottomSheetOption[];
   onSelect: (value: string) => void;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -26,16 +28,29 @@ interface BottomSheetSelectProps {
   error?: string;
 }
 
+function optId(opt: BottomSheetOption): string {
+  return typeof opt === "string" ? opt : opt.id;
+}
+
+function optLabel(opt: BottomSheetOption): string {
+  return typeof opt === "string" ? opt : opt.label;
+}
+
 function useIsMobile(breakpoint = 1024) {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
+  // Use useSyncExternalStore so the initial value reads from
+  // window.matchMedia synchronously without a setState-in-effect cascade.
+  const subscribe = useCallback((onChange: () => void) => {
     const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
-    setIsMobile(mql.matches);
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-    mql.addEventListener("change", handler);
-    return () => mql.removeEventListener("change", handler);
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
   }, [breakpoint]);
-  return isMobile;
+  const getSnapshot = useCallback(
+    () => window.matchMedia(`(max-width: ${breakpoint - 1}px)`).matches,
+    [breakpoint]
+  );
+  // SSR fallback: assume non-mobile on the server.
+  const getServerSnapshot = () => false;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
 
 export function BottomSheetSelect({
@@ -63,11 +78,17 @@ export function BottomSheetSelect({
   const filtered = useMemo(() => {
     if (!search) return [...options];
     const q = search.toLowerCase();
-    return [...options].filter((opt) => opt.toLowerCase().includes(q));
+    return [...options].filter((opt) => optLabel(opt).toLowerCase().includes(q));
   }, [options, search]);
 
-  const handleSelect = (opt: string) => {
-    onSelect(opt);
+  const selectedLabel = useMemo(() => {
+    if (!value) return "";
+    const match = options.find((opt) => optId(opt) === value);
+    return match ? optLabel(match) : value;
+  }, [options, value]);
+
+  const handleSelect = (opt: BottomSheetOption) => {
+    onSelect(optId(opt));
     setIsOpen(false);
     setSearch("");
   };
@@ -149,31 +170,36 @@ export function BottomSheetSelect({
   // ── Shared option list ──
   const optionList = (
     <>
-      {filtered.map((opt) => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => handleSelect(opt)}
-          className={cn(
-            "flex items-center justify-between w-full px-4 border-b border-[#F2F2F7] transition-colors",
-            isMobile ? "h-[52px]" : "h-10 text-[14px] hover:bg-[#F2F2F7]",
-            value === opt ? "bg-[#F2F2F7]" : ""
-          )}
-        >
-          <span
+      {filtered.map((opt) => {
+        const id = optId(opt);
+        const label = optLabel(opt);
+        const isSelected = value === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => handleSelect(opt)}
             className={cn(
-              "font-[family-name:var(--font-manrope)] truncate",
-              isMobile ? "text-[15px]" : "text-[14px]",
-              value === opt ? "font-semibold" : "font-normal"
+              "flex items-center justify-between w-full px-4 border-b border-[#F2F2F7] transition-colors",
+              isMobile ? "h-[52px]" : "h-10 text-[14px] hover:bg-[#F2F2F7]",
+              isSelected ? "bg-[#F2F2F7]" : ""
             )}
           >
-            {opt}
-          </span>
-          {value === opt && (
-            <Check className={cn("shrink-0 text-[#111111]", isMobile ? "w-5 h-5" : "w-4 h-4")} />
-          )}
-        </button>
-      ))}
+            <span
+              className={cn(
+                "font-[family-name:var(--font-manrope)] truncate",
+                isMobile ? "text-[15px]" : "text-[14px]",
+                isSelected ? "font-semibold" : "font-normal"
+              )}
+            >
+              {label}
+            </span>
+            {isSelected && (
+              <Check className={cn("shrink-0 text-[#111111]", isMobile ? "w-5 h-5" : "w-4 h-4")} />
+            )}
+          </button>
+        );
+      })}
 
       {filtered.length === 0 && (
         <div className="px-4 py-6 text-center text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
@@ -302,7 +328,7 @@ export function BottomSheetSelect({
             value ? "text-[#000000]" : "text-[#8E8E93]"
           )}
         >
-          {value || placeholder}
+          {selectedLabel || placeholder}
         </span>
         <ChevronDown
           className={cn(

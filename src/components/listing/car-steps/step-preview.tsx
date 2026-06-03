@@ -1,10 +1,20 @@
 "use client";
 
+import { useMemo } from "react";
 import type { CarListingForm } from "@/lib/types/listing";
+import {
+  useGetBrandsQuery,
+  useGetDictsQuery,
+  useGetGenerationsQuery,
+  useGetModelsQuery,
+} from "@/lib/features/dicts/dictsApi";
+import type { DictItem } from "@/lib/types/api";
 
 interface StepPreviewProps {
   form: CarListingForm;
 }
+
+const CUSTOM_CITY_ID = "__custom__";
 
 function formatPrice(val: string): string {
   if (!val) return "0";
@@ -18,14 +28,44 @@ function formatPhone(digits: string): string {
   return `+992 ${digits.slice(0, 2)} ${digits.slice(2, 5)} ${digits.slice(5, 9)}`;
 }
 
+function lookup(items: DictItem[] | undefined, id: string): string {
+  if (!id) return "";
+  return items?.find((it) => it.id === id)?.name ?? id;
+}
+
 export function StepPreview({ form }: StepPreviewProps) {
-  const title = [
-    form.customBrand || form.brand,
-    form.customModel || form.model,
-    form.modification,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const { data: dicts } = useGetDictsQuery();
+  const { data: brands } = useGetBrandsQuery({ type: "cars" });
+  const { data: models } = useGetModelsQuery(
+    { brand_id: form.brand },
+    { skip: !form.brand }
+  );
+  const { data: generations } = useGetGenerationsQuery(
+    { model_id: form.model },
+    { skip: !form.model }
+  );
+
+  const brandName = brands?.find((b) => b.id === form.brand)?.name ?? form.customBrand;
+  const modelName = models?.find((m) => m.id === form.model)?.name ?? form.customModel;
+  const generationName =
+    generations?.find((g) => g.id === form.generation)?.name ?? form.generation;
+
+  const cityName = useMemo(() => {
+    if (form.contacts.city === CUSTOM_CITY_ID) {
+      return form.contacts.customCity || "Другой";
+    }
+    return (
+      dicts?.cities.find((c) => c.id === form.contacts.city)?.name ??
+      form.contacts.city
+    );
+  }, [dicts, form.contacts.city, form.contacts.customCity]);
+
+  const equipmentLabels = useMemo(() => {
+    const map = new Map((dicts?.options ?? []).map((o) => [o.id, o.name]));
+    return form.equipment.map((id) => map.get(id) ?? id);
+  }, [dicts, form.equipment]);
+
+  const title = [brandName, modelName].filter(Boolean).join(" ");
 
   return (
     <div className="flex flex-col gap-0 pb-24">
@@ -49,6 +89,11 @@ export function StepPreview({ form }: StepPreviewProps) {
         <h2 className="text-[20px] font-bold font-[family-name:var(--font-manrope)] text-[#1C1C1E]">
           {title || "—"}
         </h2>
+        {generationName && (
+          <p className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)] mt-0.5">
+            {generationName}
+          </p>
+        )}
         <p className="text-[22px] font-bold font-[family-name:var(--font-manrope)] text-[#1C1C1E] mt-1">
           {formatPrice(form.price)} с
         </p>
@@ -72,11 +117,6 @@ export function StepPreview({ form }: StepPreviewProps) {
               Обмен
             </span>
           )}
-          {form.isNotCustomsCleared && (
-            <span className="text-[12px] px-2 py-1 rounded-lg bg-[#FFF3E0] text-[#E65100] font-[family-name:var(--font-manrope)]">
-              Не растаможен
-            </span>
-          )}
         </div>
       </div>
 
@@ -92,7 +132,7 @@ export function StepPreview({ form }: StepPreviewProps) {
                 Кузов
               </span>
               <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
-                {form.bodyType}
+                {lookup(dicts?.body_types, form.bodyType)}
               </p>
             </div>
           )}
@@ -102,7 +142,7 @@ export function StepPreview({ form }: StepPreviewProps) {
                 Двигатель
               </span>
               <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
-                {form.engineType}
+                {lookup(dicts?.fuel_types, form.engineType)}
               </p>
             </div>
           )}
@@ -112,7 +152,57 @@ export function StepPreview({ form }: StepPreviewProps) {
                 Привод
               </span>
               <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
-                {form.driveType}
+                {lookup(dicts?.drive_types, form.driveType)}
+              </p>
+            </div>
+          )}
+          {form.transmission && (
+            <div>
+              <span className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+                КПП
+              </span>
+              <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
+                {lookup(dicts?.transmission_types, form.transmission)}
+              </p>
+            </div>
+          )}
+          {form.engineVolume && (
+            <div>
+              <span className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+                Объём
+              </span>
+              <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
+                {form.engineVolume} л
+              </p>
+            </div>
+          )}
+          {form.enginePower && (
+            <div>
+              <span className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+                Мощность
+              </span>
+              <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
+                {form.enginePower} л.с.
+              </p>
+            </div>
+          )}
+          {form.condition && (
+            <div>
+              <span className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+                Состояние
+              </span>
+              <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
+                {lookup(dicts?.conditions, form.condition)}
+              </p>
+            </div>
+          )}
+          {form.steeringWheel && (
+            <div>
+              <span className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+                Руль
+              </span>
+              <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
+                {lookup(dicts?.steering_positions, form.steeringWheel)}
               </p>
             </div>
           )}
@@ -122,7 +212,7 @@ export function StepPreview({ form }: StepPreviewProps) {
                 Цвет
               </span>
               <p className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
-                {form.color}
+                {lookup(dicts?.colors, form.color)}
               </p>
             </div>
           )}
@@ -162,13 +252,13 @@ export function StepPreview({ form }: StepPreviewProps) {
       )}
 
       {/* Equipment */}
-      {form.equipment.length > 0 && (
+      {equipmentLabels.length > 0 && (
         <div className="px-4 py-4 border-b border-[#E5E5EA]">
           <h3 className="text-[16px] font-semibold font-[family-name:var(--font-manrope)] mb-2">
             Комплектация
           </h3>
           <div className="flex flex-wrap gap-2">
-            {form.equipment.slice(0, 6).map((item) => (
+            {equipmentLabels.slice(0, 6).map((item) => (
               <span
                 key={item}
                 className="text-[13px] px-3 py-1.5 rounded-lg bg-[#F2F2F7] text-[#1C1C1E] font-[family-name:var(--font-manrope)]"
@@ -176,9 +266,9 @@ export function StepPreview({ form }: StepPreviewProps) {
                 {item}
               </span>
             ))}
-            {form.equipment.length > 6 && (
+            {equipmentLabels.length > 6 && (
               <span className="text-[13px] px-3 py-1.5 rounded-lg bg-[#F2F2F7] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-                +{form.equipment.length - 6}
+                +{equipmentLabels.length - 6}
               </span>
             )}
           </div>
@@ -217,9 +307,7 @@ export function StepPreview({ form }: StepPreviewProps) {
                 Город
               </span>
               <span className="text-[15px] font-medium font-[family-name:var(--font-manrope)]">
-                {form.contacts.city === "Другой"
-                  ? form.contacts.customCity || "Другой"
-                  : form.contacts.city}
+                {cityName}
               </span>
             </div>
           )}

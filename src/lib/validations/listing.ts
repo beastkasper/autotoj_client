@@ -63,70 +63,75 @@ export function validateNumberRange(
   return null;
 }
 
-// ── Валидация по шагам (Легковые) ──
+// ── Валидация по шагам (Легковые, 21 шаг — выровнено с мобильным) ──
 
 export function validateCarStep(step: number, form: CarListingForm): ValidationErrors {
   const errors: ValidationErrors = {};
 
   switch (step) {
     case 1:
-      if (!form.status) errors.status = "Выберите статус";
-      if (form.status === "На заказ" && !form.supplyCountry.trim()) {
-        errors.supplyCountry = "Укажите страну поставки";
-      }
-      break;
-    case 2: {
-      const vinErr = validateVin(form.vin);
-      if (vinErr) errors.vin = vinErr;
-      break;
-    }
-    case 3:
       if (!form.brand && !form.customBrand) errors.brand = "Выберите марку";
       break;
-    case 4:
+    case 2:
       if (!form.model && !form.customModel) errors.model = "Выберите модель";
       break;
-    case 5:
+    case 3:
       if (!form.year) errors.year = "Выберите год";
       break;
-    case 6:
-      break; // необязательное
-    case 7:
+    case 4:
+      break; // generation — optional
+    case 5:
       if (!form.bodyType) errors.bodyType = "Выберите тип кузова";
       break;
-    case 8:
+    case 6:
       if (!form.engineType) errors.engineType = "Выберите тип двигателя";
       break;
-    case 9:
+    case 7:
       if (!form.driveType) errors.driveType = "Выберите тип привода";
       break;
+    case 8:
+      if (!form.transmission) errors.transmission = "Выберите КПП";
+      break;
+    case 9:
+      break; // engine volume — optional
     case 10:
-      break; // необязательное
+      break; // power — optional
     case 11:
       if (!form.color) errors.color = "Выберите цвет";
       break;
     case 12:
-      break; // рекомендуется, не обязательно
+      if (!form.condition) errors.condition = "Выберите состояние";
+      break;
     case 13:
-      break; // необязательное
-    case 14: {
+      if (!form.steeringWheel) errors.steeringWheel = "Выберите расположение руля";
+      break;
+    case 14:
+      break; // photos — optional
+    case 15:
+      break; // equipment — optional
+    case 16: {
       const mileErr = validateMileage(form.mileage);
       if (mileErr) errors.mileage = mileErr;
       if (!form.pts) errors.pts = "Выберите ПТС";
       if (!form.owners) errors.owners = "Укажите кол-во владельцев";
       break;
     }
-    case 15: {
+    case 17: {
+      const vinErr = validateVin(form.vin);
+      if (vinErr) errors.vin = vinErr;
+      break;
+    }
+    case 18: {
       const descErr = validateDescription(form.description);
       if (descErr) errors.description = descErr;
       break;
     }
-    case 16: {
+    case 19: {
       const priceErr = validatePrice(form.price);
       if (priceErr) errors.price = priceErr;
       break;
     }
-    case 17: {
+    case 20: {
       if (!form.contacts.name.trim()) errors.name = "Укажите имя";
       const phoneErr = validatePhone(form.contacts.phone);
       if (phoneErr) errors.phone = phoneErr;
@@ -138,8 +143,8 @@ export function validateCarStep(step: number, form: CarListingForm): ValidationE
   return errors;
 }
 
-// ── Необязательные шаги (можно пропустить) ──
-export const CAR_OPTIONAL_STEPS = [2, 6, 10, 12, 13, 15];
+// Steps that show a "Skip" affordance in the header (truly optional fields).
+export const CAR_OPTIONAL_STEPS = [4, 9, 10, 14, 15, 17, 18];
 
 export function isCarStepOptional(step: number): boolean {
   return CAR_OPTIONAL_STEPS.includes(step);
@@ -173,12 +178,12 @@ export function validateMotoForm(form: MotoListingForm): ValidationErrors {
   if (phoneErr) errors.phone = phoneErr;
 
   // Условная валидация
-  if (form.status === "В наличии") {
+  if (form.status === "available") {
     if (!form.pts) errors.pts = "Выберите ПТС";
     if (!form.owners) errors.owners = "Укажите владельцев";
     if (!form.contacts.city) errors.city = "Выберите город";
   }
-  if (form.status === "На заказ") {
+  if (form.status === "on_order") {
     if (!form.supplyCountry.trim()) errors.supplyCountry = "Укажите страну";
   }
 

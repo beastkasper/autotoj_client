@@ -21,16 +21,12 @@ import { Badge } from "@/components/ui/badge";
 import { FilterSection } from "./FilterSection";
 import { FilterChipGroup } from "./FilterChipGroup";
 import { FilterRangeInput } from "./FilterRangeInput";
+import { QUICK_FILTERS } from "@/lib/data/filterConstants";
 import {
-  QUICK_FILTERS,
-  BRANDS,
-  MODELS,
-  FUEL_TYPES,
-  TRANSMISSION_TYPES,
-  DRIVE_TYPES,
-  BODY_TYPES,
-  COLORS,
-} from "@/lib/data/filterConstants";
+  useGetBrandsQuery,
+  useGetDictsQuery,
+  useGetModelsQuery,
+} from "@/lib/features/dicts/dictsApi";
 import { useState, useCallback, useMemo } from "react";
 
 /* ── FilterState ── */
@@ -85,9 +81,40 @@ interface FilterContentProps {
 }
 
 function FilterContent({ filters, setFilters }: FilterContentProps) {
-  const availableModels = useMemo(
-    () => (filters.brand ? MODELS[filters.brand] || [] : []),
-    [filters.brand]
+  const { data: brands } = useGetBrandsQuery({ type: "cars" });
+  const { data: dicts } = useGetDictsQuery();
+  const { data: brandModels } = useGetModelsQuery(
+    { brand_id: filters.brand ?? "" },
+    { skip: !filters.brand }
+  );
+
+  const brandOptions = useMemo(
+    () => (brands ?? []).map((b) => ({ id: b.id, label: b.name })),
+    [brands]
+  );
+  const modelOptions = useMemo(
+    () => (brandModels ?? []).map((m) => ({ id: m.id, label: m.name })),
+    [brandModels]
+  );
+  const fuelOptions = useMemo(
+    () => (dicts?.fuel_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const transmissionOptions = useMemo(
+    () => (dicts?.transmission_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const driveOptions = useMemo(
+    () => (dicts?.drive_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const bodyOptions = useMemo(
+    () => (dicts?.body_types ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
+  );
+  const colorOptions = useMemo(
+    () => (dicts?.colors ?? []).map((d) => ({ id: d.id, label: d.name })),
+    [dicts]
   );
 
   const handleQuickToggle = useCallback(
@@ -160,15 +187,15 @@ function FilterContent({ filters, setFilters }: FilterContentProps) {
                     <SelectValue placeholder="Любая" />
                   </SelectTrigger>
                   <SelectContent>
-                    {BRANDS.map((b) => (
-                      <SelectItem key={b} value={b}>
-                        {b}
+                    {brandOptions.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-              {filters.brand && availableModels.length > 0 && (
+              {filters.brand && modelOptions.length > 0 && (
                 <div>
                   <Label className="text-[13px] text-[#8E8E93] mb-1.5 block font-[family-name:var(--font-manrope)]">
                     Модель
@@ -181,9 +208,9 @@ function FilterContent({ filters, setFilters }: FilterContentProps) {
                       <SelectValue placeholder="Любая" />
                     </SelectTrigger>
                     <SelectContent>
-                      {availableModels.map((m) => (
-                        <SelectItem key={m} value={m}>
-                          {m}
+                      {modelOptions.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -236,7 +263,7 @@ function FilterContent({ filters, setFilters }: FilterContentProps) {
         <Accordion type="multiple" defaultValue={[]} className="space-y-3">
           <FilterSection value="fuel" title="Топливо">
             <FilterChipGroup
-              options={FUEL_TYPES}
+              options={fuelOptions}
               value={filters.fuel}
               onChange={(v) => setField("fuel", v)}
             />
@@ -244,7 +271,7 @@ function FilterContent({ filters, setFilters }: FilterContentProps) {
 
           <FilterSection value="transmission" title="Коробка передач">
             <FilterChipGroup
-              options={TRANSMISSION_TYPES}
+              options={transmissionOptions}
               value={filters.transmission}
               onChange={(v) => setField("transmission", v)}
             />
@@ -252,7 +279,7 @@ function FilterContent({ filters, setFilters }: FilterContentProps) {
 
           <FilterSection value="drive" title="Привод">
             <FilterChipGroup
-              options={DRIVE_TYPES}
+              options={driveOptions}
               value={filters.drive}
               onChange={(v) => setField("drive", v)}
             />
@@ -260,7 +287,7 @@ function FilterContent({ filters, setFilters }: FilterContentProps) {
 
           <FilterSection value="body" title="Кузов">
             <FilterChipGroup
-              options={BODY_TYPES}
+              options={bodyOptions}
               value={filters.bodyType}
               onChange={(v) => setField("bodyType", v)}
             />
@@ -268,7 +295,7 @@ function FilterContent({ filters, setFilters }: FilterContentProps) {
 
           <FilterSection value="color" title="Цвет">
             <FilterChipGroup
-              options={COLORS}
+              options={colorOptions}
               value={filters.color}
               onChange={(v) => setField("color", v)}
             />
