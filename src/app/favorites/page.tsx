@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { AdCard } from "@/components/cards/AdCard";
@@ -8,6 +8,8 @@ import { EmptyState } from "@/components/states/EmptyState";
 import { PageHeader } from "@/components/layout/page-header";
 import { SkeletonGrid } from "@/components/layout/skeleton-grid";
 import { ContentGrid } from "@/components/layout/content-grid";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { usePagedParams } from "@/hooks/usePagedParams";
 import {
   useGetFavoritesQuery,
   useRemoveFavoriteMutation,
@@ -16,10 +18,14 @@ import { mapAdListItemToAd } from "@/lib/utils/map-ad";
 
 export default function FavoritesPage() {
   const router = useRouter();
-  const { data: apiData, isLoading } = useGetFavoritesQuery();
+  const baseParams = useMemo(() => ({}), []);
+  const { params: queryParams, page, setPage } = usePagedParams(baseParams);
+  const { data: apiData, isLoading, isFetching } = useGetFavoritesQuery(queryParams);
   const [removeFavorite] = useRemoveFavoriteMutation();
 
   const favorites = apiData?.ads.map(mapAdListItemToAd) ?? [];
+  const isLoadingMore = isFetching && !isLoading;
+  const hasMore = apiData?.has_more ?? false;
 
   const handleAdClick = useCallback(
     (id: string) => router.push(`/ad/${id}`),
@@ -83,6 +89,13 @@ export default function FavoritesPage() {
             }}
           />
         )}
+        {!isLoading && (
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
+          />
+        )}
       </div>
 
       {/* ── Mobile Header ── */}
@@ -124,6 +137,13 @@ export default function FavoritesPage() {
               label: "К объявлениям",
               onClick: () => router.push("/"),
             }}
+          />
+        )}
+        {!isLoading && (
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
           />
         )}
       </div>

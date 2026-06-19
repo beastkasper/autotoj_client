@@ -93,10 +93,10 @@ export function LoginForm() {
 
   return (
     <form
-      className="w-full max-w-[420px] bg-[var(--ios-card)] rounded-2xl px-6 py-7"
+      className="w-full max-w-[420px] bg-[var(--ios-card)] rounded-[28px] px-6 py-7"
       onSubmit={handleSubmit}
     >
-      <p className="text-center text-[15px] font-medium text-[var(--ios-label)] mb-4">
+      <p className="text-center text-[19px] font-bold text-[var(--ios-label)] mb-6">
         Выберите способ входа
       </p>
 
@@ -125,7 +125,7 @@ export function LoginForm() {
       <Button
         type="submit"
         disabled={!canSubmit}
-        className={`w-full mt-6 py-3.5 rounded-full text-[15px] font-medium h-auto ${
+        className={`w-full mt-6 py-4 rounded-full text-[16px] font-semibold h-auto ${
           canSubmit
             ? "bg-[var(--ios-label)] text-white hover:bg-[#333]"
             : "bg-[var(--ios-disabled-bg)] text-[var(--ios-disabled-text)] cursor-default"

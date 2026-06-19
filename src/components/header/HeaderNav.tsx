@@ -9,8 +9,6 @@ const NAV_ITEMS: { key: NavTab; label: string }[] = [
   { key: "search", label: "Авто" },
   { key: "parts", label: "Запчасти" },
   { key: "rental", label: "Авто прокат" },
-  { key: "services", label: "Сервисы" },
-  { key: "logbook", label: "Бортжурнал" },
 ];
 
 interface HeaderNavProps {

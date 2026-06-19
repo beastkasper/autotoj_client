@@ -2,7 +2,20 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import {
+  setSearchQuery,
+  setFilterParams,
+  setPage,
+  resetAdsFilters,
+  selectAdsSearchQuery,
+  selectAdsQueryParams,
+  selectAdsPage,
+  selectHasActiveFilters,
+  filterStateToParams,
+} from "@/lib/features/ads/adsFiltersSlice";
+import { Search, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AutoTojLogo } from "@/components/brand/AutoTojLogo";
 import { MobileSearchBar } from "@/components/search/MobileSearchBar";
 import { PullToRefreshIndicator } from "@/components/search/PullToRefreshIndicator";
@@ -16,24 +29,21 @@ import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { useGetAdsQuery } from "@/lib/features/ads/adsApi";
 import type { FilterState } from "@/components/filters/FilterSheet";
 import type { Ad } from "@/lib/types/ad";
-import type { AdsSearchParams } from "@/lib/types/api";
 
 type PageState = "default" | "loading" | "empty" | "error" | "offline";
 
 export default function HomePage() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
+  const dispatch = useAppDispatch();
+  const searchQuery = useAppSelector(selectAdsSearchQuery);
+  const queryParams = useAppSelector(selectAdsQueryParams);
+  const hasActiveFilters = useAppSelector(selectHasActiveFilters);
+  const page = useAppSelector(selectAdsPage);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [hasActiveFilters, setHasActiveFilters] = useState(false);
-  const [filterParams, setFilterParams] = useState<AdsSearchParams>({});
-
-  const queryParams: AdsSearchParams = useMemo(
-    () => ({ ...filterParams, ...(searchQuery ? { q: searchQuery } : {}) }),
-    [filterParams, searchQuery]
-  );
 
   // RTK Query — fetch from backend API
-  const { data: apiData, isLoading, isError, refetch } = useGetAdsQuery(queryParams);
+  const { data: apiData, isLoading, isFetching, isError, refetch } =
+    useGetAdsQuery(queryParams);
 
   const displayAds: Ad[] = useMemo(() => {
     if (!apiData?.ads) return [];
@@ -82,8 +92,10 @@ export default function HomePage() {
   );
 
   const handleRefresh = useCallback(async () => {
+    // Collapse back to the first page, then refetch from the top.
+    dispatch(setPage(1));
     await refetch();
-  }, [refetch]);
+  }, [dispatch, refetch]);
 
   const { pullDistance, isRefreshing, scrollRef, touchHandlers } =
     usePullToRefresh({ onRefresh: handleRefresh });
@@ -93,34 +105,28 @@ export default function HomePage() {
     [router]
   );
 
-  const handleFilterApply = useCallback((filters: FilterState) => {
-    const isActive = Object.values(filters).some(
-      (v) => v !== undefined && v !== false && v !== "" && v !== null
-    );
-    setHasActiveFilters(isActive);
-    setIsFilterOpen(false);
-    const params: AdsSearchParams = {};
-    if (filters.brand) params.brand_id = filters.brand;
-    if (filters.yearFrom) params.year_from = Number(filters.yearFrom);
-    if (filters.yearTo) params.year_to = Number(filters.yearTo);
-    if (filters.priceFrom) params.price_from = Number(filters.priceFrom);
-    if (filters.priceTo) params.price_to = Number(filters.priceTo);
-    if (filters.fuel) params.fuel = filters.fuel;
-    if (filters.transmission) params.transmission = filters.transmission;
-    if (filters.drive) params.drive = filters.drive;
-    if (filters.bodyType) params.body = filters.bodyType;
-    setFilterParams(params);
-  }, []);
+  const handleFilterApply = useCallback(
+    (filters: FilterState) => {
+      setIsFilterOpen(false);
+      dispatch(setFilterParams(filterStateToParams(filters)));
+    },
+    [dispatch]
+  );
 
   const handleResetFilters = useCallback(() => {
-    setSearchQuery("");
-    setHasActiveFilters(false);
-    setFilterParams({});
-  }, []);
+    dispatch(resetAdsFilters());
+  }, [dispatch]);
 
   const handleRetry = useCallback(() => {
     refetch();
   }, [refetch]);
+
+  const handleLoadMore = useCallback(() => {
+    dispatch(setPage(page + 1));
+  }, [dispatch, page]);
+
+  const hasMore = apiData?.has_more ?? false;
+  const isLoadingMore = isFetching && !isLoading;
 
   return (
     <main
@@ -133,7 +139,7 @@ export default function HomePage() {
       {/* Mobile Floating Search */}
       <MobileSearchBar
         searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
+        onSearchChange={(value) => dispatch(setSearchQuery(value))}
         onFilterClick={() => setIsFilterOpen(true)}
         hasActiveFilters={hasActiveFilters}
       />
@@ -186,6 +192,27 @@ export default function HomePage() {
             onAdClick={handleAdClick}
           />
         </PageStateRenderer>
+
+        {pageState === "default" && hasMore && displayAds.length > 0 && (
+          <div className="flex justify-center px-4 py-8 lg:px-0">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              className="min-w-[220px] rounded-xl border-[#E5E5E7] text-[15px] font-medium font-[family-name:var(--font-manrope)]"
+            >
+              {isLoadingMore ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  Загрузка...
+                </>
+              ) : (
+                "Показать ещё"
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Mobile Filter Sheet */}

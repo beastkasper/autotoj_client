@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { infiniteListConfig } from "@/lib/features/infiniteList";
 import type {
   LogbookListResponse,
   LogbookSearchParams,
@@ -17,6 +18,7 @@ export const logbookApi = api.injectEndpoints({
         url: "/logbook",
         params: params ?? undefined,
       }),
+      ...infiniteListConfig<LogbookListResponse>("posts"),
       providesTags: (result) =>
         result
           ? [

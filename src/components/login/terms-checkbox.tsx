@@ -22,11 +22,11 @@ export function TermsCheckbox({ checked, onChange, error }: TermsCheckboxProps) 
             id="terms-agreement"
             checked={checked}
             onCheckedChange={(val) => onChange(val === true)}
-            className="mt-0.5 data-[state=checked]:bg-[var(--ios-label)] data-[state=checked]:border-[var(--ios-label)]"
+            className="mt-0.5 size-[22px] rounded-md border-[#C7C7CC] data-[state=checked]:bg-[var(--ios-label)] data-[state=checked]:border-[var(--ios-label)]"
           />
           <Label
             htmlFor="terms-agreement"
-            className="text-sm text-[var(--ios-secondary-label)] leading-relaxed font-normal cursor-pointer"
+            className="block text-[13px] text-[var(--ios-secondary-label)] leading-relaxed font-normal cursor-pointer"
           >
             Я принимаю{" "}
             <button
@@ -35,7 +35,7 @@ export function TermsCheckbox({ checked, onChange, error }: TermsCheckboxProps) 
                 e.stopPropagation();
                 setLegalModal("terms");
               }}
-              className="font-semibold text-[var(--ios-label)] hover:underline bg-transparent border-none p-0 cursor-pointer"
+              className="text-[15px] font-bold text-[var(--ios-label)] hover:underline bg-transparent border-none p-0 cursor-pointer"
             >
               Правила использования
             </button>{" "}
@@ -46,7 +46,7 @@ export function TermsCheckbox({ checked, onChange, error }: TermsCheckboxProps) 
                 e.stopPropagation();
                 setLegalModal("privacy");
               }}
-              className="font-semibold text-[var(--ios-label)] hover:underline bg-transparent border-none p-0 cursor-pointer"
+              className="text-[15px] font-bold text-[var(--ios-label)] hover:underline bg-transparent border-none p-0 cursor-pointer"
             >
               Политику конфиденциальности
             </button>

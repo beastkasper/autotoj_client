@@ -18,31 +18,37 @@ import { PageHeader } from "@/components/layout/page-header";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { GridPageSkeleton } from "@/components/skeletons/grid-page-skeleton";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { usePagedParams } from "@/hooks/usePagedParams";
 import { useGetPartsQuery } from "@/lib/features/parts/partsApi";
 import {
-  PART_CATEGORIES,
   CONDITION_OPTIONS,
   type PartCondition,
 } from "@/lib/types/part";
+import { PARTS_CATEGORIES } from "@/lib/types/parts-listing";
 import type { PartsSearchParams } from "@/lib/types/api";
 
 export default function PartsPage() {
   const router = useRouter();
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Все категории");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedCondition, setSelectedCondition] = useState<PartCondition>("Все");
 
   // RTK Query — fetch from backend
-  const queryParams: PartsSearchParams = useMemo(() => {
+  const baseParams: PartsSearchParams = useMemo(() => {
     const p: PartsSearchParams = {};
     if (searchQuery) p.q = searchQuery;
+    if (selectedCategory !== "all") p.part_type = selectedCategory;
     if (selectedCondition === "Новый") p.condition = "new";
     else if (selectedCondition === "Б/у") p.condition = "used";
     return p;
-  }, [searchQuery, selectedCondition]);
+  }, [searchQuery, selectedCategory, selectedCondition]);
 
-  const { data: apiData, isLoading } = useGetPartsQuery(queryParams);
+  const { params: queryParams, page, setPage } = usePagedParams(baseParams);
+  const { data: apiData, isLoading, isFetching } = useGetPartsQuery(queryParams);
+  const isLoadingMore = isFetching && !isLoading;
+  const hasMore = apiData?.has_more ?? false;
 
   const filteredParts = useMemo(() => {
     if (!apiData?.parts) return [];
@@ -97,9 +103,10 @@ export default function PartsPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PART_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
+                <SelectItem value="all">Все категории</SelectItem>
+                {PARTS_CATEGORIES.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -164,6 +171,13 @@ export default function PartsPage() {
             description="Попробуйте изменить параметры поиска"
           />
         )}
+        {!isLoading && (
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
+          />
+        )}
       </div>
 
       {/* ── Mobile Header ── */}
@@ -216,22 +230,22 @@ export default function PartsPage() {
             </Button>
           ))}
           <div className="w-px h-9 bg-[#E5E5E7] shrink-0 self-center" />
-          {PART_CATEGORIES.slice(1).map((cat) => (
+          {PARTS_CATEGORIES.map((cat) => (
             <Button
-              key={cat}
-              variant={selectedCategory === cat ? "default" : "outline"}
+              key={cat.id}
+              variant={selectedCategory === cat.id ? "default" : "outline"}
               onClick={() =>
                 setSelectedCategory(
-                  selectedCategory === cat ? "Все категории" : cat
+                  selectedCategory === cat.id ? "all" : cat.id
                 )
               }
               className={`shrink-0 h-9 rounded-full text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                selectedCategory === cat
+                selectedCategory === cat.id
                   ? "bg-[#111111] text-white hover:bg-[#111111]/90"
                   : "bg-white border-[#E5E5E7] text-[#111111]"
               }`}
             >
-              {cat}
+              {cat.label}
             </Button>
           ))}
         </div>
@@ -261,6 +275,13 @@ export default function PartsPage() {
             icon={Search}
             title="Ничего не найдено"
             description="Попробуйте изменить параметры поиска"
+          />
+        )}
+        {!isLoading && (
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
           />
         )}
       </div>

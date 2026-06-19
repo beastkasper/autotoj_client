@@ -9,13 +9,26 @@ import { ListingsBar } from "./ListingsBar";
 import { DesktopFilterPanel } from "@/components/filters/DesktopFilterPanel";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { useAuth } from "@/hooks/useAuth";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import {
+  setFilterParams,
+  filterStateToParams,
+  selectAdsQueryParams,
+} from "@/lib/features/ads/adsFiltersSlice";
+import { useGetAdsQuery } from "@/lib/features/ads/adsApi";
 import type { FilterState } from "@/components/filters/FilterSheet";
 
 export function DesktopHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, showAuthModal, requireAuth, closeAuthModal } = useAuth();
+  const dispatch = useAppDispatch();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Share the same query (and RTK Query cache) as the listings grid so the
+  // "Найдено: N" count reflects the active search/filters.
+  const queryParams = useAppSelector(selectAdsQueryParams);
+  const { data: adsData } = useGetAdsQuery(queryParams);
 
   // Derive active tab from current route
   const activeTab = pathname.startsWith("/rental")
@@ -68,16 +81,13 @@ export function DesktopHeader() {
     setIsFilterOpen(true);
   };
 
-  const handleFilterApply = useCallback((filters: FilterState) => {
-    // TODO: apply filters to search results
-    console.log("Applied filters:", filters);
-    setIsFilterOpen(false);
-  }, []);
-
-  const handleSearch = (query: string) => {
-    // TODO: implement search logic
-    console.log("Search:", query);
-  };
+  const handleFilterApply = useCallback(
+    (filters: FilterState) => {
+      dispatch(setFilterParams(filterStateToParams(filters)));
+      setIsFilterOpen(false);
+    },
+    [dispatch],
+  );
 
   // Hide header on auth pages — AFTER all hooks
   if (pathname.startsWith("/login") || pathname.startsWith("/post-ad")) return null;
@@ -113,9 +123,9 @@ export function DesktopHeader() {
         {/* Second row — Listings bar (only on search tab) */}
         {activeTab === "search" && (
           <ListingsBar
-            onSearch={handleSearch}
             onFilterClick={handleFilterClick}
             onNavigate={handleNavigate}
+            resultsCount={adsData?.total ?? 0}
           />
         )}
       </header>

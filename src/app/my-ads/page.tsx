@@ -7,6 +7,8 @@ import { EmptyState } from "@/components/states/EmptyState";
 import { MyAdCardDesktop } from "@/components/my-ads/my-ad-card-desktop";
 import { MyAdCardMobile } from "@/components/my-ads/my-ad-card-mobile";
 import { MyAdsTabs } from "@/components/my-ads/my-ads-tabs";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { usePagedParams } from "@/hooks/usePagedParams";
 import {
   useGetMyAdsQuery,
   useArchiveAdMutation,
@@ -26,12 +28,16 @@ export default function MyAdsPage() {
     adId: string;
   } | null>(null);
 
-  const { data: apiData, isLoading } = useGetMyAdsQuery({ status: activeTab });
+  const baseParams = useMemo(() => ({ status: activeTab }), [activeTab]);
+  const { params: queryParams, page, setPage } = usePagedParams(baseParams);
+  const { data: apiData, isLoading, isFetching } = useGetMyAdsQuery(queryParams);
   const [archiveAd] = useArchiveAdMutation();
   const [restoreAd] = useRestoreAdMutation();
   const [deleteAd] = useDeleteMyAdMutation();
 
   const ads = useMemo(() => apiData?.ads ?? [], [apiData?.ads]);
+  const isLoadingMore = isFetching && !isLoading;
+  const hasMore = apiData?.has_more ?? false;
 
   const counts = useMemo(() => {
     const active = ads.length;
@@ -166,6 +172,14 @@ export default function MyAdsPage() {
               />
             </div>
           )}
+
+          {!isLoading && (
+            <LoadMoreButton
+              hasMore={hasMore}
+              isLoading={isLoadingMore}
+              onClick={() => setPage(page + 1)}
+            />
+          )}
         </div>
       </div>
 
@@ -244,6 +258,15 @@ export default function MyAdsPage() {
                     }
                   : undefined
               }
+            />
+          </div>
+        )}
+        {!isLoading && (
+          <div className="md:col-span-2">
+            <LoadMoreButton
+              hasMore={hasMore}
+              isLoading={isLoadingMore}
+              onClick={() => setPage(page + 1)}
             />
           </div>
         )}

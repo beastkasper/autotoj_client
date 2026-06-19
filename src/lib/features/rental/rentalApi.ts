@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { infiniteListConfig } from "@/lib/features/infiniteList";
 import type {
   RentalListResponse,
   RentalSearchParams,
@@ -15,6 +16,7 @@ export const rentalApi = api.injectEndpoints({
         url: "/rental",
         params: params ?? undefined,
       }),
+      ...infiniteListConfig<RentalListResponse>("cars"),
       providesTags: (result) =>
         result
           ? [

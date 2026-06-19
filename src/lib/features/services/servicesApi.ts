@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { infiniteListConfig } from "@/lib/features/infiniteList";
 import type {
   ServiceCategory,
   ServiceProvider,
@@ -32,6 +33,7 @@ export const servicesApi = api.injectEndpoints({
         url: "/service-providers",
         params,
       }),
+      ...infiniteListConfig<ProvidersListResponse>("providers"),
     }),
 
     // GET /service-providers/:id

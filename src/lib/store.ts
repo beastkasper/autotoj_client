@@ -1,6 +1,7 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { api } from "./api";
 import authReducer from "./features/auth/authSlice";
+import adsFiltersReducer from "./features/ads/adsFiltersSlice";
 
 // Import all API modules to register their endpoints via injectEndpoints
 import "./features/auth/authApi";
@@ -17,6 +18,7 @@ export const makeStore = () =>
   configureStore({
     reducer: {
       auth: authReducer,
+      adsFilters: adsFiltersReducer,
       [api.reducerPath]: api.reducer,
     },
     middleware: (getDefaultMiddleware) =>

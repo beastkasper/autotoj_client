@@ -228,7 +228,7 @@ export default function ChatPage() {
       {/* ── Messages ── */}
       <div
         className="flex-1 overflow-y-auto px-3 md:px-6 py-4 lg:max-w-[1000px] lg:mx-auto w-full"
-        style={{ paddingBottom: "calc(72px + env(safe-area-inset-bottom) + 64px)" }}
+        style={{ paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}
       >
         {msgsLoading && ordered.length === 0 ? (
           <div className="space-y-3">
@@ -267,7 +267,7 @@ export default function ChatPage() {
       {/* ── Input ── */}
       <div
         className="fixed left-0 right-0 z-30 bg-white border-t border-[#E5E5E7] px-3 md:px-6 py-2"
-        style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        style={{ bottom: 0, paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
       >
         <div className="flex items-end gap-2 lg:max-w-[1000px] lg:mx-auto">
           <a

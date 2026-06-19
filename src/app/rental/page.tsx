@@ -13,12 +13,13 @@ import { FilterChip } from "@/components/search/filter-chip";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { GridPageSkeleton } from "@/components/skeletons/grid-page-skeleton";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { usePagedParams } from "@/hooks/usePagedParams";
 import { useGetRentalsQuery } from "@/lib/features/rental/rentalApi";
+import { useGetCitiesQuery } from "@/lib/features/dicts/dictsApi";
 import {
   CAR_CLASSES,
-  RENTAL_CITIES,
-  type CarClass,
-  type RentalCity,
+  CAR_CLASS_LABELS,
   type RentalCar,
 } from "@/lib/types/rental";
 import type { RentalSearchParams } from "@/lib/types/api";
@@ -27,12 +28,19 @@ export default function RentalPage() {
   const router = useRouter();
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedClass, setSelectedClass] = useState<CarClass | null>(null);
-  const [selectedCity, setSelectedCity] = useState<RentalCity | null>(null);
+  const [selectedClass, setSelectedClass] = useState<string | null>(null);
+  const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
+  // City dictionary — backend filters/returns city slugs (e.g. "dushanbe").
+  const { data: cities } = useGetCitiesQuery();
+  const cityLabels = useMemo(
+    () => Object.fromEntries((cities ?? []).map((c) => [c.id, c.name])),
+    [cities],
+  );
+
   // RTK Query — fetch from backend
-  const queryParams: RentalSearchParams = useMemo(() => {
+  const baseParams: RentalSearchParams = useMemo(() => {
     const p: RentalSearchParams = {};
     if (searchQuery) p.q = searchQuery;
     if (selectedClass) p.car_class = selectedClass;
@@ -40,14 +48,17 @@ export default function RentalPage() {
     return p;
   }, [searchQuery, selectedClass, selectedCity]);
 
-  const { data: apiData, isLoading } = useGetRentalsQuery(queryParams);
+  const { params: queryParams, page, setPage } = usePagedParams(baseParams);
+  const { data: apiData, isLoading, isFetching } = useGetRentalsQuery(queryParams);
+  const isLoadingMore = isFetching && !isLoading;
+  const hasMore = apiData?.has_more ?? false;
 
   const filteredCars: RentalCar[] = useMemo(() => {
     if (!apiData?.cars) return [];
     return apiData.cars.map((car) => ({
       id: car.id,
       title: car.title,
-      carClass: car.car_class as RentalCar["carClass"],
+      carClass: CAR_CLASS_LABELS[car.car_class] ?? car.car_class,
       year: car.year,
       transmission: car.transmission === "automatic" ? "Автомат" : "Механика",
       fuel:
@@ -58,10 +69,10 @@ export default function RentalPage() {
             : car.fuel_type,
       pricePerDay: String(car.price_per_day),
       image: car.photos[0] ?? "",
-      city: car.contact_city,
+      city: cityLabels[car.contact_city] ?? car.contact_city,
       publishedDate: car.published_at,
     }));
-  }, [apiData]);
+  }, [apiData, cityLabels]);
 
   const handleAddSuccess = useCallback((_car: Omit<RentalCar, "id">) => {
     // TODO: Use createRental API mutation instead
@@ -99,21 +110,21 @@ export default function RentalPage() {
             <div className="flex gap-2">
               {CAR_CLASSES.map((cls) => (
                 <FilterChip
-                  key={cls}
-                  label={cls}
-                  isActive={selectedClass === cls}
-                  onClick={() => setSelectedClass(selectedClass === cls ? null : cls)}
+                  key={cls.id}
+                  label={cls.label}
+                  isActive={selectedClass === cls.id}
+                  onClick={() => setSelectedClass(selectedClass === cls.id ? null : cls.id)}
                 />
               ))}
             </div>
 
             <div className="flex gap-2">
-              {RENTAL_CITIES.map((city) => (
+              {(cities ?? []).map((city) => (
                 <FilterChip
-                  key={city}
-                  label={city}
-                  isActive={selectedCity === city}
-                  onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+                  key={city.id}
+                  label={city.name}
+                  isActive={selectedCity === city.id}
+                  onClick={() => setSelectedCity(selectedCity === city.id ? null : city.id)}
                 />
               ))}
             </div>
@@ -160,6 +171,13 @@ export default function RentalPage() {
             description="Попробуйте изменить параметры поиска"
           />
         )}
+        {!isLoading && (
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
+          />
+        )}
       </div>
 
       {/* ── Mobile Header ── */}
@@ -189,20 +207,20 @@ export default function RentalPage() {
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
           {CAR_CLASSES.map((cls) => (
             <FilterChip
-              key={cls}
-              label={cls}
-              isActive={selectedClass === cls}
-              onClick={() => setSelectedClass(selectedClass === cls ? null : cls)}
+              key={cls.id}
+              label={cls.label}
+              isActive={selectedClass === cls.id}
+              onClick={() => setSelectedClass(selectedClass === cls.id ? null : cls.id)}
               variant="mobile"
             />
           ))}
           <div className="w-px h-9 bg-[#E5E5E7] shrink-0 self-center" />
-          {RENTAL_CITIES.map((city) => (
+          {(cities ?? []).map((city) => (
             <FilterChip
-              key={city}
-              label={city}
-              isActive={selectedCity === city}
-              onClick={() => setSelectedCity(selectedCity === city ? null : city)}
+              key={city.id}
+              label={city.name}
+              isActive={selectedCity === city.id}
+              onClick={() => setSelectedCity(selectedCity === city.id ? null : city.id)}
               variant="mobile"
             />
           ))}
@@ -238,6 +256,13 @@ export default function RentalPage() {
             icon={Search}
             title="Ничего не найдено"
             description="Попробуйте изменить параметры поиска"
+          />
+        )}
+        {!isLoading && (
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
           />
         )}
       </div>

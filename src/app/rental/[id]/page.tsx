@@ -25,7 +25,8 @@ import { AdSpecsTable } from "@/components/ad/AdSpecsTable";
 import { AdActionBar } from "@/components/ad/AdActionBar";
 import { RentalCard } from "@/components/cards/RentalCard";
 import { useGetRentalByIdQuery, useGetSimilarRentalsQuery } from "@/lib/features/rental/rentalApi";
-import type { RentalCar } from "@/lib/types/rental";
+import { useGetCitiesQuery } from "@/lib/features/dicts/dictsApi";
+import { CAR_CLASS_LABELS, type RentalCar } from "@/lib/types/rental";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpenChat } from "@/hooks/useOpenChat";
@@ -40,41 +41,46 @@ export default function RentalDetailPage() {
   // RTK Query — fetch from backend
   const { data: apiCar, isLoading } = useGetRentalByIdQuery(idStr);
   const { data: apiSimilar } = useGetSimilarRentalsQuery({ id: idStr, limit: 6 });
+  const { data: cities } = useGetCitiesQuery();
+  const cityLabels = useMemo(
+    () => Object.fromEntries((cities ?? []).map((c) => [c.id, c.name])),
+    [cities],
+  );
 
   const car = useMemo(() => {
     if (!apiCar) return null;
     return {
       id: apiCar.id || idStr,
       title: apiCar.title,
-      carClass: apiCar.car_class as RentalCar["carClass"],
+      carClass: CAR_CLASS_LABELS[apiCar.car_class] ?? apiCar.car_class,
       year: apiCar.year,
       transmission: apiCar.transmission === "automatic" ? "Автомат" : "Механика",
       fuel: apiCar.fuel_type === "petrol" ? "Бензин" : apiCar.fuel_type,
       pricePerDay: String(apiCar.price_per_day),
       image: apiCar.photos[0] ?? "",
       images: apiCar.photos,
-      city: apiCar.contact_city,
+      city: cityLabels[apiCar.contact_city] ?? apiCar.contact_city,
       publishedDate: apiCar.published_at,
       description: apiCar.description ?? undefined,
       sellerName: apiCar.owner?.name ?? undefined,
     };
-  }, [apiCar, idStr]);
+  }, [apiCar, idStr, cityLabels]);
 
   const similarCars: RentalCar[] = useMemo(() => {
     if (!apiSimilar) return [];
     return apiSimilar.map((c) => ({
       id: c.id,
       title: c.title,
-      carClass: c.car_class as RentalCar["carClass"],
+      carClass: CAR_CLASS_LABELS[c.car_class] ?? c.car_class,
       year: c.year,
       transmission: c.transmission === "automatic" ? "Автомат" : "Механика",
       fuel: c.fuel_type === "petrol" ? "Бензин" : c.fuel_type,
       pricePerDay: String(c.price_per_day),
       image: c.photos[0] ?? "",
-      city: c.contact_city,
+      city: cityLabels[c.contact_city] ?? c.contact_city,
       publishedDate: c.published_at,
     }));
-  }, [apiSimilar]);
+  }, [apiSimilar, cityLabels]);
   const [isFavorite, setIsFavorite] = useState(false);
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const { openChat, isOpening } = useOpenChat();

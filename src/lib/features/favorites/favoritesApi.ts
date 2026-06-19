@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { infiniteListConfig } from "@/lib/features/infiniteList";
 import type { FavoritesListResponse, PaginationParams } from "@/lib/types/api";
 
 export const favoritesApi = api.injectEndpoints({
@@ -9,6 +10,7 @@ export const favoritesApi = api.injectEndpoints({
         url: "/favorites",
         params: params ?? undefined,
       }),
+      ...infiniteListConfig<FavoritesListResponse>("ads"),
       providesTags: [{ type: "Favorites", id: "LIST" }],
     }),
 

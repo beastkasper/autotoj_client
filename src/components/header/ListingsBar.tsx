@@ -1,37 +1,40 @@
 "use client";
 
-import { useState } from "react";
 import { Search, SlidersHorizontal, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
+import {
+  setCategory,
+  setSearchQuery,
+  selectAdsCategory,
+  selectAdsSearchQuery,
+  type AdsCategory,
+} from "@/lib/features/ads/adsFiltersSlice";
 
-type CategoryKey = "all" | "new" | "used";
-
-const CATEGORIES: { key: CategoryKey; label: string }[] = [
+const CATEGORIES: { key: AdsCategory; label: string }[] = [
   { key: "all", label: "Все объявления" },
   { key: "new", label: "Новые" },
   { key: "used", label: "С пробегом" },
 ];
 
 interface ListingsBarProps {
-  onSearch?: (query: string) => void;
   onFilterClick?: () => void;
   onNavigate: (tab: string) => void;
   resultsCount?: number;
 }
 
 export function ListingsBar({
-  onSearch,
   onFilterClick,
   onNavigate,
   resultsCount = 1234,
 }: ListingsBarProps) {
-  const [selectedCategory, setSelectedCategory] = useState<CategoryKey>("all");
-  const [searchQuery, setSearchQuery] = useState("");
+  const dispatch = useAppDispatch();
+  const selectedCategory = useAppSelector(selectAdsCategory);
+  const searchQuery = useAppSelector(selectAdsSearchQuery);
 
   const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    onSearch?.(value);
+    dispatch(setSearchQuery(value));
   };
 
   const formattedCount = resultsCount.toLocaleString("ru-RU");
@@ -47,7 +50,7 @@ export function ListingsBar({
                 key={cat.key}
                 variant="ghost"
                 size="sm"
-                onClick={() => setSelectedCategory(cat.key)}
+                onClick={() => dispatch(setCategory(cat.key))}
                 className={
                   selectedCategory === cat.key
                     ? "bg-[#111111] text-white hover:bg-[#111111]/90 rounded-lg text-[14px] font-medium font-[family-name:var(--font-manrope)]"

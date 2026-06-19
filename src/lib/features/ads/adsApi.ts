@@ -1,4 +1,5 @@
 import { api } from "@/lib/api";
+import { infiniteListConfig } from "@/lib/features/infiniteList";
 import type {
   AdsListResponse,
   AdsSearchParams,
@@ -15,12 +16,14 @@ import type {
 
 export const adsApi = api.injectEndpoints({
   endpoints: (builder) => ({
-    // GET /ads — Search ads
+    // GET /ads — Search ads (paginated, accumulates pages into one cache entry)
     getAds: builder.query<AdsListResponse, AdsSearchParams | void>({
       query: (params) => ({
         url: "/ads",
         params: params ?? undefined,
       }),
+      // Accumulate pages of the same filter set into one cache entry.
+      ...infiniteListConfig<AdsListResponse>("ads"),
       providesTags: (result) =>
         result
           ? [
@@ -78,6 +81,7 @@ export const adsApi = api.injectEndpoints({
         url: "/my/ads",
         params: params ?? undefined,
       }),
+      ...infiniteListConfig<AdsListResponse>("ads"),
       providesTags: [{ type: "MyAds", id: "LIST" }],
     }),
 

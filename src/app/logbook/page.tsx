@@ -1,10 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, Plus, BookOpen } from "lucide-react";
 import { useGetLogbookPostsQuery } from "@/lib/features/logbook/logbookApi";
 import { EmptyState } from "@/components/states/EmptyState";
 import { LogbookPostCard } from "@/components/logbook/logbook-post-card";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { usePagedParams } from "@/hooks/usePagedParams";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 
@@ -70,9 +73,13 @@ const MOCK_POSTS = [
 export default function LogbookPage() {
   const router = useRouter();
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
-  const { data, isLoading } = useGetLogbookPostsQuery();
+  const baseParams = useMemo(() => ({}), []);
+  const { params: queryParams, page, setPage } = usePagedParams(baseParams);
+  const { data, isLoading, isFetching } = useGetLogbookPostsQuery(queryParams);
 
   const posts = data?.posts ?? MOCK_POSTS;
+  const isLoadingMore = isFetching && !isLoading;
+  const hasMore = data?.has_more ?? false;
 
   const handlePostClick = (id: string) => router.push(`/logbook/${id}`);
 
@@ -176,10 +183,17 @@ export default function LogbookPage() {
 
       {/* Mobile + Tablet Posts */}
       {!isLoading && posts.length > 0 && (
-        <div className="lg:hidden px-4 md:px-6 pt-4 pb-24 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-          {posts.map((post) => (
-            <LogbookPostCard key={post.id} post={post} variant="mobile" onClick={handlePostClick} />
-          ))}
+        <div className="lg:hidden px-4 md:px-6 pt-4 pb-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+            {posts.map((post) => (
+              <LogbookPostCard key={post.id} post={post} variant="mobile" onClick={handlePostClick} />
+            ))}
+          </div>
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
+          />
         </div>
       )}
 
@@ -192,15 +206,11 @@ export default function LogbookPage() {
             ))}
           </div>
 
-          {(data?.has_more ?? false) && (
-            <div className="flex justify-center mt-8">
-              <button
-                className="px-8 py-3 bg-white text-[#111111] border border-[#E5E5E7] rounded-xl hover:bg-[#F5F5F5] transition-colors font-medium text-[15px] font-[family-name:var(--font-manrope)]"
-              >
-                Загрузить ещё
-              </button>
-            </div>
-          )}
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
+          />
         </div>
       )}
       <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />

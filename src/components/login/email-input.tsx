@@ -9,13 +9,13 @@ interface EmailInputProps {
 export function EmailInput({ value, onChange, error }: EmailInputProps) {
   return (
     <div>
-      <label className="block text-[13px] font-medium text-[var(--ios-secondary-label)] mb-2">
+      <label className="block text-[14px] font-semibold text-[var(--ios-label)] mb-2.5">
         Email адрес
       </label>
       <input
         type="email"
         required
-        className={`w-full h-[48px] border-none outline-none px-4 text-sm text-[var(--ios-label)] bg-[var(--ios-bg)] rounded-xl placeholder:text-gray-300 ${
+        className={`w-full h-[56px] border-none outline-none px-4 text-[16px] text-[var(--ios-label)] bg-[var(--ios-bg)] rounded-2xl placeholder:text-[#A0A0A5] ${
           error ? "ring-2 ring-[var(--ios-destructive)]" : ""
         }`}
         placeholder="example@mail.com"

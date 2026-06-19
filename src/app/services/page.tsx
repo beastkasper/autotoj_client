@@ -1,25 +1,60 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronRight, Wrench } from "lucide-react";
+import {
+  ChevronRight,
+  Wrench,
+  Box,
+  Car,
+  RectangleHorizontal,
+  Sparkles,
+  Truck,
+  ClipboardCheck,
+  Settings,
+  ShieldCheck,
+  Droplets,
+  CircleDot,
+  Star,
+  GraduationCap,
+} from "lucide-react";
 import { useGetServiceCategoriesQuery } from "@/lib/features/services/servicesApi";
 import { EmptyState } from "@/components/states/EmptyState";
 import { PageHeader } from "@/components/layout/page-header";
 import { DesktopPageHeader } from "@/components/layout/desktop-page-header";
 import { ServicesCategoriesSkeleton } from "@/components/skeletons/services-skeleton";
 
-/** Icon map -- maps API icon key to a display emoji/label */
+/** Emoji icons for the desktop list view, keyed by the API `icon` field. */
 const CATEGORY_ICONS: Record<string, string> = {
-  auto_selection: "\uD83D\uDD0D",
-  tow_truck: "\uD83D\uDE9B",
-  inspection: "\uD83D\uDD0E",
-  car_service: "\uD83D\uDD27",
-  insurance: "\uD83D\uDEE1\uFE0F",
-  car_wash: "\uD83D\uDEBF",
-  tire_service: "\uD83D\uDEDE",
-  detailing: "\u2728",
-  driving_school: "\uD83C\uDF93",
+  sparkles: "🔍",
+  truck: "🚛",
+  clipboard_check: "🔎",
+  settings: "🔧",
+  shield_check: "🛡️",
+  droplets: "🚿",
+  circle_dot: "🛞",
+  star: "✨",
+  graduation_cap: "🎓",
 };
+
+/** Line icons (lucide) for the mobile services grid, keyed by the API `icon` field. */
+const SERVICE_ICONS: Record<string, React.ElementType> = {
+  sparkles: Sparkles,
+  truck: Truck,
+  clipboard_check: ClipboardCheck,
+  settings: Settings,
+  shield_check: ShieldCheck,
+  droplets: Droplets,
+  circle_dot: CircleDot,
+  star: Star,
+  graduation_cap: GraduationCap,
+};
+
+/** Featured shortcut cards shown above the services grid on mobile. */
+const FEATURED = [
+  { id: "goods", title: "Автотовары", subtitle: "Покупка и продажа", icon: Box, href: "/parts" },
+  { id: "rental", title: "Авто прокат", subtitle: "Аренда автомобилей", icon: Car, href: "/rental" },
+  { id: "plates", title: "Гос номера", subtitle: "Покупка и продажа", icon: RectangleHorizontal, href: "/parts" },
+];
 
 function formatCompaniesCount(count: number): string {
   if (count === 1) return "компания";
@@ -30,22 +65,21 @@ function formatCompaniesCount(count: number): string {
 export default function ServicesPage() {
   const router = useRouter();
   const { data: categories, isLoading } = useGetServiceCategoriesQuery();
+  const hasCategories = !!categories && categories.length > 0;
 
   return (
     <main className="min-h-screen bg-[#F5F5F7]">
       <PageHeader title="Сервисы" />
       <DesktopPageHeader title="Сервисы" subtitle="Выберите категорию услуг" />
 
-      {/* ── Loading ── */}
-      {isLoading && <ServicesCategoriesSkeleton />}
-
-      {/* ── Categories Grid ── */}
-      {!isLoading && categories && categories.length > 0 && (
-        <>
-          {/* Desktop */}
-          <div className="hidden lg:block max-w-[1440px] mx-auto px-6 py-6">
+      {/* ── Desktop ── */}
+      <div className="hidden lg:block">
+        {isLoading ? (
+          <ServicesCategoriesSkeleton />
+        ) : hasCategories ? (
+          <div className="max-w-[1440px] mx-auto px-6 py-6">
             <div className="grid grid-cols-3 gap-4">
-              {categories.map((cat) => (
+              {categories!.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => router.push(`/services/${cat.id}`)}
@@ -54,7 +88,7 @@ export default function ServicesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <span className="text-3xl">
-                        {CATEGORY_ICONS[cat.icon] ?? "\uD83D\uDD27"}
+                        {CATEGORY_ICONS[cat.icon] ?? "🔧"}
                       </span>
                       <div>
                         <h3 className="text-[17px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">
@@ -71,43 +105,81 @@ export default function ServicesPage() {
               ))}
             </div>
           </div>
+        ) : (
+          <EmptyState
+            icon={Wrench}
+            title="Нет доступных сервисов"
+            description="Сервисы появятся позже"
+          />
+        )}
+      </div>
 
-          {/* Mobile + Tablet */}
-          <div className="lg:hidden px-4 md:px-6 pt-4 pb-24 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
-            {categories.map((cat) => (
+      {/* ── Mobile + Tablet ── */}
+      <div className="lg:hidden px-4 md:px-6 pt-4 pb-28">
+        {/* Featured shortcut cards */}
+        <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+          {FEATURED.map((item) => {
+            const Icon = item.icon;
+            return (
               <button
-                key={cat.id}
-                onClick={() => router.push(`/services/${cat.id}`)}
-                className="w-full bg-white rounded-2xl px-4 py-4 md:p-5 flex items-center justify-between active:scale-[0.98] transition-transform"
+                key={item.id}
+                onClick={() => router.push(item.href)}
+                className="bg-white rounded-2xl p-3 flex flex-col items-center text-center active:scale-[0.98] transition-transform"
               >
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">
-                    {CATEGORY_ICONS[cat.icon] ?? "\uD83D\uDD27"}
-                  </span>
-                  <div className="text-left">
-                    <h3 className="text-[15px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">
-                      {cat.name}
-                    </h3>
-                    <p className="text-[12px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-                      {cat.companies_count} {formatCompaniesCount(cat.companies_count)}
-                    </p>
-                  </div>
+                <div className="size-14 rounded-[18px] bg-[#1C1C1E] flex items-center justify-center">
+                  <Icon className="size-7 text-white" strokeWidth={1.8} />
                 </div>
-                <ChevronRight className="w-5 h-5 text-[#C7C7CC]" />
+                <h3 className="mt-2.5 text-[13px] font-bold text-[#111111] leading-tight font-[family-name:var(--font-manrope)]">
+                  {item.title}
+                </h3>
+                <p className="mt-0.5 text-[11px] text-[#8E8E93] leading-tight font-[family-name:var(--font-manrope)]">
+                  {item.subtitle}
+                </p>
               </button>
+            );
+          })}
+        </div>
+
+        {/* Услуги heading */}
+        <h2 className="mt-7 mb-3 text-[24px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
+          Услуги
+        </h2>
+
+        {/* Услуги grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+            {Array.from({ length: 9 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl h-[116px] animate-pulse" />
             ))}
           </div>
-        </>
-      )}
-
-      {/* ── Empty State ── */}
-      {!isLoading && (!categories || categories.length === 0) && (
-        <EmptyState
-          icon={Wrench}
-          title="Нет доступных сервисов"
-          description="Сервисы появятся позже"
-        />
-      )}
+        ) : hasCategories ? (
+          <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+            {categories!.map((cat) => {
+              const Icon = SERVICE_ICONS[cat.icon] ?? Wrench;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => router.push(`/services/${cat.id}`)}
+                  className="bg-white rounded-2xl p-3 flex flex-col items-start active:scale-[0.98] transition-transform"
+                >
+                  <div className="size-12 rounded-2xl bg-[#F0F0F2] flex items-center justify-center">
+                    <Icon className="size-5 text-[#111111]" strokeWidth={1.8} />
+                  </div>
+                  <h3 className="mt-3 text-[13px] font-bold text-[#111111] text-left leading-tight font-[family-name:var(--font-manrope)]">
+                    {cat.name}
+                  </h3>
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <EmptyState
+            icon={Wrench}
+            title="Нет доступных сервисов"
+            description="Сервисы появятся позже"
+          />
+        )}
+      </div>
     </main>
   );
 }

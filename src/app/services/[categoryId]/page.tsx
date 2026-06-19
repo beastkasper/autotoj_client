@@ -11,6 +11,8 @@ import {
   useGetServiceCategoriesQuery,
 } from "@/lib/features/services/servicesApi";
 import { ServiceProvidersSkeleton } from "@/components/skeletons/services-skeleton";
+import { LoadMoreButton } from "@/components/ui/load-more-button";
+import { usePagedParams } from "@/hooks/usePagedParams";
 
 const SORT_OPTIONS = [
   { value: "rating", label: "По рейтингу" },
@@ -32,7 +34,7 @@ export default function ServiceProvidersPage() {
   );
 
   // Fetch providers
-  const queryParams = useMemo(() => {
+  const baseParams = useMemo(() => {
     const p: { category_id: string; q?: string; sort?: string } = {
       category_id: categoryId,
     };
@@ -41,8 +43,12 @@ export default function ServiceProvidersPage() {
     return p;
   }, [categoryId, searchQuery, sortBy]);
 
-  const { data: providersData, isLoading } = useGetServiceProvidersQuery(queryParams);
+  const { params: queryParams, page, setPage } = usePagedParams(baseParams);
+  const { data: providersData, isLoading, isFetching } =
+    useGetServiceProvidersQuery(queryParams);
   const providers = providersData?.providers ?? [];
+  const isLoadingMore = isFetching && !isLoading;
+  const hasMore = providersData?.has_more ?? false;
 
   const handleProviderClick = useCallback(
     (id: string) => router.push(`/services/provider/${id}`),
@@ -217,10 +223,16 @@ export default function ServiceProvidersPage() {
                 </button>
               ))}
             </div>
+            <LoadMoreButton
+              hasMore={hasMore}
+              isLoading={isLoadingMore}
+              onClick={() => setPage(page + 1)}
+            />
           </div>
 
           {/* Mobile + Tablet */}
-          <div className="lg:hidden px-4 md:px-6 pb-24 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+          <div className="lg:hidden px-4 md:px-6 pb-24">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
             {providers.map((provider) => (
               <button
                 key={provider.id}
@@ -266,6 +278,12 @@ export default function ServiceProvidersPage() {
                 </div>
               </button>
             ))}
+            </div>
+            <LoadMoreButton
+              hasMore={hasMore}
+              isLoading={isLoadingMore}
+              onClick={() => setPage(page + 1)}
+            />
           </div>
         </>
       )}

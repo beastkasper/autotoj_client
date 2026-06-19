@@ -82,6 +82,12 @@ export function AuthCodeStep({
     if (digit && index < CODE_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
+
+    // Auto-submit once the full code is entered.
+    if (next.every((d) => d !== "")) {
+      inputRefs.current[index]?.blur();
+      handleSubmit(next.join(""));
+    }
   }
 
   function handleKeyDown(index: number, e: React.KeyboardEvent) {
@@ -101,10 +107,15 @@ export function AuthCodeStep({
     setDigits(next);
     const focusIdx = Math.min(pasted.length, CODE_LENGTH - 1);
     inputRefs.current[focusIdx]?.focus();
+
+    // Auto-submit when a complete code is pasted.
+    if (next.every((d) => d !== "")) {
+      handleSubmit(next.join(""));
+    }
   }
 
-  async function handleSubmit() {
-    const code = digits.join("");
+  async function handleSubmit(codeOverride?: string) {
+    const code = codeOverride ?? digits.join("");
     if (code.length < CODE_LENGTH || isVerifying) return;
 
     try {
@@ -231,7 +242,7 @@ export function AuthCodeStep({
       <Button
         type="button"
         disabled={!allFilled || isVerifying}
-        onClick={handleSubmit}
+        onClick={() => handleSubmit()}
         className="w-full h-[52px] rounded-[20px] text-[15px] font-medium"
         style={{
           backgroundColor: allFilled ? "var(--ios-label)" : "var(--ios-disabled-separator)",
