@@ -5,14 +5,14 @@ import { useRouter } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import {
   setSearchQuery,
-  setFilterParams,
+  setFilters,
   setPage,
   resetAdsFilters,
   selectAdsSearchQuery,
   selectAdsQueryParams,
   selectAdsPage,
   selectHasActiveFilters,
-  filterStateToParams,
+  selectAdsFilterState,
 } from "@/lib/features/ads/adsFiltersSlice";
 import { Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ export default function HomePage() {
   const searchQuery = useAppSelector(selectAdsSearchQuery);
   const queryParams = useAppSelector(selectAdsQueryParams);
   const hasActiveFilters = useAppSelector(selectHasActiveFilters);
+  const filterState = useAppSelector(selectAdsFilterState);
   const page = useAppSelector(selectAdsPage);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
@@ -108,7 +109,7 @@ export default function HomePage() {
   const handleFilterApply = useCallback(
     (filters: FilterState) => {
       setIsFilterOpen(false);
-      dispatch(setFilterParams(filterStateToParams(filters)));
+      dispatch(setFilters(filters));
     },
     [dispatch]
   );
@@ -221,6 +222,7 @@ export default function HomePage() {
           <FilterSheet
             onClose={() => setIsFilterOpen(false)}
             onApply={handleFilterApply}
+            activeFilters={filterState}
           />
         </div>
       )}

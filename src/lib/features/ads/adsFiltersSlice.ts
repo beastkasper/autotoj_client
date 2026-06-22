@@ -12,6 +12,7 @@ export function filterStateToParams(filters: FilterState): AdsSearchParams {
   if (filters.yearTo) params.year_to = Number(filters.yearTo);
   if (filters.priceFrom) params.price_from = Number(filters.priceFrom);
   if (filters.priceTo) params.price_to = Number(filters.priceTo);
+  if (filters.priceUnder100k && params.price_to === undefined) params.price_to = 100000;
   if (filters.mileageFrom) params.mileage_from = Number(filters.mileageFrom);
   if (filters.mileageTo) params.mileage_to = Number(filters.mileageTo);
   if (filters.fuel) params.fuel = filters.fuel;
@@ -34,7 +35,9 @@ export const ADS_PAGE_SIZE = 20;
 interface AdsFiltersState {
   searchQuery: string;
   category: AdsCategory;
-  /** Params coming from the detailed filter panel (excludes `q` and the category condition). */
+  /** Raw selections from the filter panel — source of truth, fed back as `activeFilters`. */
+  filterState: FilterState;
+  /** Backend query params derived from `filterState` (excludes `q` and the category condition). */
   filterParams: AdsSearchParams;
   /** Current page (1-based). Any change to search/category/filters resets it to 1. */
   page: number;
@@ -43,6 +46,7 @@ interface AdsFiltersState {
 const initialState: AdsFiltersState = {
   searchQuery: "",
   category: "all",
+  filterState: {},
   filterParams: {},
   page: 1,
 };
@@ -63,6 +67,12 @@ const adsFiltersSlice = createSlice({
       state.filterParams = action.payload;
       state.page = 1;
     },
+    /** Apply the filter panel's selections: store the raw state and derive query params. */
+    setFilters(state, action: PayloadAction<FilterState>) {
+      state.filterState = action.payload;
+      state.filterParams = filterStateToParams(action.payload);
+      state.page = 1;
+    },
     setPage(state, action: PayloadAction<number>) {
       state.page = action.payload;
     },
@@ -76,6 +86,7 @@ export const {
   setSearchQuery,
   setCategory,
   setFilterParams,
+  setFilters,
   setPage,
   resetAdsFilters,
 } = adsFiltersSlice.actions;
@@ -86,13 +97,15 @@ export default adsFiltersSlice.reducer;
 export const selectAdsSearchQuery = (s: RootState) => s.adsFilters.searchQuery;
 export const selectAdsCategory = (s: RootState) => s.adsFilters.category;
 export const selectAdsFilterParams = (s: RootState) => s.adsFilters.filterParams;
+export const selectAdsFilterState = (s: RootState) => s.adsFilters.filterState;
 export const selectAdsPage = (s: RootState) => s.adsFilters.page;
 
-/** Whether any filter (panel params or non-default category) is active. */
+/** Whether any filter (panel selection or non-default category) is active. */
 export const selectHasActiveFilters = createSelector(
-  [selectAdsCategory, selectAdsFilterParams],
-  (category, filterParams) =>
-    category !== "all" || Object.keys(filterParams).length > 0,
+  [selectAdsCategory, selectAdsFilterState],
+  (category, filterState) =>
+    category !== "all" ||
+    Object.values(filterState).some((v) => v !== undefined && v !== "" && v !== false),
 );
 
 /** Combined params fed to `useGetAdsQuery` — search + category + panel filters + page. */

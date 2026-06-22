@@ -11,9 +11,9 @@ import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import {
-  setFilterParams,
-  filterStateToParams,
+  setFilters,
   selectAdsQueryParams,
+  selectAdsFilterState,
 } from "@/lib/features/ads/adsFiltersSlice";
 import { useGetAdsQuery } from "@/lib/features/ads/adsApi";
 import type { FilterState } from "@/components/filters/FilterSheet";
@@ -28,6 +28,7 @@ export function DesktopHeader() {
   // Share the same query (and RTK Query cache) as the listings grid so the
   // "Найдено: N" count reflects the active search/filters.
   const queryParams = useAppSelector(selectAdsQueryParams);
+  const filterState = useAppSelector(selectAdsFilterState);
   const { data: adsData } = useGetAdsQuery(queryParams);
 
   // Derive active tab from current route
@@ -83,7 +84,7 @@ export function DesktopHeader() {
 
   const handleFilterApply = useCallback(
     (filters: FilterState) => {
-      dispatch(setFilterParams(filterStateToParams(filters)));
+      dispatch(setFilters(filters));
       setIsFilterOpen(false);
     },
     [dispatch],
@@ -135,6 +136,7 @@ export function DesktopHeader() {
         <DesktopFilterPanel
           onClose={() => setIsFilterOpen(false)}
           onApply={handleFilterApply}
+          activeFilters={filterState}
         />
       )}
 
