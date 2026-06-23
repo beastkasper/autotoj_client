@@ -98,8 +98,9 @@ export function MobileBottomNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Hide on auth/full-screen flows and inside an individual chat (its own input bar)
-  const hiddenRoutes = [/^\/login/, /^\/post-ad/, /^\/messages\/[^/]+/];
+  // Hide on auth/full-screen flows, inside an individual chat (its own input bar),
+  // and on the ad detail page (it has its own Позвонить/Написать action bar).
+  const hiddenRoutes = [/^\/login/, /^\/post-ad/, /^\/messages\/[^/]+/, /^\/ad\//];
   if (hiddenRoutes.some((re) => re.test(pathname))) return null;
 
   const handleNavClick = (item: NavItem) => {

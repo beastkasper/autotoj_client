@@ -35,6 +35,7 @@ import {
   useRemoveFavoriteMutation,
 } from "@/lib/features/favorites/favoritesApi";
 import { formatPrice } from "@/lib/utils/formatPrice";
+import { formatDate } from "@/lib/utils/dateFormat";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpenChat } from "@/hooks/useOpenChat";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
@@ -380,7 +381,7 @@ export default function AdDetailPage() {
       </div>
 
       {/* ── Mobile + Tablet Content ── */}
-      <div className="lg:hidden pb-[160px] md:pb-[176px] md:max-w-3xl md:mx-auto">
+      <div className="lg:hidden pb-[104px] md:pb-[112px] md:max-w-3xl md:mx-auto">
         <ImageGallery
           images={ad.photos.length > 0 ? ad.photos : [ad.image]}
           alt={title}
@@ -398,7 +399,7 @@ export default function AdDetailPage() {
           <div className="flex items-center gap-2 mt-2 text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
             <MapPin className="w-3.5 h-3.5" />
             <span>{ad.location}</span>
-            {ad.publishedDate && <span>• {ad.publishedDate}</span>}
+            {ad.publishedDate && <span>• {formatDate(ad.publishedDate)}</span>}
           </div>
         </div>
 

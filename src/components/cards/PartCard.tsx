@@ -1,7 +1,9 @@
 "use client";
 
 import React from "react";
+import { Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { ImageWithFallback } from "./ImageWithFallback";
 import { formatDateWithCity } from "@/lib/utils/dateFormat";
 import type { PartListing } from "@/lib/types/part";
 
@@ -29,9 +31,10 @@ export const PartCard = React.memo(function PartCard({
     >
       {/* Image */}
       <div className="relative aspect-square overflow-hidden bg-[#F5F5F7]">
-        <img
+        <ImageWithFallback
           src={part.image}
           alt={part.title}
+          Icon={Package}
           className={`w-full h-full object-cover ${
             !isMobile ? "group-hover:scale-105 transition-transform duration-300" : ""
           }`}

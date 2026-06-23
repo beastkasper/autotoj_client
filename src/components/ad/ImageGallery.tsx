@@ -38,7 +38,7 @@ export function ImageGallery({
     <div className={className}>
       {/* Main image */}
       <div className="relative bg-[#F5F5F7] aspect-[4/3] lg:aspect-[16/10] rounded-2xl overflow-hidden group">
-        <img
+        <ImageWithFallback
           src={currentImage}
           alt={`${alt} ${selectedIndex + 1}`}
           className="w-full h-full object-contain"
@@ -83,7 +83,7 @@ export function ImageGallery({
                   : "border-transparent hover:border-[#8E8E93]"
               }`}
             >
-              <img
+              <ImageWithFallback
                 src={img}
                 alt={`${alt} ${i + 1}`}
                 className="w-full h-full object-cover"

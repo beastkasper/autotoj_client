@@ -19,7 +19,7 @@ export function AdActionBar({ phone, adId }: AdActionBarProps) {
     <>
       <div
         className="lg:hidden fixed left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#E5E5E7] px-4 py-3"
-        style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
+        style={{ bottom: 0, paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom))" }}
       >
         <div className="flex gap-3">
           <Button

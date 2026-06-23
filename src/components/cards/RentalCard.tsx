@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { ImageWithFallback } from "./ImageWithFallback";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import type { RentalCar } from "@/lib/types/rental";
 
@@ -28,7 +29,7 @@ export const RentalCard = React.memo(function RentalCard({
     >
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-[#F5F5F7]">
-        <img
+        <ImageWithFallback
           src={car.image}
           alt={car.title}
           className={`w-full h-full object-cover ${
