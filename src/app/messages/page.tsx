@@ -123,7 +123,7 @@ function ChatRow({ chat, onClick }: ChatRowProps) {
           />
         ) : (
           <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white bg-[#111111] text-white text-[10px] font-semibold flex items-center justify-center font-[family-name:var(--font-manrope)]">
-            {chat.partner.name.charAt(0).toUpperCase()}
+            {chat.partner.name?.charAt(0)?.toUpperCase() ?? "?"}
           </span>
         )}
       </div>

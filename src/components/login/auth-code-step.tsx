@@ -122,7 +122,7 @@ export function AuthCodeStep({
       // INTEGRATION.md: POST /auth/verify { phone, code }
       const response = await verifyCode({
         phone: contactValue,
-        code: "123456",
+        code,
       }).unwrap();
 
       // Success: response has { token, user }

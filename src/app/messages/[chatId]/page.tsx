@@ -184,7 +184,7 @@ export default function ChatPage() {
               />
             ) : (
               <span className="w-9 h-9 rounded-full bg-[#111111] text-white text-[14px] font-semibold flex items-center justify-center font-[family-name:var(--font-manrope)]">
-                {chat.partner.name.charAt(0).toUpperCase()}
+                {chat.partner.name?.charAt(0)?.toUpperCase() ?? "?"}
               </span>
             )}
             <span className="text-[15px] font-semibold text-[#111111] truncate font-[family-name:var(--font-manrope)]">

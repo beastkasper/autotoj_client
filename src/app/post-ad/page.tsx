@@ -127,16 +127,18 @@ export default function PostAdPage() {
     setPartsPublishing(true);
     setPartsError(null);
     try {
+      // Backend part_type uses underscores (steering_wheel, body_parts); the form
+      // uses hyphens. condition must be "new"/"used", and the city column is
+      // contact_city. (Type-specific spec fields aren't mapped here yet.)
+      const isNew = /нов/i.test(data.fields.condition || "Новая");
       const body: Record<string, unknown> = {
-        part_type: selectedPartsCategory,
-        condition: data.fields.condition || "Новая",
+        part_type: selectedPartsCategory?.replace(/-/g, "_"),
+        condition: isNew ? "new" : "used",
         price: Number(data.price),
         description: data.description || undefined,
         contact_name: data.name || undefined,
         contact_phone: data.phone ? `+992${data.phone}` : undefined,
-        city: data.city || undefined,
-        fields: data.fields,
-        toggles: data.toggles,
+        contact_city: data.city || undefined,
       };
       const result = await createPart(body).unwrap();
       if (data.photos.length > 0) {

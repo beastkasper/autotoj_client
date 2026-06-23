@@ -37,7 +37,7 @@ export function CommentSection({ comments, onSendComment, variant }: CommentSect
               <div key={comment.id} className="bg-white rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-8 h-8 rounded-full bg-[#111111]/10 flex items-center justify-center">
-                    <span className="text-xs font-semibold text-[#111111]">{comment.author.name[0]}</span>
+                    <span className="text-xs font-semibold text-[#111111]">{comment.author.name?.[0] ?? "?"}</span>
                   </div>
                   <div className="flex-1">
                     <span className="font-medium text-sm font-[family-name:var(--font-manrope)]">{comment.author.name}</span>
@@ -84,7 +84,7 @@ export function CommentSection({ comments, onSendComment, variant }: CommentSect
         {comments.map((comment) => (
           <div key={comment.id} className="flex gap-3">
             <div className="w-10 h-10 rounded-full bg-[#F5F5F5] flex items-center justify-center flex-shrink-0">
-              <span className="text-[15px] font-semibold text-[#E53935]">{comment.author.name[0]}</span>
+              <span className="text-[15px] font-semibold text-[#E53935]">{comment.author.name?.[0] ?? "?"}</span>
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">

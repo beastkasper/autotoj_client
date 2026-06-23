@@ -199,6 +199,7 @@ export function useListingForm() {
   const buildCarAdBody = useCallback((): AdUpdateBody => {
     const body: AdUpdateBody = {
       vehicle_type: "car",
+      category: "cars",
     };
 
     if (carForm.brand) body.brand_id = carForm.brand;
@@ -240,6 +241,83 @@ export function useListingForm() {
     return body;
   }, [carForm]);
 
+  const buildMotoAdBody = useCallback((): AdUpdateBody => {
+    const body: AdUpdateBody = { vehicle_type: "moto", category: "moto" };
+    if (subcategory) body.subcategory = subcategory;
+    if (motoForm.brand) body.brand_id = motoForm.brand;
+    else if (motoForm.customBrand) body.brand_id = motoForm.customBrand;
+    if (motoForm.model) body.model_id = motoForm.model;
+    else if (motoForm.customModel) body.model_id = motoForm.customModel;
+    if (motoForm.motoType) body.motorcycle_type = motoForm.motoType;
+    if (motoForm.year) body.year = motoForm.year;
+    if (motoForm.mileage) body.mileage = Number(motoForm.mileage);
+    if (motoForm.engineType) body.fuel = motoForm.engineType;
+    if (motoForm.engineVolume) body.engine_volume = parseFloat(motoForm.engineVolume);
+    if (motoForm.cylinderLayout) body.cylinder_layout = motoForm.cylinderLayout;
+    if (motoForm.cylinderCount) body.cylinder_count = parseInt(motoForm.cylinderCount, 10);
+    if (motoForm.power) body.power = parseInt(motoForm.power, 10);
+    if (motoForm.driveType) body.drive = motoForm.driveType;
+    if (motoForm.transmission) body.transmission = motoForm.transmission;
+    if (motoForm.strokes) body.strokes = parseInt(motoForm.strokes, 10);
+    if (motoForm.color) body.color = motoForm.color;
+    if (motoForm.supplyCountry) body.origin_country = motoForm.supplyCountry;
+    if (motoForm.price) body.price = Number(motoForm.price);
+    if (motoForm.description) body.description = motoForm.description;
+    if (motoForm.contacts.name) body.contact_name = motoForm.contacts.name;
+    if (motoForm.contacts.phone) body.contact_phone = motoForm.contacts.phone;
+    if (motoForm.contacts.city === CUSTOM_CITY_ID) {
+      if (motoForm.contacts.customCity) body.city_id = motoForm.contacts.customCity;
+    } else if (motoForm.contacts.city) {
+      body.city_id = motoForm.contacts.city;
+    }
+    body.vehicle_status = "available";
+    body.is_customs_cleared = !motoForm.isNotCustomsCleared;
+    body.ready_for_online_viewing = motoForm.contacts.onlineShowing;
+    if (motoForm.pts) body.pts = motoForm.pts;
+    if (motoForm.owners) body.owners = Number(motoForm.owners);
+    body.is_damaged = motoForm.hasAccident;
+    return body;
+  }, [motoForm, subcategory]);
+
+  const buildCommercialAdBody = useCallback((): AdUpdateBody => {
+    const body: AdUpdateBody = { vehicle_type: "commercial", category: "commercial" };
+    if (subcategory) body.subcategory = subcategory;
+    if (commercialForm.brand) body.brand_id = commercialForm.brand;
+    else if (commercialForm.customBrand) body.brand_id = commercialForm.customBrand;
+    if (commercialForm.model) body.model_id = commercialForm.model;
+    else if (commercialForm.customModel) body.model_id = commercialForm.customModel;
+    if (commercialForm.loadCapacity) body.load_capacity = parseInt(commercialForm.loadCapacity, 10);
+    if (commercialForm.year) body.year = commercialForm.year;
+    if (commercialForm.mileage) body.mileage = Number(commercialForm.mileage);
+    if (commercialForm.bodyType) body.body = commercialForm.bodyType;
+    if (commercialForm.driveType) body.drive = commercialForm.driveType;
+    if (commercialForm.engineType) body.fuel = commercialForm.engineType;
+    if (commercialForm.transmission) body.transmission = commercialForm.transmission;
+    if (commercialForm.seats) body.seats_count = parseInt(commercialForm.seats, 10);
+    if (commercialForm.engineVolume) body.engine_volume = parseFloat(commercialForm.engineVolume);
+    if (commercialForm.power) body.power = parseInt(commercialForm.power, 10);
+    if (commercialForm.steering) body.steering_wheel = commercialForm.steering;
+    if (commercialForm.colors.length > 0) body.color = commercialForm.colors[0];
+    if (commercialForm.equipment.length > 0) body.options = commercialForm.equipment;
+    if (commercialForm.supplyCountry) body.origin_country = commercialForm.supplyCountry;
+    if (commercialForm.price) body.price = Number(commercialForm.price);
+    if (commercialForm.description) body.description = commercialForm.description;
+    if (commercialForm.contacts.name) body.contact_name = commercialForm.contacts.name;
+    if (commercialForm.contacts.phone) body.contact_phone = commercialForm.contacts.phone;
+    if (commercialForm.contacts.city === CUSTOM_CITY_ID) {
+      if (commercialForm.contacts.customCity) body.city_id = commercialForm.contacts.customCity;
+    } else if (commercialForm.contacts.city) {
+      body.city_id = commercialForm.contacts.city;
+    }
+    body.vehicle_status = "available";
+    body.is_customs_cleared = !commercialForm.isNotCustomsCleared;
+    body.ready_for_online_viewing = commercialForm.contacts.onlineShowing;
+    if (commercialForm.pts) body.pts = commercialForm.pts;
+    if (commercialForm.owners) body.owners = Number(commercialForm.owners);
+    body.is_damaged = commercialForm.hasAccident;
+    return body;
+  }, [commercialForm, subcategory]);
+
   // ── Publish: Create draft → Upload media → Update fields → Submit ──
   const publish = useCallback(async () => {
     setIsPublishing(true);
@@ -261,8 +339,13 @@ export function useListingForm() {
         await uploadVideo({ id: adId, video: form.media.video }).unwrap();
       }
 
-      // Step 4: Update ad fields
-      const body = buildCarAdBody();
+      // Step 4: Update ad fields — build from the form matching the category.
+      const body =
+        category === "moto"
+          ? buildMotoAdBody()
+          : category === "commercial"
+            ? buildCommercialAdBody()
+            : buildCarAdBody();
       await updateAd({ id: adId, body }).unwrap();
 
       // Step 5: Submit for moderation
@@ -275,7 +358,7 @@ export function useListingForm() {
     } finally {
       setIsPublishing(false);
     }
-  }, [category, carForm, motoForm, commercialForm, createDraft, uploadPhotos, uploadVideo, updateAd, submitAd, buildCarAdBody]);
+  }, [category, carForm, motoForm, commercialForm, createDraft, uploadPhotos, uploadVideo, updateAd, submitAd, buildCarAdBody, buildMotoAdBody, buildCommercialAdBody]);
 
   return {
     // State

@@ -15,16 +15,16 @@ import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { usePagedParams } from "@/hooks/usePagedParams";
 
 const SORT_OPTIONS = [
-  { value: "rating", label: "По рейтингу" },
-  { value: "reviews", label: "По отзывам" },
-  { value: "name", label: "По названию" },
+  { value: "rating_desc", label: "По рейтингу" },
+  { value: "reviews_desc", label: "По отзывам" },
+  { value: "name_asc", label: "По названию" },
 ] as const;
 
 export default function ServiceProvidersPage() {
   const router = useRouter();
   const { categoryId } = useParams<{ categoryId: string }>();
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("rating");
+  const [sortBy, setSortBy] = useState("rating_desc");
 
   // Get category name
   const { data: categories } = useGetServiceCategoriesQuery();
