@@ -28,7 +28,8 @@ const NAV_ITEMS: NavItem[] = [
       p === "/" ||
       p.startsWith("/ad/") ||
       p.startsWith("/parts") ||
-      p.startsWith("/rental"),
+      p.startsWith("/rental") ||
+      p.startsWith("/plates"),
   },
   {
     key: "services",
