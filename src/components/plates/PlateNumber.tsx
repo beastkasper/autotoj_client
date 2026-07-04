@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { TajikistanFlag } from "@/components/plates/TajikistanFlag";
 
 interface PlateNumberProps {
   /** Tajik plate number, e.g. "1234AA01". */
@@ -48,16 +49,7 @@ export function PlateNumber({ plateNumber, size = "sm", className }: PlateNumber
     >
       {/* ── Tajikistan flag + TJ ── */}
       <div className={cn("flex flex-col items-center shrink-0", s.flag)}>
-        <div
-          className="w-full overflow-hidden rounded-[2px] border border-[#E5E5E7]"
-          style={{ aspectRatio: "4 / 3" }}
-        >
-          <div className="h-[30%] bg-[#CE1126]" />
-          <div className="flex h-[40%] items-center justify-center bg-[#FFFFFF]">
-            <div className="h-[34%] w-[55%] rounded-[1px] bg-[#F8C300]" />
-          </div>
-          <div className="h-[30%] bg-[#006600]" />
-        </div>
+        <TajikistanFlag className="w-full rounded-[2px] border border-[#E5E5E7]" />
         <span
           className={cn(
             "mt-0.5 font-bold leading-none text-[#111111] font-[family-name:var(--font-manrope)]",
