@@ -14,7 +14,9 @@ export function DesktopPageHeader({
   maxWidth = "1440px",
 }: DesktopPageHeaderProps) {
   return (
-    <div className="hidden lg:block" style={{ maxWidth }}>
+    // mx-auto — иначе на экранах шире maxWidth шапка прижимается влево,
+    // а контент страницы центрируется, и заголовок не совпадает с колонкой.
+    <div className="mx-auto hidden w-full lg:block" style={{ maxWidth }}>
       <div className="mx-auto px-6 pt-8 pb-2" style={{ maxWidth }}>
         <div className="flex items-center justify-between">
           <div>

@@ -35,9 +35,11 @@ export default function MessagesPage() {
         variant="center"
         titleClass="text-[20px] leading-[26px]"
       />
+      {/* maxWidth совпадает с колонкой списка ниже, чтобы заголовок был над карточками */}
       <DesktopPageHeader
         title="Сообщения"
         subtitle="Ваши диалоги с продавцами и покупателями"
+        maxWidth="1000px"
       />
 
       {!isAuthenticated && (
@@ -51,9 +53,9 @@ export default function MessagesPage() {
 
       {/* Загрузка — строки h72 с кругом 40 (§9.3) */}
       {isAuthenticated && isLoading && (
-        <div className="lg:mx-auto lg:max-w-[1000px]">
+        <div className="lg:mx-auto lg:max-w-[1000px] lg:px-6 lg:py-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="flex h-[72px] items-center gap-3 px-4">
+            <div key={i} className="flex h-[72px] items-center gap-3 px-4 lg:px-0">
               <div className="skeleton size-10 rounded-full" />
               <div className="flex-1 space-y-2">
                 <div className="skeleton h-3.5 w-3/5" />

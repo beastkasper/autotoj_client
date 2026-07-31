@@ -9,6 +9,7 @@ import { useVerifyCodeMutation, useSendCodeMutation } from "@/lib/features/auth/
 import { resetAuth, setResendCountdown, loginSuccess } from "@/lib/features/auth/authSlice";
 
 const RESEND_SECONDS = 45;
+/** Код из 4 цифр (API принимает 4–6) */
 const CODE_LENGTH = 4;
 
 function maskContact(value: string, type: "phone" | "email"): string {
@@ -122,7 +123,7 @@ export function AuthCodeStep({
       // INTEGRATION.md: POST /auth/verify { phone, code }
       const response = await verifyCode({
         phone: contactValue,
-        code: "123456",
+        code,
       }).unwrap();
 
       // Success: response has { token, user }
@@ -191,7 +192,7 @@ export function AuthCodeStep({
 
       {/* Code inputs */}
       <div
-        className="flex justify-center mb-4"
+        className="mb-4 flex justify-center"
         style={{
           gap: 12,
           animation: shaking ? "shake 0.3s" : "none",
@@ -211,6 +212,7 @@ export function AuthCodeStep({
             disabled={isVerifying}
             className="outline-none text-center"
             style={{
+              // Ячейка кода (§6.3): 56×56, r16
               width: 56,
               height: 56,
               borderRadius: 16,
