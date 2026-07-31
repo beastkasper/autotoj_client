@@ -131,13 +131,13 @@ export default function HomePage() {
 
   return (
     <main
-      className="pb-24 lg:pb-8 bg-white"
+      className="screen bg-card lg:bg-background lg:pb-8"
       ref={scrollRef}
       {...touchHandlers}
     >
       <h1 className="sr-only">autoTOJ — покупка, продажа и сервисы автомобилей в Таджикистане</h1>
 
-      {/* Mobile Floating Search */}
+      {/* Плавающая шапка (§10.1) */}
       <MobileSearchBar
         searchQuery={searchQuery}
         onSearchChange={(value) => dispatch(setSearchQuery(value))}
@@ -145,16 +145,12 @@ export default function HomePage() {
         hasActiveFilters={hasActiveFilters}
       />
 
-      {/* Mobile Logo */}
-      <div className="lg:hidden flex justify-center px-4 mt-6">
-        <div className="text-center">
-          <div className="flex items-center justify-center">
-            <AutoTojLogo size="lg" />
-          </div>
-          <p className="text-sm text-[#8E8E93] mt-1.5 font-[family-name:var(--font-manrope)]">
-            Покупка, продажа и сервисы
-          </p>
-        </div>
+      {/* Логотип скроллится вместе с контентом: блок py28 (§10.1) */}
+      <div className="px-4 py-7 text-center lg:hidden">
+        <AutoTojLogo size="lg" />
+        <p className="mt-1.5 text-[14px] text-muted-foreground">
+          Покупка, продажа и сервисы
+        </p>
       </div>
 
       {/* Pull-to-Refresh (mobile) */}
@@ -184,8 +180,8 @@ export default function HomePage() {
           onReset={handleResetFilters}
           emptyIcon={Search}
           emptyTitle="Ничего не найдено"
-          emptyDescription="Попробуйте изменить параметры поиска"
-          emptyActionLabel="Сбросить"
+          emptyDescription="Попробуйте изменить параметры поиска или фильтры"
+          emptyActionLabel="Сбросить фильтры"
         >
           <AdsGrid
             ads={displayAds}

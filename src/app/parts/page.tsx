@@ -70,7 +70,7 @@ export default function PartsPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
       {/* ── Desktop Filter Bar (sticky) ── */}
       <div className="hidden lg:block sticky top-[65px] z-20 bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1440px] mx-auto px-6 py-4">
@@ -180,87 +180,79 @@ export default function PartsPage() {
         )}
       </div>
 
-      {/* ── Mobile Header ── */}
+      {/* ── Шапка (§10.7): кнопка добавления 40×40 r20 ── */}
       <PageHeader
         title="Запчасти"
         rightAction={
           <button
             onClick={() => requireAuth(() => router.push("/post-ad?category=parts"))}
             aria-label="Добавить объявление"
-            className="flex items-center gap-1 h-9 px-3 bg-[#E53935] text-white rounded-lg hover:bg-[#D32F2F] active:scale-95 transition-all font-[family-name:var(--font-manrope)]"
+            className="grid size-10 place-items-center rounded-[20px] bg-black/5 transition-transform active:scale-95 dark:bg-white/10"
           >
-            <Plus className="w-4 h-4" />
-            <span className="text-[14px] font-medium">Добавить</span>
+            <Plus className="size-5 text-foreground" strokeWidth={1.5} />
           </button>
         }
       />
 
-      {/* ── Mobile Search + Filters ── */}
-      <div className="lg:hidden px-4 pt-4 pb-2 space-y-3">
-        <div className="flex items-center gap-2 bg-white rounded-2xl border border-[#E5E5E7] px-4 h-12">
-          <Search className="w-5 h-5 text-[#8E8E93] shrink-0" />
-          <Input
+      {/* ── Поиск + фильтры (§10.7) ── */}
+      <div className="px-4 pb-3 pt-4 lg:hidden">
+        {/* h44 r12 bg secondary, иконка слева на 12 */}
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+          <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Поиск запчастей"
-            className="flex-1 bg-transparent border-none shadow-none text-[15px] text-[#111111] placeholder:text-[#8E8E93] focus-visible:ring-0 font-[family-name:var(--font-manrope)] h-12 px-0"
+            className="h-11 w-full rounded-xl bg-secondary pl-10 pr-10 text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="p-1">
-              <span className="text-[#8E8E93] text-sm">&#x2715;</span>
+            <button
+              onClick={() => setSearchQuery("")}
+              aria-label="Очистить"
+              className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground"
+            >
+              <span className="text-sm">&#x2715;</span>
             </button>
           )}
         </div>
 
-        {/* Filter chips */}
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+        {/* Чипы-фильтры h36 r18, gap 8, горизонтальный скролл */}
+        <div className="scroll-x -mx-4 mt-3 flex gap-2 px-4">
           {CONDITION_OPTIONS.map((cond) => (
-            <Button
+            <button
               key={cond}
-              variant={selectedCondition === cond ? "default" : "outline"}
+              type="button"
+              aria-pressed={selectedCondition === cond}
               onClick={() => setSelectedCondition(cond)}
-              className={`shrink-0 h-9 rounded-full text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                selectedCondition === cond
-                  ? "bg-[#111111] text-white hover:bg-[#111111]/90"
-                  : "bg-white border-[#E5E5E7] text-[#111111]"
-              }`}
+              className="chip shrink-0"
             >
               {cond}
-            </Button>
+            </button>
           ))}
-          <div className="w-px h-9 bg-[#E5E5E7] shrink-0 self-center" />
+          <span className="h-9 w-px shrink-0 self-center bg-border" />
           {PARTS_CATEGORIES.map((cat) => (
-            <Button
+            <button
               key={cat.id}
-              variant={selectedCategory === cat.id ? "default" : "outline"}
+              type="button"
+              aria-pressed={selectedCategory === cat.id}
               onClick={() =>
-                setSelectedCategory(
-                  selectedCategory === cat.id ? "all" : cat.id
-                )
+                setSelectedCategory(selectedCategory === cat.id ? "all" : cat.id)
               }
-              className={`shrink-0 h-9 rounded-full text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                selectedCategory === cat.id
-                  ? "bg-[#111111] text-white hover:bg-[#111111]/90"
-                  : "bg-white border-[#E5E5E7] text-[#111111]"
-              }`}
+              className="chip shrink-0"
             >
               {cat.label}
-            </Button>
+            </button>
           ))}
         </div>
-
-        <p className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-          Найдено {filteredParts.length} объявлений
-        </p>
       </div>
 
-      {/* ── Mobile + Tablet Grid ── */}
-      <div className="lg:hidden px-4 md:px-6 pb-24">
+      {/* ── Сетка: 2 колонки, gap 12, px16 ── */}
+      <div className="px-4 lg:hidden">
         {isLoading ? (
           <GridPageSkeleton count={6} />
         ) : filteredParts.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {filteredParts.map((part) => (
               <PartCard
                 key={part.id}
@@ -274,7 +266,11 @@ export default function PartsPage() {
           <EmptyState
             icon={Search}
             title="Ничего не найдено"
-            description="Попробуйте изменить параметры поиска"
+            description={
+              searchQuery || selectedCategory !== "all"
+                ? "Попробуйте другой запрос"
+                : "Пока нет объявлений. Добавьте первую запчасть"
+            }
           />
         )}
         {!isLoading && (

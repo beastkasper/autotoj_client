@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Heart, Package, BookOpen, ChevronLeft } from "lucide-react";
+import { Heart, Package, BookOpen, ArrowLeft } from "lucide-react";
 import { AdCard } from "@/components/cards/AdCard";
 import { ContentGrid } from "@/components/layout/content-grid";
 import { EmptyState } from "@/components/states/EmptyState";
@@ -53,18 +53,18 @@ export default function MePage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] pb-24 lg:pb-12">
+    <main className="screen lg:min-h-screen lg:bg-[#F5F5F7] lg:pb-12">
       {/* ── Header (mobile sticky) ── */}
-      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="lg:hidden flex items-center gap-3 px-4 h-14">
+      <div className="hairline sticky top-0 z-40 bg-card pt-[env(safe-area-inset-top)] lg:bg-white/90 lg:backdrop-blur-xl">
+        <div className="flex h-14 items-center gap-2 px-4 lg:hidden">
           <button
             onClick={() => router.back()}
             aria-label="Назад"
-            className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
+            className="icon-btn -ml-2.5"
           >
-            <ChevronLeft className="w-5 h-5 text-[#111111]" />
+            <ArrowLeft className="size-5" strokeWidth={1.5} />
           </button>
-          <h1 className="text-[17px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">
+          <h1 className="text-[20px] font-semibold leading-[26px] text-foreground">
             {TABS.find((t) => t.key === activeTab)?.label}
           </h1>
         </div>
@@ -76,7 +76,7 @@ export default function MePage() {
         </div>
 
         {/* ── Tab strip ── */}
-        <div className="flex gap-2 overflow-x-auto px-4 md:px-6 lg:max-w-[1200px] lg:mx-auto pb-3 lg:pb-4 scrollbar-hide">
+        <div className="scroll-x flex gap-2 px-4 pb-3 lg:mx-auto lg:max-w-[1200px] lg:px-6 lg:pb-4">
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -86,11 +86,7 @@ export default function MePage() {
                 type="button"
                 onClick={() => handleTabChange(tab.key)}
                 aria-pressed={isActive}
-                className={`shrink-0 flex items-center gap-1.5 h-10 px-4 rounded-full text-[14px] font-medium font-[family-name:var(--font-manrope)] transition-colors ${
-                  isActive
-                    ? "bg-[#111111] text-white"
-                    : "bg-white border border-[#E5E5E7] text-[#111111]"
-                }`}
+                className="chip shrink-0"
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
@@ -101,7 +97,7 @@ export default function MePage() {
       </div>
 
       {/* ── Body ── */}
-      <div className="px-4 md:px-6 pt-4 lg:max-w-[1200px] lg:mx-auto">
+      <div className="px-4 pt-4 lg:mx-auto lg:max-w-[1200px] lg:px-6">
         {activeTab === "favorites" && (
           <FavoritesTab onAdClick={(id) => router.push(`/ad/${id}`)} />
         )}
@@ -145,11 +141,11 @@ function FavoritesTab({ onAdClick }: { onAdClick: (id: string) => void }) {
 
   if (isLoading) {
     return (
-      <ContentGrid mobileCols={2} tabletCols={3} desktopCols={4}>
+      <ContentGrid mobileCols={2} desktopCols={4}>
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-2xl border border-[#E5E5E7] aspect-[3/4] animate-pulse"
+            className="skeleton aspect-[3/4] rounded-2xl"
           />
         ))}
       </ContentGrid>
@@ -168,7 +164,7 @@ function FavoritesTab({ onAdClick }: { onAdClick: (id: string) => void }) {
   }
 
   return (
-    <ContentGrid mobileCols={2} tabletCols={3} desktopCols={4}>
+    <ContentGrid mobileCols={2} desktopCols={4}>
       {favorites.map((ad) => (
         <AdCard
           key={ad.id}
@@ -242,17 +238,14 @@ function MyAdsTab({
   return (
     <>
       {/* Sub-filter for active/paused */}
-      <div className="flex gap-2 mb-4">
+      <div className="mb-4 flex gap-2">
         {(["active", "paused"] as const).map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => setStatusFilter(s)}
-            className={`h-9 px-4 rounded-full text-[13px] font-medium transition-colors font-[family-name:var(--font-manrope)] ${
-              statusFilter === s
-                ? "bg-[#111111] text-white"
-                : "bg-white border border-[#E5E5E7] text-[#111111]"
-            }`}
+            aria-pressed={statusFilter === s}
+            className="chip"
           >
             {s === "active" ? "Активные" : "На паузе"}
           </button>
@@ -260,11 +253,11 @@ function MyAdsTab({
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <div className="flex flex-col gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               key={i}
-              className="bg-white rounded-xl border border-[#E5E5E7] h-32 animate-pulse"
+              className="skeleton h-32 rounded-xl"
             />
           ))}
         </div>
@@ -291,7 +284,7 @@ function MyAdsTab({
           }
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <div className="flex flex-col gap-3">
           {ads.map((ad) => (
             <MyAdCardMobile
               key={ad.id}
@@ -355,11 +348,11 @@ function LogbookTab({ onPostClick }: { onPostClick: (id: string) => void }) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+      <div className="flex flex-col gap-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="bg-white rounded-xl border border-[#E5E5E7] h-40 animate-pulse"
+            className="skeleton h-40 rounded-xl"
           />
         ))}
       </div>
@@ -381,7 +374,7 @@ function LogbookTab({ onPostClick }: { onPostClick: (id: string) => void }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+    <div className="flex flex-col gap-3">
       {posts.map((post) => (
         <LogbookPostCard
           key={post.id}

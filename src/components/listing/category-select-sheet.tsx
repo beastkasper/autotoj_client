@@ -44,12 +44,12 @@ const CATEGORIES = [
 export function CategorySelectSheet({ open, onSelect, onClose }: CategorySelectSheetProps) {
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-      <SheetContent side="bottom" className="rounded-t-[20px] p-0">
+      <SheetContent side="bottom" className="rounded-t-[24px] p-0">
         <SheetHeader className="px-6 pt-6 pb-4">
           <SheetTitle className="text-[20px] font-bold text-center font-[family-name:var(--font-manrope)]">
             Выберите категорию
           </SheetTitle>
-          <p className="text-[14px] text-[#8E8E93] text-center font-[family-name:var(--font-manrope)] -mt-1">
+          <p className="-mt-1 text-center text-[15px] text-muted-foreground">
             Что вы хотите разместить?
           </p>
         </SheetHeader>
@@ -60,21 +60,16 @@ export function CategorySelectSheet({ open, onSelect, onClose }: CategorySelectS
               key={id}
               type="button"
               onClick={() => onSelect(id)}
-              className="flex items-center gap-4 w-full p-4 rounded-2xl bg-[#F7F7F7] border border-transparent hover:border-[#D1D1D6] hover:shadow-sm transition-all active:scale-[0.99] group"
+              className="group flex w-full items-center gap-3 rounded-2xl border border-transparent bg-secondary px-5 py-3 transition-all hover:border-border active:scale-[0.98] active:opacity-80"
             >
               <div
-                className="flex items-center justify-center w-12 h-12 rounded-xl transition-transform group-hover:scale-105"
-                style={{ backgroundColor: color }}
+                className="grid size-10 shrink-0 place-items-center rounded-xl bg-card"
               >
-                <Icon className="w-6 h-6 text-white" />
+                <Icon className="size-6 text-foreground" strokeWidth={1.5} style={{ color }} />
               </div>
               <div className="text-left flex-1">
-                <p className="text-[16px] font-semibold text-[#1C1C1E] font-[family-name:var(--font-manrope)]">
-                  {label}
-                </p>
-                <p className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-                  {description}
-                </p>
+                <p className="text-[16px] font-medium text-foreground">{label}</p>
+                <p className="text-[13px] text-muted-foreground">{description}</p>
               </div>
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none" className="text-[#C7C7CC] group-hover:text-[#8E8E93] transition-colors shrink-0">
                 <path d="M7.5 5L12.5 10L7.5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>

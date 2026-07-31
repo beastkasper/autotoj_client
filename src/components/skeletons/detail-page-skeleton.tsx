@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export function DetailPageSkeleton() {
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <div className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
       {/* ── Desktop Top Bar ── */}
       <div className="hidden lg:block bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1200px] mx-auto px-6 h-14 flex items-center justify-between">
@@ -69,7 +69,7 @@ export function DetailPageSkeleton() {
       </div>
 
       {/* ── Mobile Header ── */}
-      <div className="lg:hidden sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
+      <div className="blur-surface hairline sticky top-0 z-50 pt-[env(safe-area-inset-top)] lg:hidden">
         <div className="flex items-center justify-between px-4 h-14">
           <Skeleton className="w-9 h-9 rounded-full" />
           <div className="flex items-center gap-2">

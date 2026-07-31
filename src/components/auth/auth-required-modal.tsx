@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { LogIn, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +15,7 @@ interface AuthRequiredModalProps {
   onClose: () => void;
 }
 
+/** Модалка «Требуется вход» (DESIGN.md §8.3): r20, круг 64×64, кнопки h52. */
 export function AuthRequiredModal({ open, onClose }: AuthRequiredModalProps) {
   const router = useRouter();
 
@@ -25,43 +25,49 @@ export function AuthRequiredModal({ open, onClose }: AuthRequiredModalProps) {
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="rounded-[20px] max-w-sm p-0 border-none shadow-lg [&>button]:hidden">
-        {/* keep exact same inner layout */}
-        <div className="p-8 pt-10 text-center">
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) onClose();
+      }}
+    >
+      <DialogContent className="max-w-[340px] rounded-3xl border-none bg-card p-0 shadow-[var(--shadow-modal)] [&>button]:hidden">
+        <div className="px-6 pb-2 pt-8 text-center">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-[#F2F2F7] flex items-center justify-center hover:bg-[#E5E5E7] transition-colors"
+            aria-label="Закрыть"
+            className="absolute right-4 top-4 grid size-8 place-items-center rounded-full bg-secondary transition-colors"
           >
-            <X className="w-4 h-4 text-[#8E8E93]" />
+            <X className="size-4 text-muted-foreground" strokeWidth={1.5} />
           </button>
-          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-[#F5F5F7] flex items-center justify-center">
-            <LogIn className="w-7 h-7 text-[#111111]" />
+          <div className="mx-auto mb-5 grid size-16 place-items-center rounded-full bg-secondary">
+            <LogIn className="size-7 text-foreground" strokeWidth={1.5} />
           </div>
           <DialogHeader className="items-center">
-            <DialogTitle className="text-[20px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
+            <DialogTitle className="mb-2 text-[20px] font-bold text-foreground">
               Требуется вход
             </DialogTitle>
-            <DialogDescription className="text-[15px] text-[#8E8E93] leading-relaxed font-[family-name:var(--font-manrope)]">
+            <DialogDescription className="text-[15px] leading-[22px] text-muted-foreground">
               Войдите в аккаунт, чтобы получить доступ к этой функции
             </DialogDescription>
           </DialogHeader>
         </div>
-        <div className="px-6 pb-6 space-y-3">
-          <Button
+        <div className="flex flex-col gap-3 px-6 pb-6">
+          <button
+            type="button"
             onClick={handleLogin}
-            className="w-full h-[52px] bg-[#111111] text-white rounded-2xl text-[15px] font-semibold hover:bg-[#333] font-[family-name:var(--font-manrope)]"
+            className="btn h-[52px] w-full rounded-[26px] bg-primary text-[15px] font-semibold text-primary-foreground"
           >
-            <LogIn className="w-[18px] h-[18px]" />
+            <LogIn className="size-[18px]" strokeWidth={1.5} />
             Войти
-          </Button>
-          <Button
-            variant="ghost"
+          </button>
+          <button
+            type="button"
             onClick={onClose}
-            className="w-full h-[44px] rounded-2xl text-[15px] font-medium text-[#8E8E93] hover:text-[#111111] hover:bg-[#F5F5F7] font-[family-name:var(--font-manrope)]"
+            className="btn h-11 w-full rounded-[22px] text-[15px] font-medium text-muted-foreground"
           >
             Позже
-          </Button>
+          </button>
         </div>
       </DialogContent>
     </Dialog>

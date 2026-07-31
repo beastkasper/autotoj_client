@@ -5,12 +5,11 @@ import { useState, useMemo } from "react";
 import {
   X,
   Heart,
-  Share2,
+  ArrowLeft,
   MapPin,
   Phone,
   MessageCircle,
   Upload,
-  ChevronLeft,
   Tag,
   Wrench,
   Factory,
@@ -25,6 +24,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ImageGallery } from "@/components/ad/ImageGallery";
 import { AdSpecsTable } from "@/components/ad/AdSpecsTable";
 import { AdActionBar } from "@/components/ad/AdActionBar";
+import { AdGalleryMobile } from "@/components/ad/AdGalleryMobile";
 import { PartCard } from "@/components/cards/PartCard";
 import { useGetPartByIdQuery } from "@/lib/features/parts/partsApi";
 import type { PartListing } from "@/lib/types/part";
@@ -63,6 +63,7 @@ export default function PartDetailPage() {
 
   const similarParts: PartListing[] = [];
   const [isFavorite, setIsFavorite] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const { openChat, isOpening } = useOpenChat();
 
@@ -96,7 +97,7 @@ export default function PartDetailPage() {
             className="px-6 py-3 bg-[#111111] text-white rounded-2xl text-[14px] font-medium hover:bg-[#333]"
           >
             Вернуться к запчастям
-          </Button>w
+          </Button>
         </div>
       </div>
     );
@@ -109,7 +110,7 @@ export default function PartDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <div className="screen relative lg:min-h-screen lg:bg-[#F5F5F7]">
       {apiPart && (
         <script
           type="application/ld+json"
@@ -313,136 +314,164 @@ export default function PartDetailPage() {
         </div>
       </div>
 
-      {/* ── Mobile Header ── */}
-      <div className="lg:hidden sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="flex items-center justify-between px-4 h-14">
-          <Button
-            variant="ghost"
-            size="icon"
+      {/* ── Шапка поверх галереи (§10.7) ── */}
+      <div className="blur-surface absolute inset-x-0 top-0 z-50 pt-[env(safe-area-inset-top)] lg:hidden">
+        <div className="flex h-14 items-center justify-between px-4">
+          <button
+            type="button"
             onClick={() => router.back()}
-            className="rounded-full -ml-2"
+            aria-label="Назад"
+            className="icon-btn -ml-2.5"
           >
-            <ChevronLeft className="w-5 h-5 text-[#111111]" />
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={handleShare} className="rounded-full">
-              <Share2 className="w-5 h-5 text-[#111111]" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
+            <ArrowLeft className="size-5" strokeWidth={1.5} />
+          </button>
+          <div className="flex items-center">
+            <button
+              type="button"
+              onClick={handleShare}
+              aria-label="Поделиться"
+              className="icon-btn"
+            >
+              <Upload className="size-5" strokeWidth={1.5} />
+            </button>
+            <button
+              type="button"
               onClick={() => setIsFavorite(!isFavorite)}
-              className="rounded-full"
+              aria-label="В избранное"
+              className="icon-btn -mr-2.5"
             >
               <Heart
-                className={`w-5 h-5 ${isFavorite ? "fill-[#E53935] text-[#E53935]" : "text-[#111111]"}`}
+                className={`size-5 ${isFavorite ? "text-[#E53935]" : ""}`}
+                strokeWidth={1.5}
+                fill={isFavorite ? "#E53935" : "none"}
               />
-            </Button>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── Mobile Content ── */}
-      <div className="lg:hidden pb-[160px] md:pb-[176px] md:max-w-3xl md:mx-auto">
-        <ImageGallery
-          images={part.images ?? [part.image]}
-          alt={part.title}
-        />
+      {/* ── Контент: фон #F8F8F8, карточки белые (§10.7) ── */}
+      <div className="bg-[#F8F8F8] pb-[160px] dark:bg-background lg:hidden">
+        <AdGalleryMobile images={part.images ?? [part.image]} alt={part.title} />
 
-        {/* Title + Price */}
-        <div className="px-4 mt-5">
-          <h1 className="text-[20px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
-            {part.title}
-          </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge
-              className={`px-2.5 py-0.5 text-[12px] font-medium font-[family-name:var(--font-manrope)] ${
-                part.condition === "Новый"
-                  ? "bg-[#2E7D32] text-white border-transparent hover:bg-[#2E7D32]"
-                  : "bg-[#F5F5F7] text-[#111111] border-transparent hover:bg-[#F5F5F7]"
-              }`}
-            >
-              {part.condition}
-            </Badge>
-          </div>
-          <p className="text-[22px] font-bold text-[#111111] mt-3 font-[family-name:var(--font-manrope)]">
-            {part.price}{" "}
-            <span className="text-[14px] font-medium text-[#8E8E93]">сомони</span>
-          </p>
-          <div className="flex items-center gap-2 mt-2 text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-            <MapPin className="w-3.5 h-3.5" />
-            <span>{formatFullDateWithCity(part.publishedDate, part.city)}</span>
-          </div>
-        </div>
-
-        {/* Seller */}
-        <div className="px-4 mt-5">
-          <Card className="rounded-2xl border-[#E5E5E7] shadow-none py-0">
-            <CardContent className="p-4">
-              <p className="text-[14px] font-semibold text-[#111111] mb-3 font-[family-name:var(--font-manrope)]">
-                Продавец
+        <div className="flex flex-col gap-3 p-4">
+          {/* Карточка информации: r20 p20 */}
+          <div className="rounded-[20px] bg-card p-5 shadow-[var(--shadow-hairline)]">
+            <h1 className="mb-3 text-[22px] font-bold leading-7 text-foreground">
+              {part.title}
+            </h1>
+            <div className="mb-3 rounded-2xl bg-[#F8F8F8] p-4 dark:bg-secondary">
+              <p className="mb-1 text-[13px] text-muted-foreground">Цена</p>
+              <p className="text-[28px] font-bold leading-8 text-foreground">
+                {part.price}{" "}
+                <span className="text-[18px] font-normal text-muted-foreground">
+                  сомони
+                </span>
               </p>
-              <div className="flex items-center gap-3">
-                <Avatar className="w-10 h-10">
-                  <AvatarFallback className="bg-[#F2F2F7]">
-                    <User className="w-5 h-5 text-[#8E8E93]" />
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="text-[14px] font-medium text-[#111111] font-[family-name:var(--font-manrope)]">
-                    {part.sellerName || "Продавец"}
-                  </p>
-                  <p className="text-[12px] text-[#8E8E93] mt-0.5 font-[family-name:var(--font-manrope)]">
-                    <MapPin className="w-3 h-3 inline mr-0.5" />
-                    {part.city}
-                  </p>
+            </div>
+            <p className="text-[13px] text-muted-foreground">
+              {formatFullDateWithCity(part.publishedDate, part.city)}
+            </p>
+          </div>
+
+          {/* Карточка характеристик */}
+          {specs.length > 0 && (
+            <div className="rounded-[20px] bg-card p-5 shadow-[var(--shadow-hairline)]">
+              <h2 className="mb-4 text-[18px] font-bold text-foreground">
+                Характеристики
+              </h2>
+              <div>
+                {specs
+                  .filter((spec) => spec.label !== "Состояние")
+                  .map((spec) => (
+                    <div
+                      key={spec.label}
+                      className="flex items-center justify-between py-2"
+                    >
+                      <span className="text-[15px] text-muted-foreground">
+                        {spec.label}
+                      </span>
+                      <span className="text-[15px] font-semibold text-foreground">
+                        {spec.value}
+                      </span>
+                    </div>
+                  ))}
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-[15px] text-muted-foreground">Состояние</span>
+                  <span
+                    className="rounded-[10px] px-3 py-1.5 text-[14px] font-semibold text-white"
+                    style={{
+                      background: part.condition === "Новый" ? "#34C759" : "#FF9500",
+                    }}
+                  >
+                    {part.condition}
+                  </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          )}
 
-        {/* Specs */}
-        {specs.length > 0 && (
-          <div className="px-4 mt-5">
-            <AdSpecsTable specs={specs} title="Характеристики" />
-          </div>
-        )}
+          {/* Описание */}
+          {part.description && (
+            <div className="rounded-[20px] bg-card p-5 shadow-[var(--shadow-hairline)]">
+              <h2 className="mb-3 text-[18px] font-bold text-foreground">Описание</h2>
+              <p
+                className={`whitespace-pre-wrap text-[15px] leading-[22px] text-foreground ${
+                  descExpanded ? "" : "line-clamp-4"
+                }`}
+              >
+                {part.description}
+              </p>
+              {part.description.length > 150 && (
+                <button
+                  type="button"
+                  onClick={() => setDescExpanded((v) => !v)}
+                  className="mt-2 flex items-center gap-1 text-[15px] font-semibold text-link"
+                >
+                  {descExpanded ? "Скрыть" : "Показать полностью"}
+                </button>
+              )}
+            </div>
+          )}
 
-        {/* Description */}
-        {part.description && (
-          <div className="px-4 mt-5">
-            <Card className="rounded-2xl border-[#E5E5E7] shadow-none py-0">
-              <CardContent className="p-4">
-                <h2 className="text-[16px] font-semibold text-[#111111] mb-2 font-[family-name:var(--font-manrope)]">
-                  Описание
-                </h2>
-                <p className="text-[14px] text-[#333] leading-relaxed font-[family-name:var(--font-manrope)]">
-                  {part.description}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Similar */}
-        {similarParts.length > 0 && (
-          <div className="px-4 mt-5">
-            <h2 className="text-[16px] font-semibold text-[#111111] mb-3 font-[family-name:var(--font-manrope)]">
-              Похожие объявления
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
-              {similarParts.map((p) => (
-                <PartCard
-                  key={p.id}
-                  part={p}
-                  onClick={(pId) => router.push(`/parts/${pId}`)}
-                  variant="mobile"
-                />
-              ))}
+          {/* Продавец */}
+          <div className="rounded-[20px] bg-card p-5 shadow-[var(--shadow-hairline)]">
+            <h2 className="mb-3 text-[18px] font-bold text-foreground">Продавец</h2>
+            <div className="flex items-center gap-3">
+              <span className="grid size-12 shrink-0 place-items-center rounded-full bg-secondary">
+                <User className="size-6 text-muted-foreground" strokeWidth={1.5} />
+              </span>
+              <span>
+                <span className="block text-[15px] font-semibold text-foreground">
+                  {part.sellerName || "Продавец"}
+                </span>
+                <span className="mt-0.5 flex items-center gap-1 text-[13px] text-muted-foreground">
+                  <MapPin className="size-3.5" strokeWidth={1.5} />
+                  {part.city}
+                </span>
+              </span>
             </div>
           </div>
-        )}
+
+          {/* Похожие */}
+          {similarParts.length > 0 && (
+            <section className="mt-1">
+              <h2 className="mb-3 text-[18px] font-bold text-foreground">
+                Похожие объявления
+              </h2>
+              <div className="grid grid-cols-2 gap-3">
+                {similarParts.map((p) => (
+                  <PartCard
+                    key={p.id}
+                    part={p}
+                    onClick={(pId) => router.push(`/parts/${pId}`)}
+                    variant="mobile"
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
       </div>
 
       {/* Mobile Bottom CTA */}

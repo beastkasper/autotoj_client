@@ -4,7 +4,8 @@ import { useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Search, ChevronLeft, Star, BadgeCheck, MapPin, Phone } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/layout/page-header";
+import { SearchInput } from "@/components/search/search-input";
 import { EmptyState } from "@/components/states/EmptyState";
 import {
   useGetServiceProvidersQuery,
@@ -56,7 +57,7 @@ export default function ServiceProvidersPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <div className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
       {/* ── Desktop Filter Bar ── */}
       <div className="hidden lg:block sticky top-[65px] z-20 bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1440px] mx-auto px-6 py-4">
@@ -110,51 +111,29 @@ export default function ServiceProvidersPage() {
       </div>
 
       {/* ── Mobile Header ── */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button
-            onClick={() => router.push("/services")}
-            className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5 text-[#111111]" />
-          </button>
-          <h1 className="text-[17px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)] truncate">
-            {categoryName}
-          </h1>
-        </div>
-      </div>
+      <PageHeader title={categoryName} onBack={() => router.push("/services")} />
 
       {/* ── Mobile Search ── */}
-      <div className="lg:hidden px-4 pt-4 pb-2 space-y-3">
-        <div className="flex items-center gap-2 bg-white rounded-2xl border border-[#E5E5E7] px-4 h-12">
-          <Search className="w-5 h-5 text-[#8E8E93] shrink-0" />
-          <Input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Поиск..."
-            className="flex-1 bg-transparent border-none shadow-none text-[15px] text-[#111111] placeholder:text-[#8E8E93] focus-visible:ring-0 font-[family-name:var(--font-manrope)] h-12 px-0"
-          />
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+      <div className="px-4 py-3 lg:hidden">
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Поиск"
+          variant="mobile"
+        />
+        <div className="scroll-x -mx-4 mt-3 flex gap-2 px-4">
           {SORT_OPTIONS.map((opt) => (
-            <Button
+            <button
               key={opt.value}
-              variant={sortBy === opt.value ? "default" : "outline"}
+              type="button"
+              aria-pressed={sortBy === opt.value}
               onClick={() => setSortBy(opt.value)}
-              className={`shrink-0 h-9 rounded-full text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                sortBy === opt.value
-                  ? "bg-[#111111] text-white hover:bg-[#111111]/90"
-                  : "bg-white border-[#E5E5E7] text-[#111111]"
-              }`}
+              className="chip shrink-0"
             >
               {opt.label}
-            </Button>
+            </button>
           ))}
         </div>
-        <p className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-          Найдено {providers.length} компаний
-        </p>
       </div>
 
       {/* ── Loading ── */}
@@ -231,29 +210,29 @@ export default function ServiceProvidersPage() {
           </div>
 
           {/* Mobile + Tablet */}
-          <div className="lg:hidden px-4 md:px-6 pb-24">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+          <div className="px-4 lg:hidden">
+            <div className="flex flex-col gap-3">
             {providers.map((provider) => (
               <button
                 key={provider.id}
                 onClick={() => handleProviderClick(provider.id)}
-                className="w-full bg-white rounded-2xl p-4 text-left active:scale-[0.98] transition-transform"
+                className="press-card w-full rounded-2xl border border-border-soft bg-card p-4 text-left shadow-[var(--shadow-icon-card)] transition-transform"
               >
                 <div className="flex gap-3">
                   {provider.logo_url ? (
                     <img
                       src={provider.logo_url}
                       alt={provider.name}
-                      className="w-14 h-14 rounded-xl object-cover bg-[#F5F5F7] shrink-0"
+                      className="size-20 shrink-0 rounded-xl bg-secondary object-cover"
                     />
                   ) : (
-                    <div className="w-14 h-14 rounded-xl bg-[#F5F5F7] flex items-center justify-center shrink-0">
-                      <span className="text-xl text-[#C7C7CC]">🔧</span>
+                    <div className="grid size-20 shrink-0 place-items-center rounded-xl bg-secondary">
+                      <span className="text-xl">🔧</span>
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="text-[15px] font-semibold text-[#111111] truncate font-[family-name:var(--font-manrope)]">
+                      <h3 className="line-1 text-[17px] font-semibold text-foreground">
                         {provider.name}
                       </h3>
                       {provider.is_verified && (
@@ -261,16 +240,16 @@ export default function ServiceProvidersPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <Star className="w-3.5 h-3.5 text-[#FF9500] fill-[#FF9500]" />
-                      <span className="text-[13px] font-medium text-[#111111] font-[family-name:var(--font-manrope)]">
+                      <Star className="size-4 fill-star text-star" />
+                      <span className="text-[14px] font-medium text-foreground">
                         {provider.rating.toFixed(1)}
                       </span>
-                      <span className="text-[12px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-                        ({provider.reviews_count})
+                      <span className="text-[13px] text-muted-foreground">
+                        ({provider.reviews_count} отзывов)
                       </span>
                     </div>
                     {provider.address && (
-                      <p className="text-[12px] text-[#8E8E93] mt-1 truncate font-[family-name:var(--font-manrope)]">
+                      <p className="line-1 mt-2 text-[13px] text-muted-foreground">
                         {provider.city}, {provider.address}
                       </p>
                     )}

@@ -33,6 +33,16 @@ export function formatFullDateWithCity(dateStr: string, city: string): string {
 }
 
 /**
+ * Дата в деталях объявления (DESIGN.md §13.11): "12 марта, Душанбе"
+ * — день + месяц в родительном падеже + город.
+ */
+export function formatDayMonthWithCity(dateStr: string, city: string): string {
+  const date = new Date(dateStr);
+  if (Number.isNaN(date.getTime())) return city;
+  return `${date.getDate()} ${MONTHS_FULL[date.getMonth()]}, ${city}`;
+}
+
+/**
  * Formats a date string with city context.
  * - Today → "Сегодня, Душанбе"
  * - Yesterday → "Вчера, Худжанд"

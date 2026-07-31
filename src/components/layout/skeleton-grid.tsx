@@ -5,28 +5,32 @@ interface SkeletonGridProps {
   variant?: "card" | "list";
 }
 
+/** Карточка-скелетон сетки (§9.3): r12 + border, фото 4:3, линии 16/12/20/12. */
 function SkeletonCard() {
   return (
-    <div className="bg-white rounded-2xl overflow-hidden border border-[#E5E5E7] animate-pulse">
-      <div className="aspect-[4/3] bg-[#E5E5E7]" />
-      <div className="p-3 space-y-2">
-        <div className="h-4 bg-[#E5E5E7] rounded w-3/4" />
-        <div className="h-5 bg-[#E5E5E7] rounded w-1/2" />
-        <div className="h-3 bg-[#E5E5E7] rounded w-2/3" />
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="skeleton aspect-[4/3] rounded-none" />
+      <div className="flex flex-col gap-2 p-3">
+        <div className="skeleton h-4 w-full" />
+        <div className="skeleton h-3 w-2/3" />
+        <div className="skeleton h-5 w-1/2" />
+        <div className="skeleton h-3 w-3/4" />
       </div>
     </div>
   );
 }
 
+/** Строка-скелетон списка (§9.3): фото 128×128, линии 16/12/20/12, gap 12. */
 function SkeletonListItem() {
   return (
-    <div className="bg-white rounded-xl overflow-hidden border border-[#E5E5E7] animate-pulse">
+    <div className="overflow-hidden rounded-xl border border-border bg-card">
       <div className="flex">
-        <div className="w-32 h-32 bg-[#E5E5E7]" />
-        <div className="flex-1 p-3 space-y-2">
-          <div className="h-4 bg-[#E5E5E7] rounded w-3/4" />
-          <div className="h-3 bg-[#E5E5E7] rounded w-1/2" />
-          <div className="h-5 bg-[#E5E5E7] rounded w-1/3" />
+        <div className="skeleton size-32 shrink-0 rounded-none" />
+        <div className="flex flex-1 flex-col gap-3 p-4">
+          <div className="skeleton h-4 w-3/4" />
+          <div className="skeleton h-3 w-1/2" />
+          <div className="skeleton h-5 w-1/3" />
+          <div className="skeleton h-3 w-2/3" />
         </div>
       </div>
     </div>

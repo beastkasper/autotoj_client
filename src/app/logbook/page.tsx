@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Plus, BookOpen } from "lucide-react";
+import { Plus, BookOpen } from "lucide-react";
+import { PageHeader } from "@/components/layout/page-header";
 import { useGetLogbookPostsQuery } from "@/lib/features/logbook/logbookApi";
 import { EmptyState } from "@/components/states/EmptyState";
 import { LogbookPostCard } from "@/components/logbook/logbook-post-card";
@@ -84,30 +85,21 @@ export default function LogbookPage() {
   const handlePostClick = (id: string) => router.push(`/logbook/${id}`);
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      {/* Mobile Header */}
-      <div className="lg:hidden sticky top-0 z-10 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="flex items-center justify-between px-4 h-14">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => router.back()}
-              className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
-            >
-              <ChevronLeft className="w-5 h-5 text-[#111111]" />
-            </button>
-            <h1 className="text-xl font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">
-              Бортжурнал
-            </h1>
-          </div>
+    <main className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
+      {/* Шапка (§10.17): «Бортжурнал» 20/600 + кнопка «Создать» */}
+      <PageHeader
+        title="Бортжурнал"
+        variant="large"
+        rightAction={
           <button
             onClick={() => requireAuth(() => router.push("/logbook/create"))}
-            className="flex items-center gap-1 px-3 py-2 bg-[#111111] text-white rounded-lg hover:bg-[#111111]/90 transition-colors"
+            className="btn gap-1.5 rounded-lg bg-primary px-3 py-2 text-[14px] font-medium text-primary-foreground"
           >
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium font-[family-name:var(--font-manrope)]">Создать</span>
+            <Plus className="size-4" strokeWidth={1.5} />
+            Создать
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Desktop Title */}
       <div className="hidden lg:block max-w-[1200px] mx-auto px-6 pt-8 pb-2">
@@ -133,16 +125,17 @@ export default function LogbookPage() {
       {/* Loading */}
       {isLoading && (
         <>
-          <div className="lg:hidden p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+          {/* Скелетон карточек бортжурнала (§9.3) */}
+          <div className="flex flex-col gap-3 p-4 lg:hidden">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white border border-[#E5E5E7] rounded-xl p-4 animate-pulse">
+              <div key={i} className="rounded-xl border border-border bg-card p-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#F2F2F7]" />
+                  <div className="skeleton size-10 rounded-full" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-[#F2F2F7] rounded w-1/3" />
-                    <div className="h-3 bg-[#F2F2F7] rounded w-1/4" />
-                    <div className="h-5 bg-[#F2F2F7] rounded w-2/3 mt-3" />
-                    <div className="h-3 bg-[#F2F2F7] rounded w-full" />
+                    <div className="skeleton h-4 w-1/3" />
+                    <div className="skeleton h-4 w-1/4" />
+                    <div className="skeleton mt-3 h-4 w-2/3" />
+                    <div className="skeleton h-4 w-full" />
                   </div>
                 </div>
               </div>
@@ -183,8 +176,9 @@ export default function LogbookPage() {
 
       {/* Mobile + Tablet Posts */}
       {!isLoading && posts.length > 0 && (
-        <div className="lg:hidden px-4 md:px-6 pt-4 pb-24">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <div className="p-4 lg:hidden">
+          {/* Список: padding 16, gap 12 (§10.17) */}
+          <div className="flex flex-col gap-3">
             {posts.map((post) => (
               <LogbookPostCard key={post.id} post={post} variant="mobile" onClick={handlePostClick} />
             ))}

@@ -1,33 +1,15 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Accordion } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { FilterSection } from "./FilterSection";
-import { FilterChipGroup } from "./FilterChipGroup";
-import { FilterRangeInput } from "./FilterRangeInput";
+import { useState, useCallback, useMemo } from "react";
+import { ChevronDown } from "lucide-react";
+import { BottomSheet } from "@/components/layout/bottom-sheet";
 import { QUICK_FILTERS } from "@/lib/data/filterConstants";
 import {
   useGetBrandsQuery,
   useGetDictsQuery,
   useGetModelsQuery,
 } from "@/lib/features/dicts/dictsApi";
-import { useState, useCallback, useMemo } from "react";
+import { cn } from "@/lib/utils";
 
 /* ── FilterState ── */
 export interface FilterState {
@@ -74,298 +56,342 @@ export function countActiveFilters(f: FilterState): number {
   return c;
 }
 
-/* ── Shared filter content (used by both Desktop & Mobile) ── */
-interface FilterContentProps {
-  filters: FilterState;
-  setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
-}
+type Option = { id: string; label: string };
 
-function FilterContent({ filters, setFilters }: FilterContentProps) {
-  const { data: brands } = useGetBrandsQuery({ type: "cars" });
-  const { data: dicts } = useGetDictsQuery();
-  const { data: brandModels } = useGetModelsQuery(
-    { brand_id: filters.brand ?? "" },
-    { skip: !filters.brand }
-  );
-
-  const brandOptions = useMemo(
-    () => (brands ?? []).map((b) => ({ id: b.id, label: b.name })),
-    [brands]
-  );
-  const modelOptions = useMemo(
-    () => (brandModels ?? []).map((m) => ({ id: m.id, label: m.name })),
-    [brandModels]
-  );
-  const fuelOptions = useMemo(
-    () => (dicts?.fuel_types ?? []).map((d) => ({ id: d.id, label: d.name })),
-    [dicts]
-  );
-  const transmissionOptions = useMemo(
-    () => (dicts?.transmission_types ?? []).map((d) => ({ id: d.id, label: d.name })),
-    [dicts]
-  );
-  const driveOptions = useMemo(
-    () => (dicts?.drive_types ?? []).map((d) => ({ id: d.id, label: d.name })),
-    [dicts]
-  );
-  const bodyOptions = useMemo(
-    () => (dicts?.body_types ?? []).map((d) => ({ id: d.id, label: d.name })),
-    [dicts]
-  );
-  const colorOptions = useMemo(
-    () => (dicts?.colors ?? []).map((d) => ({ id: d.id, label: d.name })),
-    [dicts]
-  );
-
-  const handleQuickToggle = useCallback(
-    (id: string) => {
-      setFilters((prev) => ({
-        ...prev,
-        [id]: !prev[id as keyof FilterState],
-      }));
-    },
-    [setFilters]
-  );
-
-  const setField = useCallback(
-    <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-      setFilters((prev) => ({ ...prev, [key]: value }));
-    },
-    [setFilters]
-  );
-
+/** Аккордеон шита фильтров (§8.2): p16, заголовок 16/500 + Chevron 20 muted. */
+function Section({
+  title,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
   return (
-    <>
-      {/* Quick Filters */}
-      <div className="px-6 py-5 border-b border-[#E5E5E7]">
-        <h3 className="text-[15px] font-semibold text-[#111111] mb-3 font-[family-name:var(--font-manrope)]">
-          Быстрые фильтры
-        </h3>
-        <div className="flex flex-wrap gap-2">
-          {QUICK_FILTERS.map((qf) => (
-            <Button
-              key={qf.id}
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => handleQuickToggle(qf.id)}
-              className={`rounded-lg text-[14px] font-medium font-[family-name:var(--font-manrope)] transition-all ${
-                filters[qf.id as keyof FilterState]
-                  ? "bg-[#111111] text-white border-[#111111] hover:bg-[#333] hover:text-white"
-                  : "bg-[#F5F5F7] text-[#111111] border-transparent hover:bg-[#E5E5E7]"
-              }`}
-            >
-              {qf.label}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Detailed Filters — Two-Column on Desktop, single column on Mobile */}
-      <div className="px-6 py-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Left Column */}
-        <Accordion
-          type="multiple"
-          defaultValue={["brand-model", "price"]}
-          className="space-y-3"
-        >
-          {/* Brand/Model */}
-          <FilterSection value="brand-model" title="Марка / Модель">
-            <div className="space-y-3">
-              <div>
-                <Label className="text-[13px] text-[#8E8E93] mb-1.5 block font-[family-name:var(--font-manrope)]">
-                  Марка
-                </Label>
-                <Select
-                  value={filters.brand || ""}
-                  onValueChange={(v) => {
-                    setField("brand", v || undefined);
-                    setField("model", undefined);
-                  }}
-                >
-                  <SelectTrigger className="h-10 rounded-lg border-[#E5E5E7] bg-white text-[14px] font-[family-name:var(--font-manrope)]">
-                    <SelectValue placeholder="Любая" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {brandOptions.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {filters.brand && modelOptions.length > 0 && (
-                <div>
-                  <Label className="text-[13px] text-[#8E8E93] mb-1.5 block font-[family-name:var(--font-manrope)]">
-                    Модель
-                  </Label>
-                  <Select
-                    value={filters.model || ""}
-                    onValueChange={(v) => setField("model", v || undefined)}
-                  >
-                    <SelectTrigger className="h-10 rounded-lg border-[#E5E5E7] bg-white text-[14px] font-[family-name:var(--font-manrope)]">
-                      <SelectValue placeholder="Любая" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {modelOptions.map((m) => (
-                        <SelectItem key={m.id} value={m.id}>
-                          {m.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
-          </FilterSection>
-
-          {/* Price */}
-          <FilterSection value="price" title="Цена">
-            <FilterRangeInput
-              fromValue={filters.priceFrom}
-              toValue={filters.priceTo}
-              onFromChange={(v) => setField("priceFrom", v)}
-              onToChange={(v) => setField("priceTo", v)}
-              fromPlaceholder="0"
-              toPlaceholder="∞"
-            />
-          </FilterSection>
-
-          {/* Year */}
-          <FilterSection value="year" title="Год выпуска">
-            <FilterRangeInput
-              fromValue={filters.yearFrom}
-              toValue={filters.yearTo}
-              onFromChange={(v) => setField("yearFrom", v)}
-              onToChange={(v) => setField("yearTo", v)}
-              fromPlaceholder="2000"
-              toPlaceholder="2026"
-            />
-          </FilterSection>
-
-          {/* Mileage */}
-          <FilterSection value="mileage" title="Пробег">
-            <FilterRangeInput
-              fromValue={filters.mileageFrom}
-              toValue={filters.mileageTo}
-              onFromChange={(v) => setField("mileageFrom", v)}
-              onToChange={(v) => setField("mileageTo", v)}
-              fromLabel="От, км"
-              toLabel="До, км"
-              fromPlaceholder="0"
-              toPlaceholder="∞"
-            />
-          </FilterSection>
-        </Accordion>
-
-        {/* Right Column */}
-        <Accordion type="multiple" defaultValue={[]} className="space-y-3">
-          <FilterSection value="fuel" title="Топливо">
-            <FilterChipGroup
-              options={fuelOptions}
-              value={filters.fuel}
-              onChange={(v) => setField("fuel", v)}
-            />
-          </FilterSection>
-
-          <FilterSection value="transmission" title="Коробка передач">
-            <FilterChipGroup
-              options={transmissionOptions}
-              value={filters.transmission}
-              onChange={(v) => setField("transmission", v)}
-            />
-          </FilterSection>
-
-          <FilterSection value="drive" title="Привод">
-            <FilterChipGroup
-              options={driveOptions}
-              value={filters.drive}
-              onChange={(v) => setField("drive", v)}
-            />
-          </FilterSection>
-
-          <FilterSection value="body" title="Кузов">
-            <FilterChipGroup
-              options={bodyOptions}
-              value={filters.bodyType}
-              onChange={(v) => setField("bodyType", v)}
-            />
-          </FilterSection>
-
-          <FilterSection value="color" title="Цвет">
-            <FilterChipGroup
-              options={colorOptions}
-              value={filters.color}
-              onChange={(v) => setField("color", v)}
-            />
-          </FilterSection>
-        </Accordion>
-      </div>
-    </>
+    <div className="hairline">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between p-4 text-left"
+      >
+        <span className="text-[16px] font-medium text-foreground">{title}</span>
+        <ChevronDown
+          className={cn(
+            "size-5 text-muted-foreground transition-transform",
+            open && "rotate-180",
+          )}
+          strokeWidth={1.5}
+        />
+      </button>
+      {open && <div className="px-4 pb-4">{children}</div>}
+    </div>
   );
 }
 
-/* ── Mobile FilterSheet ── */
+/** Ряд чипов-опций с горизонтальным скроллом (§6.2). */
+function OptionRow({
+  label,
+  options,
+  value,
+  onChange,
+  anyLabel = "Любой",
+}: {
+  label?: string;
+  options: readonly Option[];
+  value?: string;
+  onChange: (v: string | undefined) => void;
+  anyLabel?: string;
+}) {
+  return (
+    <div>
+      {label && (
+        <p className="mb-2 text-[14px] text-muted-foreground">{label}</p>
+      )}
+      <div className="scroll-x -mx-4 flex gap-2 px-4">
+        <button
+          type="button"
+          aria-pressed={!value}
+          onClick={() => onChange(undefined)}
+          className="chip-option shrink-0"
+        >
+          {anyLabel}
+        </button>
+        {options.map((opt) => (
+          <button
+            key={opt.id}
+            type="button"
+            aria-pressed={value === opt.id}
+            onClick={() => onChange(value === opt.id ? undefined : opt.id)}
+            className="chip-option shrink-0"
+          >
+            {opt.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Диапазон «От / До»: два инпута в ряд, gap 12, лейблы 14/400 muted (§8.2). */
+function RangeRow({
+  fromValue,
+  toValue,
+  onFrom,
+  onTo,
+  fromPlaceholder = "0",
+  toPlaceholder = "∞",
+  hint,
+}: {
+  fromValue?: number;
+  toValue?: number;
+  onFrom: (v: number | undefined) => void;
+  onTo: (v: number | undefined) => void;
+  fromPlaceholder?: string;
+  toPlaceholder?: string;
+  hint?: string;
+}) {
+  return (
+    <div>
+      <div className="grid grid-cols-2 gap-3">
+        {(
+          [
+            ["От", fromValue, onFrom, fromPlaceholder],
+            ["До", toValue, onTo, toPlaceholder],
+          ] as const
+        ).map(([label, value, onChange, placeholder]) => (
+          <div key={label}>
+            <p className="mb-2 text-[14px] text-muted-foreground">{label}</p>
+            <input
+              type="number"
+              inputMode="numeric"
+              placeholder={placeholder}
+              value={value ?? ""}
+              onChange={(e) =>
+                onChange(e.target.value ? Number(e.target.value) : undefined)
+              }
+              className="w-full rounded-lg border border-border bg-card px-4 py-3 text-[16px] text-foreground outline-none placeholder:text-muted-foreground focus:border-ring"
+            />
+          </div>
+        ))}
+      </div>
+      {hint && <p className="mt-2 text-[12px] text-muted-foreground">{hint}</p>}
+    </div>
+  );
+}
+
+/* ── Мобильный шит фильтров (DESIGN.md §8.2) ── */
 interface FilterSheetProps {
   onClose: () => void;
   onApply: (filters: FilterState) => void;
   activeFilters?: FilterState;
 }
 
-export function FilterSheet({
-  onClose,
-  onApply,
-  activeFilters,
-}: FilterSheetProps) {
-  const [filters, setFilters] = useState<FilterState>(
-    activeFilters || EMPTY_FILTERS
-  );
+export function FilterSheet({ onClose, onApply, activeFilters }: FilterSheetProps) {
+  const [filters, setFilters] = useState<FilterState>(activeFilters || EMPTY_FILTERS);
+  // По умолчанию раскрыт только аккордеон «Марка / Модель»
+  const [openSection, setOpenSection] = useState<string | null>("brand-model");
   const count = countActiveFilters(filters);
 
+  const { data: brands } = useGetBrandsQuery({ type: "cars" });
+  const { data: dicts } = useGetDictsQuery();
+  const { data: brandModels } = useGetModelsQuery(
+    { brand_id: filters.brand ?? "" },
+    { skip: !filters.brand },
+  );
+
+  const toOptions = (list?: { id: string; name: string }[]): Option[] =>
+    (list ?? []).map((d) => ({ id: d.id, label: d.name }));
+
+  const brandOptions = useMemo(() => toOptions(brands), [brands]);
+  const modelOptions = useMemo(() => toOptions(brandModels), [brandModels]);
+
+  const setField = useCallback(
+    <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
+
+  const toggleSection = (key: string) =>
+    setOpenSection((prev) => (prev === key ? null : key));
+
   return (
-    <Sheet open onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side="bottom"
-        className="rounded-t-3xl max-h-[85vh] flex flex-col p-0"
-      >
-        <SheetHeader className="px-6 pt-5 pb-0 border-b border-[#E5E5E7]">
-          <div className="flex items-center justify-between pb-4">
-            <div className="flex items-center gap-2">
-              <SheetTitle className="text-[18px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
-                Фильтры
-              </SheetTitle>
-              {count > 0 && (
-                <Badge className="bg-[#111111] text-white border-transparent hover:bg-[#111111] rounded-full px-2.5 py-0.5 text-[12px] font-medium">
-                  {count}
-                </Badge>
-              )}
-            </div>
-            <button
-              onClick={() => setFilters(EMPTY_FILTERS)}
-              className="text-[14px] font-medium text-[#8E8E93] hover:text-[#111111] transition-colors font-[family-name:var(--font-manrope)]"
-            >
-              Сбросить
-            </button>
-          </div>
-        </SheetHeader>
+    <BottomSheet
+      open
+      onClose={onClose}
+      radius={16}
+      showHandle={false}
+      maxHeight="85vh"
+      ariaLabel="Фильтры"
+    >
+      {/* Шапка */}
+      <div className="hairline flex items-center justify-between p-4">
+        <h2 className="text-[20px] font-semibold text-foreground">Фильтры</h2>
+        <button
+          type="button"
+          onClick={() => setFilters(EMPTY_FILTERS)}
+          className="text-[14px] font-medium text-muted-foreground"
+        >
+          Сбросить
+        </button>
+      </div>
 
-        <ScrollArea className="flex-1 overflow-y-auto">
-          <FilterContent filters={filters} setFilters={setFilters} />
-        </ScrollArea>
-
-        <div className="px-6 py-4 border-t border-[#E5E5E7] bg-white">
-          <Button
-            onClick={() => {
-              onApply(filters);
-              onClose();
-            }}
-            className="w-full h-12 rounded-2xl bg-[#111111] text-white hover:bg-[#333] text-[15px] font-semibold font-[family-name:var(--font-manrope)]"
+      {/* Быстрые фильтры — круглые чипы, горизонтальный скролл */}
+      <div className="hairline scroll-x flex gap-2 p-4">
+        {QUICK_FILTERS.map((qf) => (
+          <button
+            key={qf.id}
+            type="button"
+            aria-pressed={!!filters[qf.id as keyof FilterState]}
+            onClick={() =>
+              setFilters((prev) => ({
+                ...prev,
+                [qf.id]: !prev[qf.id as keyof FilterState],
+              }))
+            }
+            className="chip shrink-0"
           >
-            Показать результаты
-          </Button>
-        </div>
-      </SheetContent>
-    </Sheet>
+            {qf.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Аккордеоны */}
+      <div className="flex-1 overflow-y-auto">
+        <Section
+          title="Марка / Модель"
+          open={openSection === "brand-model"}
+          onToggle={() => toggleSection("brand-model")}
+        >
+          <div className="space-y-4">
+            <OptionRow
+              label="Марка"
+              options={brandOptions}
+              value={filters.brand}
+              anyLabel="Любая"
+              onChange={(v) => {
+                setField("brand", v);
+                setField("model", undefined);
+              }}
+            />
+            {filters.brand && modelOptions.length > 0 && (
+              <OptionRow
+                label="Модель"
+                options={modelOptions}
+                value={filters.model}
+                anyLabel="Любая"
+                onChange={(v) => setField("model", v)}
+              />
+            )}
+          </div>
+        </Section>
+
+        <Section
+          title="Цена"
+          open={openSection === "price"}
+          onToggle={() => toggleSection("price")}
+        >
+          <RangeRow
+            fromValue={filters.priceFrom}
+            toValue={filters.priceTo}
+            onFrom={(v) => setField("priceFrom", v)}
+            onTo={(v) => setField("priceTo", v)}
+            hint="Валюта: сомони"
+          />
+        </Section>
+
+        <Section
+          title="Год"
+          open={openSection === "year"}
+          onToggle={() => toggleSection("year")}
+        >
+          <RangeRow
+            fromValue={filters.yearFrom}
+            toValue={filters.yearTo}
+            onFrom={(v) => setField("yearFrom", v)}
+            onTo={(v) => setField("yearTo", v)}
+            fromPlaceholder="1976"
+            toPlaceholder="2026"
+          />
+        </Section>
+
+        <Section
+          title="Пробег"
+          open={openSection === "mileage"}
+          onToggle={() => toggleSection("mileage")}
+        >
+          <RangeRow
+            fromValue={filters.mileageFrom}
+            toValue={filters.mileageTo}
+            onFrom={(v) => setField("mileageFrom", v)}
+            onTo={(v) => setField("mileageTo", v)}
+          />
+        </Section>
+
+        <Section
+          title="Технические"
+          open={openSection === "tech"}
+          onToggle={() => toggleSection("tech")}
+        >
+          <div className="space-y-4">
+            <OptionRow
+              label="Двигатель"
+              options={toOptions(dicts?.fuel_types)}
+              value={filters.fuel}
+              onChange={(v) => setField("fuel", v)}
+            />
+            <OptionRow
+              label="Коробка"
+              options={toOptions(dicts?.transmission_types)}
+              value={filters.transmission}
+              anyLabel="Любая"
+              onChange={(v) => setField("transmission", v)}
+            />
+            <OptionRow
+              label="Привод"
+              options={toOptions(dicts?.drive_types)}
+              value={filters.drive}
+              onChange={(v) => setField("drive", v)}
+            />
+            <OptionRow
+              label="Кузов"
+              options={toOptions(dicts?.body_types)}
+              value={filters.bodyType}
+              onChange={(v) => setField("bodyType", v)}
+            />
+          </div>
+        </Section>
+
+        <Section
+          title="Дополнительно"
+          open={openSection === "extra"}
+          onToggle={() => toggleSection("extra")}
+        >
+          <OptionRow
+            label="Цвет"
+            options={toOptions(dicts?.colors)}
+            value={filters.color}
+            onChange={(v) => setField("color", v)}
+          />
+        </Section>
+      </div>
+
+      {/* Кнопка применения (§8.2) */}
+      <div className="hairline-top p-4">
+        <button
+          type="button"
+          onClick={() => {
+            onApply(filters);
+            onClose();
+          }}
+          className="btn w-full rounded-lg bg-primary py-4 text-[16px] font-medium text-primary-foreground"
+        >
+          Показать объявления{count > 0 ? ` (${count})` : ""}
+        </button>
+      </div>
+    </BottomSheet>
   );
 }

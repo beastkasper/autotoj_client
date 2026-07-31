@@ -94,7 +94,7 @@ export default function RentalPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
       {/* ── Desktop Filter Bar (sticky) ── */}
       <div className="hidden lg:block sticky top-[65px] z-20 bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1440px] mx-auto px-6 py-4">
@@ -180,31 +180,30 @@ export default function RentalPage() {
         )}
       </div>
 
-      {/* ── Mobile Header ── */}
+      {/* ── Шапка (§10.8) ── */}
       <PageHeader
         title="Авто прокат"
         rightAction={
           <button
             onClick={() => requireAuth(() => setShowAddForm(true))}
             aria-label="Добавить автомобиль"
-            className="flex items-center gap-1 h-9 px-3 bg-[#E53935] text-white rounded-lg hover:bg-[#D32F2F] active:scale-95 transition-all font-[family-name:var(--font-manrope)]"
+            className="grid size-10 place-items-center rounded-[20px] bg-black/5 transition-transform active:scale-95 dark:bg-white/10"
           >
-            <Plus className="w-4 h-4" />
-            <span className="text-[14px] font-medium">Добавить</span>
+            <Plus className="size-5 text-foreground" strokeWidth={1.5} />
           </button>
         }
       />
 
-      {/* ── Mobile Search + Filters ── */}
-      <div className="lg:hidden px-4 pt-4 pb-2 space-y-3">
+      {/* ── Поиск + фильтры (§10.8) ── */}
+      <div className="px-4 py-3 lg:hidden">
         <SearchInput
           value={searchQuery}
           onChange={setSearchQuery}
-          placeholder="Поиск автомобилей.."
+          placeholder="Поиск автомобилей"
           variant="mobile"
         />
 
-        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+        <div className="scroll-x -mx-4 mt-3 flex gap-2 px-4">
           {CAR_CLASSES.map((cls) => (
             <FilterChip
               key={cls.id}
@@ -214,7 +213,7 @@ export default function RentalPage() {
               variant="mobile"
             />
           ))}
-          <div className="w-px h-9 bg-[#E5E5E7] shrink-0 self-center" />
+          <span className="h-9 w-px shrink-0 self-center bg-border" />
           {(cities ?? []).map((city) => (
             <FilterChip
               key={city.id}
@@ -226,27 +225,22 @@ export default function RentalPage() {
           ))}
         </div>
 
-        <div className="flex items-center justify-between">
-          <p className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-            Найдено {filteredCars.length} автомобилей
-          </p>
-          {hasActiveFilters && (
-            <button
-              onClick={resetFilters}
-              className="text-[13px] text-[#E53935] font-medium font-[family-name:var(--font-manrope)]"
-            >
-              Сбросить
-            </button>
-          )}
-        </div>
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="mt-3 text-[13px] font-medium text-link"
+          >
+            Сбросить фильтры
+          </button>
+        )}
       </div>
 
-      {/* ── Mobile + Tablet Grid ── */}
-      <div className="lg:hidden px-4 md:px-6 pb-24">
+      {/* ── Сетка: 2 колонки, gap 12, px16 ── */}
+      <div className="px-4 lg:hidden">
         {isLoading ? (
           <GridPageSkeleton count={6} />
         ) : filteredCars.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 gap-3">
             {filteredCars.map((car) => (
               <RentalCard key={car.id} car={car} onClick={handleCarClick} variant="mobile" />
             ))}
@@ -255,7 +249,11 @@ export default function RentalPage() {
           <EmptyState
             icon={Search}
             title="Ничего не найдено"
-            description="Попробуйте изменить параметры поиска"
+            description={
+              hasActiveFilters || searchQuery
+                ? "Попробуйте изменить параметры поиска"
+                : "Пока нет объявлений"
+            }
           />
         )}
         {!isLoading && (

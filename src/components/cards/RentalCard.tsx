@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { Settings } from "lucide-react";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import type { RentalCar } from "@/lib/types/rental";
 
@@ -10,6 +11,7 @@ interface RentalCardProps {
   variant?: "desktop" | "mobile";
 }
 
+/** Карточка проката (DESIGN.md §10.8): r16, тень 0 2px 8px rgba(0,0,0,.06), без границы. */
 export const RentalCard = React.memo(function RentalCard({
   car,
   onClick,
@@ -20,53 +22,46 @@ export const RentalCard = React.memo(function RentalCard({
   return (
     <button
       onClick={() => onClick(car.id)}
-      className={`bg-white rounded-2xl overflow-hidden text-left transition-all ${
+      className={`overflow-hidden bg-card text-left transition-all ${
         isMobile
-          ? "active:scale-[0.98] transition-transform"
-          : "hover:shadow-lg group"
+          ? "press-card rounded-2xl shadow-[var(--shadow-icon-card)]"
+          : "group rounded-2xl hover:shadow-lg"
       }`}
     >
-      {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-[#F5F5F7]">
+      <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
         <img
           src={car.image}
           alt={car.title}
-          className={`w-full h-full object-cover ${
-            !isMobile
-              ? "group-hover:scale-105 transition-transform duration-300"
-              : ""
+          className={`size-full object-cover ${
+            !isMobile ? "transition-transform duration-300 group-hover:scale-105" : ""
           }`}
         />
       </div>
 
-      {/* Info */}
       <div className={isMobile ? "p-3" : "p-4"}>
         <h3
-          className={`font-semibold text-[#111111] mb-0.5 line-clamp-1 font-[family-name:var(--font-manrope)] ${
-            isMobile ? "text-[13px]" : "text-[15px]"
+          className={`line-1 font-semibold text-foreground ${
+            isMobile ? "mb-1 text-[14px]" : "mb-0.5 text-[15px]"
           }`}
         >
           {car.title}
         </h3>
+        {isMobile ? (
+          <p className="mb-2 flex items-center gap-1 text-[12px] text-muted-foreground">
+            <Settings className="size-3.5 shrink-0" strokeWidth={1.5} />
+            {car.transmission}
+          </p>
+        ) : (
+          <p className="mb-2 text-[13px] text-muted-foreground">{car.transmission}</p>
+        )}
         <p
-          className={`text-[#8E8E93] font-[family-name:var(--font-manrope)] ${
-            isMobile ? "text-[11px] mb-1.5" : "text-[13px] mb-2"
-          }`}
+          className={`text-foreground ${isMobile ? "mb-1 text-[15px]" : "mb-2 text-[17px]"}`}
         >
-          {car.transmission}
+          <span className="font-bold">{car.pricePerDay} сомони</span>
+          <span className="text-[12px] font-normal text-muted-foreground"> / день</span>
         </p>
         <p
-          className={`text-[#111111] font-[family-name:var(--font-manrope)] ${
-            isMobile ? "text-[15px] mb-1" : "text-[17px] mb-2"
-          }`}
-        >
-          <span className="font-bold">{car.pricePerDay} сомони/</span>
-          <span className="font-normal text-[13px]">день</span>
-        </p>
-        <p
-          className={`text-[#8E8E93] font-[family-name:var(--font-manrope)] ${
-            isMobile ? "text-[11px]" : "text-[13px]"
-          }`}
+          className={`text-muted-foreground ${isMobile ? "text-[12px]" : "text-[13px]"}`}
         >
           {formatFullDateWithCity(car.publishedDate, car.city)}
         </p>

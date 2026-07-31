@@ -39,11 +39,18 @@ export default function FavoritesPage() {
     [removeFavorite],
   );
 
-  const countLabel =
-    favorites.length === 1 ? "объявление" : "объявлений";
+  // Склонение: 1 → объявление, 2–4 → объявления, 5+ → объявлений (§10.15)
+  const countLabel = (() => {
+    const n = favorites.length % 100;
+    if (n > 10 && n < 20) return "объявлений";
+    const d = n % 10;
+    if (d === 1) return "объявление";
+    if (d >= 2 && d <= 4) return "объявления";
+    return "объявлений";
+  })();
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
       {/* ── Desktop Header Bar (sticky) ── */}
       <div className="hidden lg:block sticky top-[65px] z-20 bg-white border-b border-[#E5E5E7]">
         <div className="max-w-[1440px] mx-auto px-6 py-4">
@@ -98,43 +105,40 @@ export default function FavoritesPage() {
         )}
       </div>
 
-      {/* ── Mobile Header ── */}
+      {/* ── Шапка (§10.15): «Избранное» 24/600 + «N объявлений» ── */}
       <PageHeader
         title="Избранное"
-        rightAction={
-          favorites.length > 0 ? (
-            <span className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-              {favorites.length}
-            </span>
-          ) : undefined
+        variant="large"
+        titleClass="text-[24px] leading-[30px]"
+        subtitle={
+          favorites.length > 0
+            ? `${favorites.length} ${countLabel}`
+            : undefined
         }
       />
 
-      {/* ── Mobile + Tablet Grid ── */}
-      <div className="lg:hidden px-4 md:px-6 py-4 pb-24">
+      {/* ── Список: карточки list-варианта, padding 16, gap 12 (§10.15) ── */}
+      <div className="flex flex-col gap-3 p-4 lg:hidden">
         {isLoading ? (
-          <ContentGrid mobileCols={2}>
-            <SkeletonGrid count={6} />
-          </ContentGrid>
+          <SkeletonGrid count={4} variant="list" />
         ) : favorites.length > 0 ? (
-          <ContentGrid mobileCols={2}>
-            {favorites.map((ad) => (
-              <AdCard
-                key={ad.id}
-                ad={ad}
-                variant="grid"
-                onFavoriteToggle={handleFavoriteToggle}
-                onClick={handleAdClick}
-              />
-            ))}
-          </ContentGrid>
+          favorites.map((ad) => (
+            <AdCard
+              key={ad.id}
+              ad={ad}
+              variant="list"
+              isFavorite
+              onFavoriteToggle={handleFavoriteToggle}
+              onClick={handleAdClick}
+            />
+          ))
         ) : (
           <EmptyState
             icon={Heart}
-            title="Нет избранных"
+            title="Нет избранных объявлений"
             description="Добавляйте объявления в избранное, чтобы не потерять их"
             action={{
-              label: "К объявлениям",
+              label: "К поиску",
               onClick: () => router.push("/"),
             }}
           />

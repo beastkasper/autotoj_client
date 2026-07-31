@@ -24,7 +24,8 @@ import {
 
 const F = "font-[family-name:var(--font-manrope)]";
 const BIO_MAX = 150;
-const INPUT_BASE = "bg-[#F7F7F9] border border-black/4 px-5 py-4 text-[15px] w-full outline-none";
+const INPUT_BASE =
+  "bg-surface-alt border border-black/[0.04] px-5 py-4 text-[15px] w-full outline-none text-foreground";
 const LABEL = `block text-[13px] uppercase tracking-wider text-[#8E8E93] mb-2 ${F}`;
 
 export default function ProfileEditPage() {
@@ -111,28 +112,38 @@ export default function ProfileEditPage() {
   const camBtn = (onClick: () => void, lg: boolean) => (
     <button
       onClick={onClick}
-      className={`absolute bg-black/40 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-black/50 transition-colors ${
-        lg ? "w-10 h-10 bottom-3 right-3" : "w-8 h-8 bottom-2 right-2"
+      className={`absolute grid place-items-center rounded-full bg-black/70 text-white backdrop-blur-sm transition-colors hover:bg-black/80 ${
+        lg ? "bottom-3 right-3 size-10" : "bottom-1 right-1 size-7"
       }`}
     >
-      <Camera className={lg ? "w-5 h-5" : "w-4 h-4"} />
+      <Camera className={lg ? "size-5" : "size-4"} strokeWidth={1.5} />
     </button>
   );
 
   const banner = (h: number) => (
-    <div className="relative rounded-2xl overflow-hidden bg-[#F5F5F7]" style={{ height: h }}>
-      {profile?.banner_url && <Image src={profile.banner_url} alt="Banner" fill className="object-cover" />}
+    <div
+      className="relative flex items-center justify-center overflow-hidden rounded-[20px] bg-surface-alt shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+      style={{ height: h }}
+    >
+      {profile?.banner_url ? (
+        <Image src={profile.banner_url} alt="Banner" fill className="object-cover" />
+      ) : (
+        <span className="flex items-center gap-2 text-[13px] font-medium text-muted-foreground">
+          <Camera className="size-4" strokeWidth={1.5} />
+          Добавить обложку
+        </span>
+      )}
       {camBtn(() => bannerRef.current?.click(), h > 150)}
     </div>
   );
 
   const avatar = (dim: number, mt: string) => (
     <div className={`relative mx-auto ${mt}`} style={{ width: dim, height: dim }}>
-      <div className="rounded-full overflow-hidden border-4 border-white bg-[#F5F5F7] flex items-center justify-center" style={{ width: dim, height: dim }}>
+      <div className="flex items-center justify-center overflow-hidden rounded-full border-4 border-card bg-secondary shadow-[0_4px_12px_rgba(0,0,0,0.08)]" style={{ width: dim, height: dim }}>
         {profile?.avatar_url ? (
           <Image src={profile.avatar_url} alt="Avatar" width={dim} height={dim} className="object-cover w-full h-full" />
         ) : (
-          <User className="w-1/2 h-1/2 text-[#C7C7CC]" />
+          <User className="h-1/2 w-1/2 text-muted-foreground" strokeWidth={1.5} />
         )}
       </div>
       {camBtn(() => avatarRef.current?.click(), dim > 100)}
@@ -162,7 +173,7 @@ export default function ProfileEditPage() {
         maxLength={BIO_MAX}
         className={`${INPUT_BASE} ${rounded} resize-none ${F}`}
       />
-      <span className="absolute bottom-3 right-4 text-[12px] text-[#8E8E93]">{formData.bio.length}/{BIO_MAX}</span>
+      <span className="absolute bottom-3 right-4 text-[11px] text-[#C7C7CC]">{formData.bio.length}/{BIO_MAX}</span>
     </div>
   );
 
@@ -185,34 +196,67 @@ export default function ProfileEditPage() {
       <input ref={avatarRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarFile} />
       <input ref={bannerRef} type="file" accept="image/*" className="hidden" onChange={handleBannerFile} />
 
-      {/* Mobile + Tablet */}
-      <div className="lg:hidden min-h-screen bg-white md:max-w-3xl md:mx-auto">
+      {/* ── Мобилка (§10.14) ── */}
+      <div className="screen min-h-screen bg-card lg:hidden">
         <PageHeader
-          title="Редактировать"
+          title="Профиль"
           rightAction={
             <button
               onClick={handleSave}
               disabled={!hasChanges || isSaving}
-              className={`text-[15px] font-semibold ${F} ${hasChanges && !isSaving ? "text-[#007AFF]" : "text-[#C7C7CC]"}`}
+              className={`text-[15px] font-semibold ${
+                hasChanges && !isSaving ? "text-foreground" : "text-[#C7C7CC]"
+              }`}
             >
-              {isSaving ? "..." : "Сохранить"}
+              {isSaving ? "Сохранение..." : "Сохранить"}
             </button>
           }
         />
-        <div className="px-4 pb-28">
-          {banner(140)}
+        <div className="px-4">
+          <div className="mt-4">{banner(140)}</div>
           {avatar(88, "-mt-[44px] mb-4")}
           {uploadErrorBanner}
           {success}
-          <div className="flex flex-col gap-3 mt-4">
-            <Input value={formData.name} onChange={(e) => set("name", e.target.value)} placeholder="Имя" className={`${INPUT_BASE} rounded-full h-auto ${F}`} />
-            <Input value={profile?.phone ?? ""} disabled placeholder="Телефон" className={`${INPUT_BASE} rounded-full h-auto opacity-50 ${F}`} />
-            <Input type="email" value={formData.email} onChange={(e) => set("email", e.target.value)} placeholder="Email" className={`${INPUT_BASE} rounded-full h-auto ${F}`} />
+          {/* Поля: r9999, padding 16×20, bg #F7F7F9 (§10.14) */}
+          <div className="mt-6 flex flex-col gap-3">
+            <Input
+              value={formData.name}
+              onChange={(e) => set("name", e.target.value)}
+              placeholder="Имя"
+              className={`${INPUT_BASE} h-auto rounded-full`}
+            />
+            <Input
+              value={profile?.phone ?? ""}
+              disabled
+              placeholder="Телефон"
+              className={`${INPUT_BASE} h-auto rounded-full opacity-50`}
+            />
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e) => set("email", e.target.value)}
+              placeholder="Email"
+              className={`${INPUT_BASE} h-auto rounded-full`}
+            />
             {bioField("rounded-[20px]")}
           </div>
-          <div className="flex flex-col gap-3 mt-8">
-            {logoutBtn("w-full rounded-full h-12")}
-            {deleteBtn("w-full rounded-full h-12")}
+          <div className="mt-8 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="btn btn--danger-ghost w-full"
+            >
+              <LogOut className="size-4" strokeWidth={1.5} />
+              Выйти из аккаунта
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true)}
+              className="btn btn--danger w-full"
+            >
+              <Trash2 className="size-4" strokeWidth={1.5} />
+              Удалить аккаунт
+            </button>
           </div>
         </div>
       </div>
@@ -262,6 +306,7 @@ export default function ProfileEditPage() {
           title="Удалить аккаунт?"
           description="Все ваши данные будут безвозвратно удалены. Это действие нельзя отменить."
           confirmLabel="Удалить"
+          destructive
           onConfirm={handleDeleteAccount}
           onCancel={() => setShowDeleteModal(false)}
         />

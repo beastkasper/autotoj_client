@@ -2,8 +2,9 @@
 
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Package } from "lucide-react";
+import { ArrowLeft, Package } from "lucide-react";
 import { EmptyState } from "@/components/states/EmptyState";
+import { SkeletonGrid } from "@/components/layout/skeleton-grid";
 import { MyAdCardDesktop } from "@/components/my-ads/my-ad-card-desktop";
 import { MyAdCardMobile } from "@/components/my-ads/my-ad-card-mobile";
 import { MyAdsTabs } from "@/components/my-ads/my-ads-tabs";
@@ -101,7 +102,7 @@ export default function MyAdsPage() {
   void counts;
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
+    <main className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
       {/* ══════════ DESKTOP ══════════ */}
       <div className="hidden lg:block">
         <div className="max-w-[1200px] mx-auto px-6 py-8">
@@ -185,16 +186,17 @@ export default function MyAdsPage() {
 
       {/* ══════════ MOBILE ══════════ */}
 
-      {/* Mobile Header (sticky) */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="flex items-center gap-3 px-4 h-14">
+      {/* Шапка (§10.16): «Мои объявления» 20/600 + табы */}
+      <div className="hairline sticky top-0 z-40 bg-card pt-[env(safe-area-inset-top)] lg:hidden">
+        <div className="flex items-center gap-2 p-4">
           <button
             onClick={() => router.back()}
-            className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
+            aria-label="Назад"
+            className="icon-btn -ml-2.5"
           >
-            <ChevronLeft className="w-5 h-5 text-[#111111]" />
+            <ArrowLeft className="size-5" strokeWidth={1.5} />
           </button>
-          <h1 className="text-[17px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">
+          <h1 className="text-[20px] font-semibold leading-[26px] text-foreground">
             Мои объявления
           </h1>
         </div>
@@ -202,24 +204,10 @@ export default function MyAdsPage() {
         <MyAdsTabs activeTab={activeTab} onTabChange={setActiveTab} variant="mobile" />
       </div>
 
-      {/* Mobile + Tablet Cards */}
-      <div className="lg:hidden px-4 md:px-6 py-4 pb-24 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+      {/* Список: padding 16, gap 12 */}
+      <div className="flex flex-col gap-3 p-4 lg:hidden">
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl overflow-hidden border border-[#E5E5E7] animate-pulse"
-            >
-              <div className="flex">
-                <div className="w-32 h-32 bg-[#E5E5E7]" />
-                <div className="flex-1 p-3 space-y-2">
-                  <div className="h-4 bg-[#E5E5E7] rounded w-3/4" />
-                  <div className="h-3 bg-[#E5E5E7] rounded w-1/2" />
-                  <div className="h-5 bg-[#E5E5E7] rounded w-1/3" />
-                </div>
-              </div>
-            </div>
-          ))
+          <SkeletonGrid count={4} variant="list" />
         ) : ads.length > 0 ? (
           ads.map((ad) => (
             <MyAdCardMobile
@@ -237,38 +225,34 @@ export default function MyAdsPage() {
             />
           ))
         ) : (
-          <div className="md:col-span-2">
-            <EmptyState
-              icon={Package}
-              title={
-                activeTab === "active"
-                  ? "У вас пока нет активных объявлений"
-                  : "Пауза объявлений"
-              }
-              description={
-                activeTab === "active"
-                  ? "Создайте новое объявление, чтобы начать продажу"
-                  : "Здесь будут храниться объявления на паузе"
-              }
-              action={
-                activeTab === "active"
-                  ? {
-                      label: "Разместить объявление",
-                      onClick: () => router.push("/post-ad"),
-                    }
-                  : undefined
-              }
-            />
-          </div>
+          <EmptyState
+            icon={Package}
+            title={
+              activeTab === "active"
+                ? "У вас пока нет активных объявлений"
+                : "Пауза объявлений"
+            }
+            description={
+              activeTab === "active"
+                ? "Создайте новое объявление, чтобы начать продажу"
+                : "Здесь будут храниться объявления на паузе"
+            }
+            action={
+              activeTab === "active"
+                ? {
+                    label: "Разместить объявление",
+                    onClick: () => router.push("/post-ad"),
+                  }
+                : undefined
+            }
+          />
         )}
         {!isLoading && (
-          <div className="md:col-span-2">
-            <LoadMoreButton
-              hasMore={hasMore}
-              isLoading={isLoadingMore}
-              onClick={() => setPage(page + 1)}
-            />
-          </div>
+          <LoadMoreButton
+            hasMore={hasMore}
+            isLoading={isLoadingMore}
+            onClick={() => setPage(page + 1)}
+          />
         )}
       </div>
 

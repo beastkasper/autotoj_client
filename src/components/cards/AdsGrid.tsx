@@ -8,50 +8,40 @@ interface AdsGridProps {
   onFavoriteToggle: (id: string) => void;
   onAdClick: (id: string) => void;
   /** Desktop columns (default: 4) */
-  desktopCols?: number;
-  /** Mobile columns (default: 2) */
-  mobileCols?: number;
+  desktopCols?: 2 | 3 | 4;
 }
+
+const DESKTOP_COLS = {
+  2: "lg:grid-cols-2",
+  3: "lg:grid-cols-3",
+  4: "lg:grid-cols-4",
+} as const;
 
 export const AdsGrid = React.memo(function AdsGrid({
   ads,
   onFavoriteToggle,
   onAdClick,
   desktopCols = 4,
-  mobileCols = 2,
 }: AdsGridProps) {
-  const desktopGridCls =
-    desktopCols === 4 ? "lg:grid-cols-4" : `lg:grid-cols-${desktopCols}`;
+  const cards = ads.map((ad) => (
+    <AdCard
+      key={ad.id}
+      ad={ad}
+      variant="grid"
+      onFavoriteToggle={onFavoriteToggle}
+      onClick={onAdClick}
+    />
+  ));
 
   return (
     <>
       {/* Desktop */}
-      <div className={`hidden lg:grid ${desktopGridCls} gap-5`}>
-        {ads.map((ad) => (
-          <AdCard
-            key={ad.id}
-            ad={ad}
-            variant="grid"
-            onFavoriteToggle={onFavoriteToggle}
-            onClick={onAdClick}
-          />
-        ))}
+      <div className={`hidden gap-5 lg:grid ${DESKTOP_COLS[desktopCols]}`}>
+        {cards}
       </div>
 
-      {/* Mobile + Tablet */}
-      <div
-        className={`lg:hidden grid grid-cols-${mobileCols} md:grid-cols-3 gap-3 md:gap-4 px-4 md:px-6 mt-8`}
-      >
-        {ads.map((ad) => (
-          <AdCard
-            key={ad.id}
-            ad={ad}
-            variant="grid"
-            onFavoriteToggle={onFavoriteToggle}
-            onClick={onAdClick}
-          />
-        ))}
-      </div>
+      {/* Мобилка: 2 колонки, gap 12, px 16 (§10.1) */}
+      <div className="grid grid-cols-2 gap-3 px-4 lg:hidden">{cards}</div>
     </>
   );
 });

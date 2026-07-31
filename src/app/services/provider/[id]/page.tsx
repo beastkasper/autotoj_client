@@ -14,6 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/layout/page-header";
 import {
   useGetServiceProviderByIdQuery,
   useGetProviderReviewsQuery,
@@ -82,21 +83,9 @@ export default function ServiceProviderPage() {
   const workingHoursEntries = Object.entries(provider.working_hours ?? {});
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <div className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
       {/* ── Mobile Header ── */}
-      <div className="lg:hidden sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="flex items-center gap-3 px-4 h-14">
-          <button
-            onClick={() => router.back()}
-            className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5 text-[#111111]" />
-          </button>
-          <h1 className="text-[17px] font-semibold text-[#111111] font-[family-name:var(--font-manrope)] truncate">
-            {provider.name}
-          </h1>
-        </div>
-      </div>
+      <PageHeader title={provider.name} />
 
       {/* ── Desktop Back Link ── */}
       <div className="hidden lg:block max-w-[1440px] mx-auto px-6 pt-6">
@@ -129,7 +118,7 @@ export default function ServiceProviderPage() {
         {/* ── Main Info ── */}
         <div className="lg:col-span-2 space-y-4 px-4 lg:px-0 py-4 lg:py-0">
           {/* Name + Rating */}
-          <div className="bg-white rounded-2xl p-5">
+          <div className="rounded-2xl bg-card p-4 lg:p-5">
             <div className="flex items-center gap-2">
               <h1 className="text-[22px] lg:text-[28px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
                 {provider.name}
@@ -141,7 +130,7 @@ export default function ServiceProviderPage() {
 
             <div className="flex items-center gap-3 mt-2">
               <div className="flex items-center gap-1">
-                <Star className="w-5 h-5 text-[#FF9500] fill-[#FF9500]" />
+                <Star className="size-5 fill-star text-star" />
                 <span className="text-[17px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
                   {averageRating.toFixed(1)}
                 </span>
@@ -159,7 +148,7 @@ export default function ServiceProviderPage() {
           </div>
 
           {/* Contact + Address */}
-          <div className="bg-white rounded-2xl p-5 space-y-3">
+          <div className="space-y-3 rounded-2xl bg-card p-4 lg:p-5">
             {provider.address && (
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-[#8E8E93] mt-0.5 shrink-0" />
@@ -214,7 +203,7 @@ export default function ServiceProviderPage() {
           </div>
 
           {/* Reviews */}
-          <div className="bg-white rounded-2xl p-5">
+          <div className="rounded-2xl bg-card p-4 lg:p-5">
             <h2 className="text-[17px] font-bold text-[#111111] mb-4 font-[family-name:var(--font-manrope)]">
               Отзывы ({reviewsData?.total ?? provider.reviews_count})
             </h2>
@@ -295,7 +284,7 @@ export default function ServiceProviderPage() {
         <div className="hidden lg:block">
           <div className="sticky top-[120px] space-y-4">
             {/* Call CTA */}
-            <div className="bg-white rounded-2xl p-5">
+            <div className="rounded-2xl bg-card p-4 lg:p-5">
               <Button
                 onClick={handleCall}
                 className="w-full h-12 bg-[#34C759] hover:bg-[#2DB84D] text-white rounded-xl text-[17px] font-semibold font-[family-name:var(--font-manrope)]"
@@ -323,14 +312,16 @@ export default function ServiceProviderPage() {
       </div>
 
       {/* ── Mobile Fixed Call Button ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 backdrop-blur-xl border-t border-[#E5E5E7] px-4 py-3">
-        <Button
+      <div className="blur-surface hairline-top fixed bottom-0 left-0 right-0 z-30 mx-auto max-w-[440px] px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] lg:hidden">
+        {/* Кнопка «Позвонить»: h48 r24, обводка 2px (§10.6) */}
+        <button
+          type="button"
           onClick={handleCall}
-          className="w-full h-12 bg-[#34C759] hover:bg-[#2DB84D] text-white rounded-xl text-[17px] font-semibold font-[family-name:var(--font-manrope)]"
+          className="btn h-12 w-full rounded-[24px] border-2 border-foreground text-[15px] font-semibold text-foreground"
         >
-          <Phone className="w-5 h-5 mr-2" />
+          <Phone className="size-[18px]" strokeWidth={1.5} />
           Позвонить
-        </Button>
+        </button>
       </div>
     </div>
   );

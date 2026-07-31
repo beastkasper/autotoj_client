@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import StoreProvider from "@/components/providers/StoreProvider";
+import { ThemeScript } from "@/components/providers/ThemeProvider";
 import { DesktopHeader } from "@/components/header/DesktopHeader";
 import { MobileBottomNav } from "@/components/header/MobileBottomNav";
 import { DesktopFooter } from "@/components/footer/DesktopFooter";
@@ -54,13 +55,27 @@ export const metadata: Metadata = {
   },
 };
 
+// §1 — safe-area работает только с viewport-fit=cover
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru">
+    <html lang="ru" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${manrope.variable} antialiased`}
       >
@@ -79,7 +94,8 @@ export default function RootLayout({
             }}
           />
           <DesktopHeader />
-          {children}
+          {/* §1 — на мобилке контент ограничен 440px и центрирован */}
+          <div className="app-shell">{children}</div>
           <MobileBottomNav />
           <DesktopFooter />
         </StoreProvider>

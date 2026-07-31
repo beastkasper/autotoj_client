@@ -4,9 +4,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronRight,
   Wrench,
-  Box,
   Car,
-  RectangleHorizontal,
   Sparkles,
   Truck,
   ClipboardCheck,
@@ -49,11 +47,24 @@ const SERVICE_ICONS: Record<string, React.ElementType> = {
   graduation_cap: GraduationCap,
 };
 
-/** Featured shortcut cards shown above the services grid on mobile. */
+/** Главные плитки сервисов (§13.4): иконбоксы #1a1a1a и #2d2d2d. */
 const FEATURED = [
-  { id: "goods", title: "Автотовары", subtitle: "Покупка и продажа", icon: Box, href: "/parts" },
-  { id: "rental", title: "Авто прокат", subtitle: "Аренда автомобилей", icon: Car, href: "/rental" },
-  { id: "plates", title: "Гос номера", subtitle: "Покупка и продажа", icon: RectangleHorizontal, href: "/parts" },
+  {
+    id: "parts",
+    title: "Запчасти",
+    subtitle: "Покупка и продажа",
+    icon: Wrench,
+    iconBg: "#1a1a1a",
+    href: "/parts",
+  },
+  {
+    id: "rental",
+    title: "Авто прокат",
+    subtitle: "Аренда автомобилей",
+    icon: Car,
+    iconBg: "#2d2d2d",
+    href: "/rental",
+  },
 ];
 
 function formatCompaniesCount(count: number): string {
@@ -68,8 +79,8 @@ export default function ServicesPage() {
   const hasCategories = !!categories && categories.length > 0;
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7]">
-      <PageHeader title="Сервисы" />
+    <main className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
+      <PageHeader title="Сервисы" variant="center" />
       <DesktopPageHeader title="Сервисы" subtitle="Выберите категорию услуг" />
 
       {/* ── Desktop ── */}
@@ -114,25 +125,28 @@ export default function ServicesPage() {
         )}
       </div>
 
-      {/* ── Mobile + Tablet ── */}
-      <div className="lg:hidden px-4 md:px-6 pt-4 pb-28">
-        {/* Featured shortcut cards */}
-        <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+      {/* ── Мобилка (§10.5) ── */}
+      <div className="px-4 pt-4 lg:hidden">
+        {/* Главные плитки: 2 колонки, gap 12, r20 p20, shadow-tile */}
+        <div className="grid grid-cols-2 gap-3">
           {FEATURED.map((item) => {
             const Icon = item.icon;
             return (
               <button
                 key={item.id}
                 onClick={() => router.push(item.href)}
-                className="bg-white rounded-2xl p-3 flex flex-col items-center text-center active:scale-[0.98] transition-transform"
+                className="press-tile rounded-[20px] border border-black/[0.04] bg-card p-5 text-left shadow-[var(--shadow-tile)] transition-transform"
               >
-                <div className="size-14 rounded-[18px] bg-[#1C1C1E] flex items-center justify-center">
-                  <Icon className="size-7 text-white" strokeWidth={1.8} />
+                <div
+                  className="mb-3 grid size-[52px] place-items-center rounded-2xl"
+                  style={{ background: item.iconBg }}
+                >
+                  <Icon className="size-[26px] text-white" strokeWidth={1.8} />
                 </div>
-                <h3 className="mt-2.5 text-[13px] font-bold text-[#111111] leading-tight font-[family-name:var(--font-manrope)]">
+                <h3 className="text-[15px] font-bold leading-5 text-foreground">
                   {item.title}
                 </h3>
-                <p className="mt-0.5 text-[11px] text-[#8E8E93] leading-tight font-[family-name:var(--font-manrope)]">
+                <p className="mt-1 text-[13px] leading-[17px] text-muted-foreground">
                   {item.subtitle}
                 </p>
               </button>
@@ -140,32 +154,29 @@ export default function ServicesPage() {
           })}
         </div>
 
-        {/* Услуги heading */}
-        <h2 className="mt-7 mb-3 text-[24px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
-          Услуги
-        </h2>
+        <h2 className="mb-3 mt-6 text-[22px] font-bold text-foreground">Услуги</h2>
 
-        {/* Услуги grid */}
+        {/* Услуги: 3 колонки, gap 8, r20 p16 */}
         {isLoading ? (
-          <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {Array.from({ length: 9 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl h-[116px] animate-pulse" />
+              <div key={i} className="skeleton h-[110px] rounded-[20px]" />
             ))}
           </div>
         ) : hasCategories ? (
-          <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+          <div className="grid grid-cols-3 gap-2">
             {categories!.map((cat) => {
               const Icon = SERVICE_ICONS[cat.icon] ?? Wrench;
               return (
                 <button
                   key={cat.id}
                   onClick={() => router.push(`/services/${cat.id}`)}
-                  className="bg-white rounded-2xl p-3 flex flex-col items-start active:scale-[0.98] transition-transform"
+                  className="press-tile-sm flex flex-col items-start rounded-[20px] border border-black/[0.04] bg-card p-4 text-left shadow-[var(--shadow-tile)] transition-transform"
                 >
-                  <div className="size-12 rounded-2xl bg-[#F0F0F2] flex items-center justify-center">
-                    <Icon className="size-5 text-[#111111]" strokeWidth={1.8} />
+                  <div className="grid size-11 place-items-center rounded-[14px] bg-surface-alt dark:bg-white/[0.08]">
+                    <Icon className="size-[22px] text-foreground" strokeWidth={1.8} />
                   </div>
-                  <h3 className="mt-3 text-[13px] font-bold text-[#111111] text-left leading-tight font-[family-name:var(--font-manrope)]">
+                  <h3 className="mt-3 text-[13px] font-bold leading-[17px] text-foreground">
                     {cat.name}
                   </h3>
                 </button>

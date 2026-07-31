@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Badge } from "@/components/ui/badge";
 import { formatDateWithCity } from "@/lib/utils/dateFormat";
 import type { PartListing } from "@/lib/types/part";
 
@@ -11,64 +10,61 @@ interface PartCardProps {
   variant?: "desktop" | "mobile";
 }
 
+/** Карточка запчасти (DESIGN.md §10.7): r12 + border, фото 1:1, бейдж состояния top8 left8. */
 export const PartCard = React.memo(function PartCard({
   part,
   onClick,
   variant = "desktop",
 }: PartCardProps) {
   const isMobile = variant === "mobile";
+  const isNew = part.condition === "Новый";
 
   return (
     <button
       onClick={() => onClick(part.id)}
-      className={`bg-white rounded-2xl overflow-hidden text-left transition-all ${
+      className={`overflow-hidden bg-card text-left transition-all ${
         isMobile
-          ? "active:scale-[0.98] transition-transform"
-          : "hover:shadow-lg group"
+          ? "press-card rounded-xl border border-border"
+          : "group rounded-2xl hover:shadow-lg"
       }`}
     >
-      {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-[#F5F5F7]">
+      <div className="relative aspect-square overflow-hidden bg-secondary">
         <img
           src={part.image}
           alt={part.title}
-          className={`w-full h-full object-cover ${
-            !isMobile ? "group-hover:scale-105 transition-transform duration-300" : ""
+          className={`size-full object-cover ${
+            !isMobile ? "transition-transform duration-300 group-hover:scale-105" : ""
           }`}
         />
-        <div className={`absolute ${isMobile ? "top-2 left-2" : "top-3 left-3"}`}>
-          <Badge
-            className={`${isMobile ? "px-2 py-0.5 text-[11px]" : "px-3 py-1 text-[13px]"} font-medium font-[family-name:var(--font-manrope)] ${
-              part.condition === "Новый"
-                ? "bg-[#2E7D32] text-white border-transparent hover:bg-[#2E7D32]"
-                : "bg-white/90 backdrop-blur-sm text-[#111111] border-transparent hover:bg-white/90"
-            }`}
-          >
-            {part.condition}
-          </Badge>
-        </div>
+        <span
+          className={`absolute rounded-md font-medium text-white ${
+            isMobile
+              ? "left-2 top-2 px-2 py-0.5 text-[11px]"
+              : "left-3 top-3 px-3 py-1 text-[13px]"
+          }`}
+          style={{ background: isNew ? "#34C759" : "#FF9500" }}
+        >
+          {part.condition}
+        </span>
       </div>
 
-      {/* Info */}
       <div className={isMobile ? "p-3" : "p-4"}>
         <h3
-          className={`font-semibold text-[#111111] mb-${isMobile ? "1" : "2"} line-clamp-2 font-[family-name:var(--font-manrope)] ${
-            isMobile ? "text-[13px]" : "text-[15px]"
+          className={`line-2 font-medium text-foreground ${
+            isMobile ? "mb-1 text-[14px]" : "mb-2 text-[15px] font-semibold"
           }`}
         >
           {part.title}
         </h3>
         <p
-          className={`font-bold text-[#111111] mb-${isMobile ? "1" : "2"} font-[family-name:var(--font-manrope)] ${
-            isMobile ? "text-[15px]" : "text-[17px]"
+          className={`font-bold text-foreground ${
+            isMobile ? "mb-1 text-[15px]" : "mb-2 text-[17px]"
           }`}
         >
           {part.price} сомони
         </p>
         <p
-          className={`text-[#8E8E93] font-[family-name:var(--font-manrope)] ${
-            isMobile ? "text-[11px]" : "text-[13px]"
-          }`}
+          className={`text-muted-foreground ${isMobile ? "text-[12px]" : "text-[13px]"}`}
         >
           {formatDateWithCity(part.publishedDate, part.city)}
         </p>

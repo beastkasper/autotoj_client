@@ -94,10 +94,10 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
   const formattedDate = formatDate(post.created_at);
 
   return (
-    <div className="min-h-screen bg-[#F5F5F7]">
+    <div className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
       {/* ── Mobile + Tablet Version ── */}
       <div className="lg:hidden pb-20 md:pb-12 bg-white min-h-screen md:max-w-3xl md:mx-auto">
-        <div className="sticky top-0 z-10 bg-white/90 backdrop-blur-xl border-b border-[#E5E5E7]">
+        <div className="blur-surface hairline sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
           <div className="flex items-center justify-between p-4">
             <button onClick={() => router.back()} className="p-2 -ml-2 hover:bg-[#F2F2F7] rounded-full transition-colors">
               <ArrowLeft className="w-5 h-5" />

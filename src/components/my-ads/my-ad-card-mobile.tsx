@@ -1,7 +1,6 @@
 "use client";
 
-import { Edit, Pause, Play, MoreVertical } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Edit2, Pause, Play, MoreVertical } from "lucide-react";
 import { ImageWithFallback } from "@/components/cards/ImageWithFallback";
 import { formatPrice } from "@/lib/utils/formatPrice";
 import { buildAdTitle, buildAdCharacteristics, formatDateRu } from "@/lib/utils/ad-helpers";
@@ -18,6 +17,10 @@ interface MyAdCardMobileProps {
   onClick: (id: string) => void;
 }
 
+/**
+ * Карточка «Моих объявлений» (DESIGN.md §10.16): r12 + border, фото 128×128,
+ * бейдж статуса top8 left8 r6 12/500, цена 18/600.
+ */
 export function MyAdCardMobile({
   ad,
   activeTab,
@@ -30,93 +33,94 @@ export function MyAdCardMobile({
 }: MyAdCardMobileProps) {
   const title = buildAdTitle(ad);
   const chars = buildAdCharacteristics(ad);
+  const isActive = activeTab === "active";
 
   return (
     <div
-      className="bg-white rounded-xl overflow-hidden border border-[#E5E5E7] hover:shadow-md transition-shadow cursor-pointer"
+      className="relative cursor-pointer overflow-hidden rounded-xl border border-border bg-card"
       onClick={() => onClick(ad.id)}
     >
       <div className="flex">
-        {/* Image */}
-        <div className="relative w-32 h-32 shrink-0">
+        <div className="relative size-32 shrink-0">
           <ImageWithFallback
             src={ad.photos[0] ?? ""}
             alt={title}
-            className="w-full h-full object-cover"
+            className="size-full object-cover"
           />
-          <Badge
-            className={`absolute top-2 left-2 text-[11px] font-bold px-2 py-0.5 rounded-md border-transparent ${
-              activeTab === "active"
-                ? "bg-[#EAF7EE] text-[#2E7D32] hover:bg-[#EAF7EE]"
-                : "bg-gray-100 text-gray-700 hover:bg-gray-100"
+          <span
+            className={`absolute left-2 top-2 rounded-md px-2 py-0.5 text-[12px] font-medium ${
+              isActive ? "bg-[#4CAF50] text-white" : "bg-black/60 text-white"
             }`}
           >
-            {activeTab === "active" ? "Активно" : "Пауза"}
-          </Badge>
+            {isActive ? "Активно" : "Пауза"}
+          </span>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 p-3 flex flex-col justify-between relative">
-          {/* Menu button */}
+        <div className="relative flex flex-1 flex-col justify-between overflow-hidden p-3">
           <button
             onClick={(e) => {
               e.stopPropagation();
               onMenuToggle();
             }}
-            className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[#F2F2F7] transition-colors"
+            aria-label="Действия"
+            className="absolute right-1 top-1 grid size-8 place-items-center rounded-lg text-muted-foreground transition-colors active:bg-secondary"
           >
-            <MoreVertical className="w-4 h-4 text-[#8E8E93]" />
+            <MoreVertical className="size-4" strokeWidth={1.5} />
           </button>
 
-          {/* Dropdown menu */}
-          {isMenuOpen && (
-            <div
-              className="absolute top-10 right-2 z-50 bg-white rounded-2xl shadow-lg border border-[#E5E5EA] overflow-hidden min-w-[180px]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => onEdit(ad.id)}
-                className="w-full px-4 py-3 text-left text-[14px] font-medium text-[#111111] hover:bg-[#F2F2F7] active:bg-[#E5E5EA] transition-colors flex items-center gap-2.5 font-[family-name:var(--font-manrope)]"
-              >
-                <Edit className="w-4 h-4" />
-                Редактировать
-              </button>
-              {activeTab === "active" ? (
-                <button
-                  onClick={() => onPauseRequest(ad.id)}
-                  className="w-full px-4 py-3 text-left text-[14px] font-medium text-[#111111] hover:bg-[#F2F2F7] active:bg-[#E5E5EA] transition-colors flex items-center gap-2.5 font-[family-name:var(--font-manrope)]"
-                >
-                  <Pause className="w-4 h-4" />
-                  Поставить на паузу
-                </button>
-              ) : (
-                <button
-                  onClick={() => onPublishRequest(ad.id)}
-                  className="w-full px-4 py-3 text-left text-[14px] font-medium text-[#111111] hover:bg-[#F2F2F7] active:bg-[#E5E5EA] transition-colors flex items-center gap-2.5 font-[family-name:var(--font-manrope)]"
-                >
-                  <Play className="w-4 h-4" />
-                  Опубликовать
-                </button>
-              )}
-            </div>
-          )}
-
           <div>
-            <h3 className="font-semibold text-sm line-clamp-2 mb-1 text-[#111111] pr-8 font-[family-name:var(--font-manrope)]">
+            <h3 className="line-1 mb-1 pr-8 text-[14px] font-semibold text-foreground">
               {title}
             </h3>
-            <p className="text-[12px] text-[#8E8E93] mb-1 font-[family-name:var(--font-manrope)]">
-              {chars}
-            </p>
-            <p className="text-lg font-semibold text-[#111111] mb-1 font-[family-name:var(--font-manrope)]">
+            <p className="line-1 mb-2 text-[12px] text-muted-foreground">{chars}</p>
+            {ad.location && (
+              <p className="line-1 mb-2 text-[12px] text-muted-foreground">
+                {ad.location}
+              </p>
+            )}
+            <p className="mb-1 text-[18px] font-semibold text-foreground">
               {formatPrice(ad.price)} сомони
             </p>
           </div>
-          <p className="text-[12px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+          <p className="text-[12px] text-muted-foreground">
             {formatDateRu(ad.created_at)}
           </p>
         </div>
       </div>
+
+      {/* Контекстное меню (§10.16): right 12, top 48, min-width 200, r16 */}
+      {isMenuOpen && (
+        <div
+          className="absolute right-3 top-12 z-50 min-w-[200px] overflow-hidden rounded-2xl border border-border bg-card shadow-[var(--shadow-menu)]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => onEdit(ad.id)}
+            className="press-row flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] text-foreground transition-colors"
+          >
+            <Edit2 className="size-[18px]" strokeWidth={1.5} />
+            Редактировать
+          </button>
+          <div className="h-px bg-border" />
+          {isActive ? (
+            <button
+              onClick={() => onPauseRequest(ad.id)}
+              className="press-row flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] text-foreground transition-colors"
+            >
+              <Pause className="size-[18px]" strokeWidth={1.5} />
+              Приостановить
+            </button>
+          ) : (
+            <button
+              onClick={() => onPublishRequest(ad.id)}
+              className="press-row flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] text-foreground transition-colors"
+            >
+              <Play className="size-[18px]" strokeWidth={1.5} />
+              Опубликовать
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

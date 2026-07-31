@@ -2,10 +2,10 @@
 
 import React from "react";
 import { Heart, Video } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { formatPrice } from "@/lib/utils/formatPrice";
 import { buildAdTitle } from "@/lib/utils/ad-helpers";
+import { cn } from "@/lib/utils";
 import type { Ad } from "@/lib/types/ad";
 
 export type { Ad };
@@ -16,6 +16,8 @@ interface AdCardProps {
   onFavoriteToggle: (id: string) => void;
   onClick: (id: string) => void;
   showCategoryBadge?: boolean;
+  /** Карточка в избранном — сердце залито брендовым красным (§6.8) */
+  isFavorite?: boolean;
 }
 
 const buildCharacteristics = (ad: Ad): string => {
@@ -24,141 +26,142 @@ const buildCharacteristics = (ad: Ad): string => {
   return parts.join(" • ");
 };
 
-function StatusBadges({ statusNew, statusOnOrder }: { statusNew?: boolean; statusOnOrder?: boolean }) {
+/** Бейджи статуса поверх фото: r6, 11/700, белый текст (§6.7) */
+function StatusBadges({
+  statusNew,
+  statusOnOrder,
+}: {
+  statusNew?: boolean;
+  statusOnOrder?: boolean;
+}) {
   if (!statusNew && !statusOnOrder) return null;
   return (
-    <div className="absolute top-2 left-2 flex gap-1">
+    <div className="absolute left-2 top-2 flex gap-1">
       {statusNew && (
-        <Badge className="bg-[#4CAF50] text-white border-transparent hover:bg-[#4CAF50] backdrop-blur-sm rounded-md px-2 py-1 text-[11px] font-bold font-[family-name:var(--font-manrope)]">
+        <span className="rounded-md bg-[#4CAF50] px-2 py-1 text-[11px] font-bold leading-none text-white">
           Новый
-        </Badge>
+        </span>
       )}
       {statusOnOrder && (
-        <Badge className="bg-[#111111] text-white border-transparent hover:bg-[#111111] backdrop-blur-sm rounded-md px-2 py-1 text-[11px] font-bold font-[family-name:var(--font-manrope)]">
+        <span className="rounded-md bg-[#111111] px-2 py-1 text-[11px] font-bold leading-none text-white">
           На заказ
-        </Badge>
+        </span>
       )}
     </div>
   );
 }
 
+function MediaOverlays({
+  ad,
+  isFavorite,
+  onFavoriteToggle,
+}: {
+  ad: Ad;
+  isFavorite?: boolean;
+  onFavoriteToggle: (id: string) => void;
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        aria-label="В избранное"
+        aria-pressed={isFavorite ? "true" : "false"}
+        onClick={(e) => {
+          e.stopPropagation();
+          onFavoriteToggle(ad.id);
+        }}
+        className="absolute right-2 top-2 z-10 grid size-7 place-items-center rounded-[14px] bg-black/20 backdrop-blur-[4px] transition-opacity active:opacity-70"
+      >
+        <Heart
+          className={cn("size-4", isFavorite ? "text-[#E53935]" : "text-white")}
+          strokeWidth={2}
+          fill={isFavorite ? "#E53935" : "none"}
+        />
+      </button>
+      <StatusBadges statusNew={ad.statusNew} statusOnOrder={ad.statusOnOrder} />
+      {ad.hasVideo && (
+        <div className="absolute bottom-2 left-2 flex items-center gap-0.5 rounded-md bg-black/70 px-1.5 py-0.5 backdrop-blur-[4px]">
+          <Video className="size-3 text-white" strokeWidth={2} />
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Карточка объявления (DESIGN.md §6.8): r20, border 1px, тень 0 4px 16px rgba(0,0,0,.06) */
 export const AdCard = React.memo(function AdCard({
   ad,
   variant = "grid",
   onFavoriteToggle,
   onClick,
+  isFavorite,
 }: AdCardProps) {
   const characteristics = buildCharacteristics(ad);
-  const title = ad.version
-    ? `${ad.brand} · ${ad.model}`
-    : buildAdTitle(ad);
+  // Есть версия → «{марка} · {модель}» и версия отдельной строкой
+  const title = ad.version ? `${ad.brand} · ${ad.model}` : buildAdTitle(ad);
+
+  const body = (
+    <>
+      <h3 className="line-1 mb-0.5 text-[14px] font-medium text-foreground">{title}</h3>
+      {ad.version && (
+        <p className="line-1 mb-1 text-[12px] text-muted-foreground">{ad.version}</p>
+      )}
+      <p className="mb-1 text-[16px] font-bold text-foreground">
+        {formatPrice(ad.price)} сомони
+      </p>
+      {characteristics && (
+        <p className="line-1 text-[12px] text-muted-foreground">{characteristics}</p>
+      )}
+    </>
+  );
 
   if (variant === "list") {
     return (
-      <div
-        className="bg-white rounded-[20px] overflow-hidden border border-[#E5E5EA] shadow-[0_4px_16px_rgba(0,0,0,0.06)] cursor-pointer active:opacity-96 transition-opacity"
+      <article
         onClick={() => onClick(ad.id)}
+        className="ad-card cursor-pointer"
+        role="button"
       >
         <div className="flex">
-          {/* Image */}
-          <div className="relative w-32 h-32 shrink-0">
+          <div className="relative size-32 shrink-0">
             <ImageWithFallback
               src={ad.image}
               alt={title}
-              className="w-full h-full object-cover"
+              className="size-full object-cover"
             />
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onFavoriteToggle(ad.id);
-              }}
-              className="absolute top-2 right-2 w-7 h-7 bg-black/20 backdrop-blur-sm rounded-[14px] flex items-center justify-center active:opacity-70 transition-opacity z-10"
-            >
-              <Heart className="w-4 h-4 text-white" />
-            </button>
-            <StatusBadges statusNew={ad.statusNew} statusOnOrder={ad.statusOnOrder} />
-            {ad.hasVideo && (
-              <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
-                <Video className="w-3 h-3 text-white" strokeWidth={2} />
-              </div>
-            )}
+            <MediaOverlays
+              ad={ad}
+              isFavorite={isFavorite}
+              onFavoriteToggle={onFavoriteToggle}
+            />
           </div>
-
-          {/* Content */}
-          <div className="flex-1 p-3 flex flex-col justify-between">
-            <div>
-              <h3 className="font-medium text-sm line-clamp-1 mb-0.5 text-[#111111] font-[family-name:var(--font-manrope)]">
-                {title}
-              </h3>
-              {ad.version && (
-                <div className="text-xs text-[#8E8E93] mb-1 font-[family-name:var(--font-manrope)]">
-                  {ad.version}
-                </div>
-              )}
-              <div className="text-base font-bold text-[#111111] mb-1 font-[family-name:var(--font-manrope)]">
-                {formatPrice(ad.price)} сомони
-              </div>
-              {characteristics && (
-                <div className="text-xs text-[#8E8E93] line-clamp-1 font-[family-name:var(--font-manrope)]">
-                  {characteristics}
-                </div>
-              )}
-            </div>
+          <div className="flex flex-1 flex-col justify-between overflow-hidden p-3">
+            {body}
           </div>
         </div>
-      </div>
+      </article>
     );
   }
 
-  // Grid variant
   return (
     <article
       onClick={() => onClick(ad.id)}
-      className="bg-white rounded-2xl overflow-hidden border border-[#E5E5E7] transition-all cursor-pointer group hover:border-[#111111] hover:shadow-lg lg:hover:scale-[1.02] flex flex-col"
+      role="button"
+      className="ad-card flex cursor-pointer flex-col lg:hover:border-foreground lg:hover:shadow-lg lg:hover:scale-[1.02] lg:transition-all"
     >
-      {/* Image */}
       <div className="relative aspect-[4/3]">
         <ImageWithFallback
           src={ad.image}
           alt={title}
-          className="w-full h-full object-cover"
+          className="size-full object-cover"
         />
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onFavoriteToggle(ad.id);
-          }}
-          className="absolute top-2 right-2 w-7 h-7 bg-black/20 backdrop-blur-sm rounded-[14px] flex items-center justify-center active:opacity-70 transition-opacity z-10"
-        >
-          <Heart className="w-4 h-4 text-white" />
-        </button>
-        <StatusBadges statusNew={ad.statusNew} statusOnOrder={ad.statusOnOrder} />
-        {ad.hasVideo && (
-          <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
-            <Video className="w-3 h-3 text-white" strokeWidth={2} />
-          </div>
-        )}
+        <MediaOverlays
+          ad={ad}
+          isFavorite={isFavorite}
+          onFavoriteToggle={onFavoriteToggle}
+        />
       </div>
-
-      {/* Content */}
-      <div className="p-3">
-        <h3 className="font-medium text-sm line-clamp-1 mb-0.5 text-[#111111] font-[family-name:var(--font-manrope)]">
-          {title}
-        </h3>
-        {ad.version && (
-          <div className="text-xs text-[#8E8E93] mb-1 font-[family-name:var(--font-manrope)]">
-            {ad.version}
-          </div>
-        )}
-        <div className="text-base font-bold text-[#111111] mb-1 font-[family-name:var(--font-manrope)]">
-          {formatPrice(ad.price)} сомони
-        </div>
-        {characteristics && (
-          <div className="text-xs text-[#8E8E93] line-clamp-1 font-[family-name:var(--font-manrope)]">
-            {characteristics}
-          </div>
-        )}
-      </div>
+      <div className="p-3">{body}</div>
     </article>
   );
 });

@@ -1,23 +1,27 @@
 "use client";
 
-import { Skeleton } from "@/components/ui/skeleton";
-
+/**
+ * Скелетон сетки объявлений (DESIGN.md §9.3): 6 карточек r12,
+ * фото 4:3 и 4 линии 16/12/20/12 шириной 100%/66%/50%/75%, gap 8.
+ */
 export function LoadingState() {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-5 px-4 md:px-6 lg:px-0 mt-8 lg:mt-0">
-      {Array.from({ length: 8 }).map((_, i) => (
+    <div
+      role="status"
+      aria-label="Загрузка"
+      className="mt-6 grid grid-cols-2 gap-3 px-4 md:grid-cols-3 md:gap-4 md:px-6 lg:mt-0 lg:grid-cols-4 lg:gap-5 lg:px-0"
+    >
+      {Array.from({ length: 6 }).map((_, i) => (
         <div
           key={i}
-          className="rounded-2xl overflow-hidden bg-white border border-[#F2F2F7]"
+          className="overflow-hidden rounded-xl border border-border bg-card"
         >
-          {/* Image skeleton */}
-          <Skeleton className="aspect-[4/3] rounded-none" />
-          {/* Content skeleton */}
-          <div className="p-3 space-y-2">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
-            <Skeleton className="h-5 w-2/3" />
-            <Skeleton className="h-3 w-1/3" />
+          <div className="skeleton aspect-[4/3] rounded-none" />
+          <div className="flex flex-col gap-2 p-3">
+            <div className="skeleton h-4 w-full" />
+            <div className="skeleton h-3 w-2/3" />
+            <div className="skeleton h-5 w-1/2" />
+            <div className="skeleton h-3 w-3/4" />
           </div>
         </div>
       ))}

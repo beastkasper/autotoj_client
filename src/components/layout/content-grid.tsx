@@ -3,10 +3,9 @@
 interface ContentGridProps {
   children: React.ReactNode;
   desktopCols?: 2 | 3 | 4;
-  tabletCols?: 2 | 3;
   mobileCols?: 1 | 2;
   desktopGap?: string;
-  tabletGap?: string;
+  /** По умолчанию 12px — шаг сетки на мобилке (§4) */
   mobileGap?: string;
 }
 
@@ -14,11 +13,6 @@ const DESKTOP_COLS = {
   2: "lg:grid-cols-2",
   3: "lg:grid-cols-3",
   4: "lg:grid-cols-4",
-} as const;
-
-const TABLET_COLS = {
-  2: "md:grid-cols-2",
-  3: "md:grid-cols-3",
 } as const;
 
 const MOBILE_COLS = {
@@ -29,10 +23,8 @@ const MOBILE_COLS = {
 export function ContentGrid({
   children,
   desktopCols = 4,
-  tabletCols = 3,
   mobileCols = 2,
   desktopGap = "gap-4",
-  tabletGap = "md:gap-4",
   mobileGap = "gap-3",
 }: ContentGridProps) {
   return (
@@ -41,10 +33,8 @@ export function ContentGrid({
       <div className={`hidden lg:grid ${DESKTOP_COLS[desktopCols]} ${desktopGap}`}>
         {children}
       </div>
-      {/* Mobile + Tablet */}
-      <div
-        className={`lg:hidden grid ${MOBILE_COLS[mobileCols]} ${TABLET_COLS[tabletCols]} ${mobileGap} ${tabletGap}`}
-      >
+      {/* Мобилка — контент ограничен 440px, так что колонок всегда не больше двух */}
+      <div className={`grid lg:hidden ${MOBILE_COLS[mobileCols]} ${mobileGap}`}>
         {children}
       </div>
     </>

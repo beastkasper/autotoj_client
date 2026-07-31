@@ -10,30 +10,54 @@ interface SearchInputProps {
   variant?: "desktop" | "mobile";
 }
 
-export function SearchInput({ value, onChange, placeholder, variant = "desktop" }: SearchInputProps) {
-  const isDesktop = variant === "desktop";
+/** Поиск в запчастях / прокате (§6.3): h44 r12 bg secondary, иконка слева на 12. */
+export function SearchInput({
+  value,
+  onChange,
+  placeholder,
+  variant = "desktop",
+}: SearchInputProps) {
+  if (variant === "mobile") {
+    return (
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-3 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="h-11 w-full rounded-xl bg-secondary pl-10 pr-10 text-[15px] text-foreground outline-none placeholder:text-muted-foreground"
+        />
+        {value && (
+          <button
+            type="button"
+            onClick={() => onChange("")}
+            aria-label="Очистить"
+            className="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground"
+          >
+            <span className="text-sm">&#10005;</span>
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className={`flex items-center gap-2 ${
-      isDesktop
-        ? "bg-[#F5F5F7] rounded-xl px-4 h-10"
-        : "bg-white rounded-2xl border border-[#E5E5E7] px-4 h-12"
-    }`}>
-      <Search className="w-5 h-5 text-[#8E8E93] shrink-0" />
+    <div className="flex h-10 items-center gap-2 rounded-xl bg-[#F5F5F7] px-4">
+      <Search className="size-5 shrink-0 text-[#8E8E93]" />
       <Input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`flex-1 bg-transparent border-none shadow-none text-[15px] text-[#111111] placeholder:text-[#8E8E93] focus-visible:ring-0 font-[family-name:var(--font-manrope)] ${
-          isDesktop ? "h-10" : "h-12"
-        } px-0`}
+        className="h-10 flex-1 border-none bg-transparent px-0 text-[15px] text-[#111111] shadow-none placeholder:text-[#8E8E93] focus-visible:ring-0"
       />
       {value && (
         <button
           onClick={() => onChange("")}
-          className={`p-1 ${isDesktop ? "hover:bg-[#E5E5E7] rounded-lg transition-colors" : ""}`}
+          className="rounded-lg p-1 transition-colors hover:bg-[#E5E5E7]"
         >
-          <span className={`text-[#8E8E93] ${isDesktop ? "text-xs" : "text-sm"}`}>&#10005;</span>
+          <span className="text-xs text-[#8E8E93]">&#10005;</span>
         </button>
       )}
     </div>

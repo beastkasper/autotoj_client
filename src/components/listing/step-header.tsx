@@ -27,15 +27,15 @@ export function StepHeader({
   return (
     <div
       className={cn(
-        "sticky top-0 z-30 flex flex-col bg-white/95 backdrop-blur-md border-b border-[#E5E5EA]",
+        "sticky top-0 z-30 flex flex-col border-b border-[#EDEDED] bg-card pt-[env(safe-area-inset-top)] dark:border-border",
         className
       )}
     >
       {/* Progress bar */}
       {currentStep && totalSteps && (
-        <div className="h-[3px] bg-[#F2F2F7]">
+        <div className="h-[3px] bg-secondary">
           <div
-            className="h-full bg-[#111111] transition-all duration-500 ease-out rounded-r-full"
+            className="h-full rounded-r-full bg-primary transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -47,21 +47,19 @@ export function StepHeader({
           type="button"
           onClick={onBack}
           className={cn(
-            "flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[#F2F2F7] transition-colors active:opacity-60",
+            "icon-btn",
             !onBack && "invisible"
           )}
           aria-label="Назад"
         >
-          <ChevronLeft className="w-5 h-5 text-[#1C1C1E]" />
+          <ChevronLeft className="size-5" strokeWidth={1.5} />
         </button>
 
         {/* Center: Title */}
         <div className="flex flex-col items-center">
-          <span className="text-[15px] font-semibold text-[#1C1C1E] font-[family-name:var(--font-manrope)]">
-            {title}
-          </span>
+          <span className="screen-title text-foreground">{title}</span>
           {currentStep && totalSteps && (
-            <span className="text-[12px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+            <span className="text-[13px] text-muted-foreground">
               Шаг {currentStep} из {totalSteps}
             </span>
           )}
@@ -73,10 +71,10 @@ export function StepHeader({
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-[#F2F2F7] transition-colors active:opacity-60"
+            className="icon-btn text-muted-foreground"
             aria-label="Закрыть"
           >
-            <X className="w-5 h-5 text-[#8E8E93]" />
+            <X className="size-5" strokeWidth={1.5} />
           </button>
         </div>
       </div>

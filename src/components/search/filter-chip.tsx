@@ -9,20 +9,34 @@ interface FilterChipProps {
   variant?: "desktop" | "mobile";
 }
 
-export function FilterChip({ label, isActive, onClick, variant = "desktop" }: FilterChipProps) {
-  const isDesktop = variant === "desktop";
+/** Круглый чип (§6.2): h36 r18 bg secondary; активный — чёрный с белым текстом. */
+export function FilterChip({
+  label,
+  isActive,
+  onClick,
+  variant = "desktop",
+}: FilterChipProps) {
+  if (variant === "mobile") {
+    return (
+      <button
+        type="button"
+        aria-pressed={isActive}
+        onClick={onClick}
+        className="chip shrink-0"
+      >
+        {label}
+      </button>
+    );
+  }
+
   return (
     <Button
       variant="outline"
       onClick={onClick}
-      className={`${isDesktop ? "h-10 rounded-xl" : "shrink-0 h-9 rounded-full"} text-${isDesktop ? "[15px]" : "[14px]"} font-medium font-[family-name:var(--font-manrope)] ${
+      className={`h-10 rounded-xl text-[15px] font-medium ${
         isActive
-          ? isDesktop
-            ? "bg-white text-[#111111] border-[#111111] border-2 hover:bg-[#F5F5F7]"
-            : "bg-white text-[#111111] border-[#111111] border-2"
-          : isDesktop
-            ? "bg-[#F5F5F7] text-[#111111] hover:bg-[#EAEAEA] border-transparent"
-            : "bg-white border-[#E5E5E7] text-[#111111]"
+          ? "border-2 border-[#111111] bg-white text-[#111111] hover:bg-[#F5F5F7]"
+          : "border-transparent bg-[#F5F5F7] text-[#111111] hover:bg-[#EAEAEA]"
       }`}
     >
       {label}

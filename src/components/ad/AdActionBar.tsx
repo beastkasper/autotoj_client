@@ -1,7 +1,6 @@
 "use client";
 
 import { Phone, MessageCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpenChat } from "@/hooks/useOpenChat";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
@@ -11,6 +10,10 @@ interface AdActionBarProps {
   adId?: string;
 }
 
+/**
+ * Нижняя панель деталей (DESIGN.md §10.2): фиксированная, полупрозрачная
+ * с блюром и границей сверху; кнопки h52, обводка --foreground, r16, gap 12.
+ */
 export function AdActionBar({ phone, adId }: AdActionBarProps) {
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const { openChat, isOpening } = useOpenChat();
@@ -18,29 +21,31 @@ export function AdActionBar({ phone, adId }: AdActionBarProps) {
   return (
     <>
       <div
-        className="lg:hidden fixed left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-[#E5E5E7] px-4 py-3"
+        className="blur-surface-soft hairline-top fixed left-0 right-0 z-40 mx-auto max-w-[440px] px-4 py-3 lg:hidden"
         style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
       >
         <div className="flex gap-3">
-          <Button
-            onClick={() => requireAuth(() => {
-              if (phone) {
-                window.location.href = `tel:${phone}`;
-              }
-            })}
-            className="flex-1 h-12 bg-[#E53935] text-white rounded-2xl text-[15px] font-semibold active:bg-[#D32F2F] hover:bg-[#D32F2F] font-[family-name:var(--font-manrope)]"
+          <button
+            type="button"
+            onClick={() =>
+              requireAuth(() => {
+                if (phone) window.location.href = `tel:${phone}`;
+              })
+            }
+            className="btn btn--outline flex-1"
           >
-            <Phone className="w-4 h-4" />
+            <Phone className="size-[18px]" strokeWidth={1.5} />
             Позвонить
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={() => adId && openChat(adId)}
             disabled={isOpening}
-            className="flex-1 h-12 bg-[#111111] text-white rounded-2xl text-[15px] font-semibold active:bg-[#333] hover:bg-[#333] font-[family-name:var(--font-manrope)]"
+            className="btn btn--outline flex-1"
           >
-            <MessageCircle className="w-4 h-4" />
+            <MessageCircle className="size-[18px]" strokeWidth={1.5} />
             Написать
-          </Button>
+          </button>
         </div>
       </div>
       <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />

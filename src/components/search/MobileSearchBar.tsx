@@ -1,8 +1,7 @@
 "use client";
 
-import { Search, SlidersHorizontal, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/useAuth";
+import { Search, SlidersHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface MobileSearchBarProps {
   searchQuery: string;
@@ -11,54 +10,44 @@ interface MobileSearchBarProps {
   hasActiveFilters: boolean;
 }
 
+/**
+ * Плавающая шапка главной (DESIGN.md §10.1): липкая, фон прозрачный —
+ * карточки проезжают под ней. Белый контейнер r28, p12, gap12, shadow-float.
+ */
 export function MobileSearchBar({
   searchQuery,
   onSearchChange,
   onFilterClick,
   hasActiveFilters,
 }: MobileSearchBarProps) {
-  const router = useRouter();
-  const { requireAuth } = useAuth();
-
-  const handlePost = () => requireAuth(() => router.push("/post-ad"));
-
   return (
-    <div className="lg:hidden sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+    <div className="sticky top-0 z-40 pt-[env(safe-area-inset-top)] lg:hidden">
       <div className="px-4 py-3">
-        <div className="bg-white rounded-[28px] shadow-[0_8px_24px_rgba(0,0,0,0.08)] p-3 flex items-center gap-2 md:gap-3">
-          {/* Search input */}
-          <div className="flex-1 bg-[#F2F2F7] rounded-[20px] px-3 h-10 flex items-center gap-2">
-            <Search className="size-[18px] text-[#111111] shrink-0" />
+        <div className="flex items-center gap-3 rounded-[28px] bg-card p-3 shadow-[var(--shadow-float)]">
+          {/* Поле поиска: h40 r20 bg secondary, иконка 18 stroke 2 */}
+          <div className="flex h-10 flex-1 items-center gap-2 rounded-[20px] bg-secondary px-3">
+            <Search className="size-[18px] shrink-0 text-foreground" strokeWidth={2} />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Поиск автомобилей"
-              className="flex-1 bg-transparent text-sm text-[#111111] placeholder:text-[#8E8E93] focus:outline-none font-[family-name:var(--font-manrope)]"
+              className="w-full flex-1 bg-transparent text-[14px] text-foreground outline-none placeholder:text-muted-foreground"
             />
           </div>
-          {/* Filter button */}
+          {/* Кнопка фильтров: 40×40 r20; при активных фильтрах — чёрная */}
           <button
+            type="button"
             onClick={onFilterClick}
             aria-label="Фильтры"
-            className={`size-10 rounded-[20px] flex items-center justify-center transition-all active:scale-95 shrink-0 ${
+            className={cn(
+              "grid size-10 shrink-0 place-items-center rounded-[20px] transition-all active:scale-95",
               hasActiveFilters
-                ? "bg-[#111111] text-white"
-                : "bg-[#F2F2F7] text-[#111111]"
-            }`}
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-foreground",
+            )}
           >
-            <SlidersHorizontal className="size-5" />
-          </button>
-          {/* Post ad button */}
-          <button
-            onClick={handlePost}
-            aria-label="Разместить объявление"
-            className="h-10 px-3 rounded-[20px] bg-[#E53935] text-white flex items-center gap-1 shrink-0 hover:bg-[#D32F2F] active:scale-95 transition-all"
-          >
-            <Plus className="size-5" />
-            <span className="text-[14px] font-medium font-[family-name:var(--font-manrope)] hidden md:inline">
-              Разместить
-            </span>
+            <SlidersHorizontal className="size-5" strokeWidth={1.5} />
           </button>
         </div>
       </div>

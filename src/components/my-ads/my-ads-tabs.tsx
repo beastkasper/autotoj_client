@@ -34,16 +34,17 @@ export function MyAdsTabs({ activeTab, onTabChange, variant }: MyAdsTabsProps) {
     );
   }
 
+  // Табы (§10.16): px16 py12, border-bottom 2px; активный — цвет и линия --foreground
   return (
-    <div className="flex overflow-x-auto scrollbar-hide border-b border-[#E5E5E7]">
+    <div className="scroll-x flex border-b border-border">
       {tabs.map((tab) => (
         <button
           key={tab.key}
           onClick={() => onTabChange(tab.key)}
-          className={`flex-1 px-4 py-3 text-[14px] font-medium whitespace-nowrap border-b-2 transition-colors font-[family-name:var(--font-manrope)] ${
+          className={`whitespace-nowrap border-b-2 px-4 py-3 text-[14px] font-medium transition-colors ${
             activeTab === tab.key
-              ? "border-[#111111] text-[#111111]"
-              : "border-transparent text-[#8E8E93]"
+              ? "border-foreground text-foreground"
+              : "border-transparent text-muted-foreground"
           }`}
         >
           {tab.label}

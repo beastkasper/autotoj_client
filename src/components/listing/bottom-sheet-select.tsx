@@ -180,22 +180,24 @@ export function BottomSheetSelect({
             type="button"
             onClick={() => handleSelect(opt)}
             className={cn(
-              "flex items-center justify-between w-full px-4 border-b border-[#F2F2F7] transition-colors",
-              isMobile ? "h-[52px]" : "h-10 text-[14px] hover:bg-[#F2F2F7]",
-              isSelected ? "bg-[#F2F2F7]" : ""
+              "flex w-full items-center justify-between px-4 transition-colors",
+              isMobile
+                ? "py-3 border-b border-border last:border-b-0"
+                : "h-10 text-[14px] border-b border-[#F2F2F7] hover:bg-[#F2F2F7]",
+              isSelected && !isMobile ? "bg-[#F2F2F7]" : ""
             )}
           >
             <span
               className={cn(
-                "font-[family-name:var(--font-manrope)] truncate",
-                isMobile ? "text-[15px]" : "text-[14px]",
+                "truncate",
+                isMobile ? "text-[15px] text-foreground" : "text-[14px]",
                 isSelected ? "font-semibold" : "font-normal"
               )}
             >
               {label}
             </span>
             {isSelected && (
-              <Check className={cn("shrink-0 text-[#111111]", isMobile ? "w-5 h-5" : "w-4 h-4")} />
+              <Check className={cn("shrink-0 text-foreground", isMobile ? "size-5" : "size-4")} strokeWidth={2} />
             )}
           </button>
         );
@@ -213,12 +215,12 @@ export function BottomSheetSelect({
           type="button"
           onClick={() => setIsAdding(true)}
           className={cn(
-            "flex items-center gap-2 w-full px-4 border-t border-[#E5E5EA]",
+            "flex w-full items-center gap-2 px-4 border-t border-border",
             isMobile ? "h-[52px]" : "h-10"
           )}
         >
-          <Plus className={cn("text-[#D32F2F]", isMobile ? "w-5 h-5" : "w-4 h-4")} />
-          <span className={cn("font-semibold text-[#D32F2F] font-[family-name:var(--font-manrope)]", isMobile ? "text-[15px]" : "text-[14px]")}>
+          <Plus className={cn("text-foreground", isMobile ? "size-5" : "size-4")} strokeWidth={1.5} />
+          <span className={cn("font-medium text-foreground", isMobile ? "text-[16px]" : "text-[14px]")}>
             {customLabel}
           </span>
         </button>
@@ -258,8 +260,8 @@ export function BottomSheetSelect({
   const searchBar = searchable ? (
     <div className={cn("px-4", isMobile ? "py-3" : "py-2 border-b border-[#F2F2F7]")}>
       <div className={cn(
-        "flex items-center gap-2 px-3 rounded-lg bg-[#F2F2F7]",
-        isMobile ? "h-12 rounded-xl" : "h-9"
+        "flex items-center gap-2 rounded-lg bg-secondary px-3",
+        isMobile ? "h-11 rounded-[10px]" : "h-9"
       )}>
         <Search className={cn("text-[#8E8E93] shrink-0", isMobile ? "w-5 h-5" : "w-4 h-4")} />
         <input
@@ -268,8 +270,8 @@ export function BottomSheetSelect({
           onChange={(e) => setSearch(e.target.value)}
           placeholder={searchPlaceholder}
           className={cn(
-            "flex-1 bg-transparent outline-none font-[family-name:var(--font-manrope)] placeholder:text-[#8E8E93]",
-            isMobile ? "text-[15px]" : "text-[14px]"
+            "flex-1 bg-transparent text-foreground outline-none placeholder:text-muted-foreground",
+            isMobile ? "text-[16px]" : "text-[14px]"
           )}
           autoFocus={!isMobile}
         />
@@ -307,7 +309,7 @@ export function BottomSheetSelect({
   return (
     <div>
       {/* Label */}
-      <label className="block text-[13px] text-[#8E8E93] mb-1.5 font-[family-name:var(--font-manrope)]">
+      <label className="mb-1.5 block text-[13px] text-muted-foreground">
         {label}
       </label>
 
@@ -317,22 +319,22 @@ export function BottomSheetSelect({
         type="button"
         onClick={handleTriggerClick}
         className={cn(
-          "flex items-center justify-between w-full h-12 px-4 rounded-xl border bg-white transition-colors",
-          error ? "border-[#E53935]" : isOpen && !isMobile ? "border-[#111111] ring-1 ring-[#111111]" : "border-[#C7C7CC]",
-          isMobile ? "active:bg-[#F2F2F7]" : "hover:border-[#8E8E93]"
+          "flex h-12 w-full items-center justify-between rounded-xl border bg-card px-4 transition-colors",
+          error ? "border-[#E53935]" : isOpen && !isMobile ? "border-foreground ring-1 ring-foreground" : "border-border",
+          isMobile ? "active:bg-secondary" : "hover:border-[#8E8E93]"
         )}
       >
         <span
           className={cn(
-            "text-[15px] font-[family-name:var(--font-manrope)] truncate",
-            value ? "text-[#000000]" : "text-[#8E8E93]"
+            "truncate text-[15px]",
+            value ? "text-foreground" : "text-muted-foreground"
           )}
         >
           {selectedLabel || placeholder}
         </span>
         <ChevronDown
           className={cn(
-            "w-4 h-4 text-[#8E8E93] shrink-0 ml-2 transition-transform duration-200",
+            "ml-2 size-5 shrink-0 text-muted-foreground transition-transform duration-200",
             isOpen && !isMobile && "rotate-180"
           )}
         />
@@ -350,11 +352,12 @@ export function BottomSheetSelect({
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetContent
             side="bottom"
-            className="rounded-t-[20px] max-h-[70vh] flex flex-col p-0"
+            className="flex max-h-[70vh] flex-col rounded-t-[24px] p-0"
           >
-            <SheetHeader className="px-4 pt-4 pb-0 border-b border-[#E5E5EA]">
-              <div className="flex items-center justify-between pb-4">
-                <SheetTitle className="text-[17px] font-semibold text-[#000000] font-[family-name:var(--font-manrope)]">
+            <SheetHeader className="hairline p-0">
+              <div className="flex items-center justify-between p-4">
+                <span className="w-10 shrink-0" aria-hidden />
+                <SheetTitle className="screen-title flex-1 text-center text-foreground">
                   {label}
                 </SheetTitle>
                 <button
@@ -363,9 +366,10 @@ export function BottomSheetSelect({
                     setIsOpen(false);
                     setSearch("");
                   }}
-                  className="flex items-center justify-center w-8 h-8"
+                  aria-label="Закрыть"
+                  className="icon-btn shrink-0"
                 >
-                  <X className="w-5 h-5 text-[#1C1C1E]" />
+                  <X className="size-5" strokeWidth={1.5} />
                 </button>
               </div>
             </SheetHeader>
@@ -374,6 +378,7 @@ export function BottomSheetSelect({
 
             <ScrollArea className="flex-1">
               <div>{optionList}</div>
+              <div className="h-8" />
             </ScrollArea>
           </SheetContent>
         </Sheet>

@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ChevronLeft,
+  ArrowLeft,
+  ChevronRight,
   Send,
-  AlertTriangle,
+  AlertCircle,
   MoreVertical,
-  Phone,
+  Paperclip,
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/cards/ImageWithFallback";
 import { EmptyState } from "@/components/states/EmptyState";
@@ -109,9 +110,9 @@ export default function ChatPage() {
 
   if (!isAuthenticated) {
     return (
-      <main className="min-h-screen bg-[#F5F5F7]">
+      <main className="screen min-h-screen bg-card">
         <EmptyState
-          icon={AlertTriangle}
+          icon={AlertCircle}
           title="Войдите в аккаунт"
           description="Чтобы открыть переписку, войдите"
           action={{ label: "Войти", onClick: () => router.push("/login") }}
@@ -122,14 +123,14 @@ export default function ChatPage() {
 
   if (chatLoading) {
     return (
-      <main className="min-h-screen bg-[#F5F5F7]">
+      <main className="screen min-h-screen bg-card">
         <ChatHeaderSkeleton onBack={() => router.back()} />
-        <div className="px-4 py-6 space-y-3">
+        <div className="space-y-2 px-4 py-6">
           {Array.from({ length: 5 }).map((_, i) => (
             <div
               key={i}
-              className={`h-10 rounded-2xl bg-white animate-pulse ${
-                i % 2 === 0 ? "w-1/2" : "w-2/3 ml-auto"
+              className={`skeleton h-10 rounded-2xl ${
+                i % 2 === 0 ? "w-1/2" : "ml-auto w-2/3"
               }`}
             />
           ))}
@@ -141,10 +142,10 @@ export default function ChatPage() {
   if (chatError || !chat) {
     const status = (chatErrorObj as { status?: number } | undefined)?.status;
     return (
-      <main className="min-h-screen bg-[#F5F5F7]">
+      <main className="screen min-h-screen bg-card">
         <ChatHeaderSkeleton onBack={() => router.back()} />
         <EmptyState
-          icon={AlertTriangle}
+          icon={AlertCircle}
           title={status === 404 ? "Чат не найден" : "Не удалось загрузить чат"}
           description={
             status === 403
@@ -161,97 +162,94 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F5F7] flex flex-col">
-      {/* ── Header ── */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-[#E5E5E7]">
-        <div className="flex items-center gap-3 px-3 md:px-6 h-14 lg:h-16 lg:max-w-[1000px] lg:mx-auto">
+    <main className="flex min-h-screen flex-col bg-card">
+      {/* ── Шапка h56 (§10.10) ── */}
+      <div className="sticky top-0 z-30 bg-card pt-[env(safe-area-inset-top)]">
+        <div className="mx-auto flex h-14 items-center gap-3 px-4 lg:max-w-[1000px]">
           <button
             type="button"
             onClick={() => router.back()}
             aria-label="Назад"
-            className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7] transition-colors"
+            className="icon-btn -ml-2.5"
           >
-            <ChevronLeft className="w-5 h-5 text-[#111111]" />
+            <ArrowLeft className="size-5" strokeWidth={1.5} />
           </button>
 
-          {/* Partner */}
-          <div className="flex items-center gap-2 flex-1 min-w-0">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             {chat.partner.avatar ? (
               <img
                 src={chat.partner.avatar}
                 alt={chat.partner.name}
-                className="w-9 h-9 rounded-full object-cover bg-[#F2F2F7]"
+                className="size-9 rounded-full bg-secondary object-cover"
               />
             ) : (
-              <span className="w-9 h-9 rounded-full bg-[#111111] text-white text-[14px] font-semibold flex items-center justify-center font-[family-name:var(--font-manrope)]">
+              <span className="grid size-9 place-items-center rounded-full bg-muted text-[14px] font-medium text-[#6B7280]">
                 {chat.partner.name.charAt(0).toUpperCase()}
               </span>
             )}
-            <span className="text-[15px] font-semibold text-[#111111] truncate font-[family-name:var(--font-manrope)]">
+            <span className="line-1 text-[15px] font-semibold text-foreground">
               {chat.partner.name}
             </span>
           </div>
 
-          <button
-            type="button"
-            aria-label="Меню"
-            className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#F2F2F7] transition-colors"
-          >
-            <MoreVertical className="w-5 h-5 text-[#111111]" />
+          <button type="button" aria-label="Меню" className="icon-btn -mr-2.5">
+            <MoreVertical className="size-5" strokeWidth={1.5} />
           </button>
         </div>
 
-        {/* Ad pill */}
+        {/* Плашка объявления: m 12px 16px 8px, фото 40×40 r8 (§10.10) */}
         <button
           type="button"
           onClick={handleAdClick}
-          className="w-full lg:max-w-[1000px] lg:mx-auto flex items-center gap-3 px-3 md:px-6 py-2 bg-[#FAFAFA] border-t border-[#F2F2F7] text-left hover:bg-[#F5F5F7] transition-colors"
+          className="press-row mx-4 mb-2 mt-3 flex w-[calc(100%-32px)] items-center gap-3 rounded-xl px-1 text-left lg:mx-auto lg:max-w-[1000px]"
         >
-          <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#F2F2F7] shrink-0">
+          <div className="size-10 shrink-0 overflow-hidden rounded-lg bg-secondary">
             <ImageWithFallback
               src={chat.ad.photo}
               alt={chat.ad.title}
-              className="w-full h-full object-cover"
+              className="size-full object-cover"
             />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[13px] text-[#111111] truncate font-medium font-[family-name:var(--font-manrope)]">
+          <div className="min-w-0 flex-1">
+            <p className="line-1 text-[14px] font-medium text-foreground">
               {chat.ad.title}
             </p>
-            <p className="text-[12px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+            <p className="text-[12px] text-muted-foreground">
               {formatPrice(chat.ad.price)} сомони
             </p>
           </div>
+          <ChevronRight className="size-5 shrink-0 text-muted-foreground" strokeWidth={1.5} />
         </button>
+        <div className="hairline" />
       </div>
 
-      {/* ── Messages ── */}
+      {/* ── Лента сообщений: px16, gap 8 (§10.10) ── */}
       <div
-        className="flex-1 overflow-y-auto px-3 md:px-6 py-4 lg:max-w-[1000px] lg:mx-auto w-full"
+        className="mx-auto w-full flex-1 overflow-y-auto px-4 py-4 lg:max-w-[1000px]"
         style={{ paddingBottom: "calc(72px + env(safe-area-inset-bottom))" }}
       >
         {msgsLoading && ordered.length === 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <div
                 key={i}
-                className={`h-10 rounded-2xl bg-white animate-pulse ${
-                  i % 2 === 0 ? "w-1/2" : "w-2/3 ml-auto"
+                className={`skeleton h-10 rounded-2xl ${
+                  i % 2 === 0 ? "w-1/2" : "ml-auto w-2/3"
                 }`}
               />
             ))}
           </div>
         ) : ordered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+          <div className="py-12 text-center">
+            <p className="text-[14px] text-muted-foreground">
               Сообщений ещё нет. Напишите первым.
             </p>
           </div>
         ) : (
           groups.map((group) => (
-            <div key={group.dateLabel} className="space-y-1.5">
-              <div className="flex justify-center my-3">
-                <span className="px-3 py-1 rounded-full bg-white border border-[#E5E5E7] text-[12px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+            <div key={group.dateLabel} className="space-y-2">
+              <div className="my-3 flex justify-center">
+                <span className="rounded-full bg-secondary px-3 py-1 text-[12px] text-muted-foreground">
                   {group.dateLabel}
                 </span>
               </div>
@@ -264,20 +262,20 @@ export default function ChatPage() {
         <div ref={bottomRef} />
       </div>
 
-      {/* ── Input ── */}
+      {/* ── Строка ввода h56 (§10.10) ── */}
       <div
-        className="fixed left-0 right-0 z-30 bg-white border-t border-[#E5E5E7] px-3 md:px-6 py-2"
-        style={{ bottom: 0, paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
+        className="hairline-top fixed bottom-0 left-0 right-0 z-30 bg-card px-4 py-2"
+        style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
       >
-        <div className="flex items-end gap-2 lg:max-w-[1000px] lg:mx-auto">
-          <a
-            href={chat.partner ? undefined : undefined}
-            className="hidden md:flex w-10 h-10 rounded-full items-center justify-center hover:bg-[#F2F2F7] text-[#111111] transition-colors"
-            aria-label="Позвонить"
+        <div className="mx-auto flex items-end gap-3 lg:max-w-[1000px]">
+          <button
+            type="button"
+            aria-label="Вложение"
+            className="icon-btn shrink-0 text-muted-foreground"
           >
-            <Phone className="w-5 h-5" />
-          </a>
-          <div className="flex-1 bg-[#F2F2F7] rounded-2xl flex items-end min-h-10">
+            <Paperclip className="size-5" strokeWidth={1.5} />
+          </button>
+          <div className="flex min-h-9 flex-1 items-end rounded-[20px] bg-secondary">
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -287,9 +285,9 @@ export default function ChatPage() {
                   handleSend();
                 }
               }}
-              placeholder="Написать сообщение..."
+              placeholder="Сообщение…"
               rows={1}
-              className="flex-1 bg-transparent px-4 py-2.5 text-[15px] text-[#111111] placeholder:text-[#8E8E93] focus:outline-none resize-none max-h-32 font-[family-name:var(--font-manrope)]"
+              className="max-h-32 flex-1 resize-none bg-transparent px-4 py-2 text-[15px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
           <button
@@ -297,9 +295,9 @@ export default function ChatPage() {
             onClick={handleSend}
             disabled={!text.trim() || sending}
             aria-label="Отправить"
-            className="w-10 h-10 rounded-full bg-[#E53935] text-white flex items-center justify-center shrink-0 disabled:bg-[#C7C7CC] disabled:cursor-not-allowed hover:bg-[#D32F2F] active:scale-95 transition-all"
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground transition-all active:scale-95 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
           >
-            <Send className="w-5 h-5" />
+            <Send className="size-[18px]" strokeWidth={1.5} />
           </button>
         </div>
       </div>
@@ -307,68 +305,66 @@ export default function ChatPage() {
   );
 }
 
+/**
+ * Пузырь сообщения (§10.10): входящее — bg secondary, r16 с левым нижним 4;
+ * исходящее — bg muted, r16 с правым нижним 4. Текст 15/400, время 11/400 muted.
+ */
 function MessageBubble({ message }: { message: Message }) {
   const mine = message.is_mine;
   return (
-    <div className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+    <div className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
       <div
-        className={`max-w-[80%] md:max-w-[60%] rounded-2xl px-3 py-2 ${
+        className={`max-w-[75%] px-3 py-2 ${
           mine
-            ? "bg-[#E53935] text-white rounded-br-sm"
-            : "bg-white text-[#111111] border border-[#E5E5E7] rounded-bl-sm"
+            ? "rounded-2xl rounded-br-[4px] bg-muted text-foreground"
+            : "rounded-2xl rounded-bl-[4px] bg-secondary text-foreground"
         }`}
       >
         {message.text && (
-          <p
-            className="text-[15px] leading-snug whitespace-pre-wrap break-words font-[family-name:var(--font-manrope)]"
-          >
+          <p className="whitespace-pre-wrap break-words text-[15px] leading-snug">
             {message.text}
           </p>
         )}
         {message.media_url && (
-          <div className="mt-1 rounded-xl overflow-hidden">
+          <div className="mt-1 overflow-hidden rounded-xl">
             {message.media_type === "video" ? (
               <video
                 src={message.media_url}
                 controls
-                className="w-full max-h-72 rounded-xl"
+                className="max-h-72 w-full rounded-xl"
               />
             ) : (
               <img
                 src={message.media_url}
                 alt=""
-                className="w-full max-h-72 object-cover rounded-xl"
+                className="max-h-72 w-full rounded-xl object-cover"
               />
             )}
           </div>
         )}
-        <span
-          className={`block text-[11px] mt-1 text-right font-[family-name:var(--font-manrope)] ${
-            mine ? "text-white/70" : "text-[#8E8E93]"
-          }`}
-        >
-          {formatMessageTime(message.created_at)}
-          {mine && message.is_read && " · прочитано"}
-        </span>
       </div>
+      <span className="mt-1 text-[11px] text-muted-foreground">
+        {formatMessageTime(message.created_at)}
+        {mine && message.is_read && " · прочитано"}
+      </span>
     </div>
   );
 }
 
 function ChatHeaderSkeleton({ onBack }: { onBack: () => void }) {
   return (
-    <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-xl border-b border-[#E5E5E7]">
-      <div className="flex items-center gap-3 px-3 md:px-6 h-14 lg:h-16">
+    <div className="hairline sticky top-0 z-30 bg-card pt-[env(safe-area-inset-top)]">
+      <div className="flex h-14 items-center gap-3 px-4">
         <button
           type="button"
           onClick={onBack}
           aria-label="Назад"
-          className="w-10 h-10 rounded-full flex items-center justify-center -ml-2 hover:bg-[#F2F2F7]"
+          className="icon-btn -ml-2.5"
         >
-          <ChevronLeft className="w-5 h-5 text-[#111111]" />
+          <ArrowLeft className="size-5" strokeWidth={1.5} />
         </button>
-        <div className="w-9 h-9 rounded-full bg-[#F2F2F7] animate-pulse" />
-        <div className="flex-1 h-4 bg-[#F2F2F7] rounded animate-pulse max-w-[140px]" />
+        <div className="skeleton size-9 rounded-full" />
+        <div className="skeleton h-4 w-[140px]" />
       </div>
     </div>
   );
