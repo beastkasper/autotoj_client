@@ -4,6 +4,7 @@ import { User } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { formatDate } from "@/lib/utils/dateFormat";
 
 interface SellerCardProps {
   sellerName?: string;
@@ -50,7 +51,7 @@ export function SellerCard({
               {publishedDate && (
                 <div className="flex items-center justify-between text-[13px] font-[family-name:var(--font-manrope)]">
                   <span className="text-[#8E8E93]">Опубликовано</span>
-                  <span className="text-[#111111] font-medium">{publishedDate}</span>
+                  <span className="text-[#111111] font-medium">{formatDate(publishedDate)}</span>
                 </div>
               )}
               {vehicleStatus && (

@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Settings } from "lucide-react";
+import { ImageWithFallback } from "./ImageWithFallback";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import type { RentalCar } from "@/lib/types/rental";
 
@@ -29,7 +30,7 @@ export const RentalCard = React.memo(function RentalCard({
       }`}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-secondary">
-        <img
+        <ImageWithFallback
           src={car.image}
           alt={car.title}
           className={`size-full object-cover ${

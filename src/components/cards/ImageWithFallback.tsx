@@ -1,21 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { Car } from "lucide-react";
+import { Car, type LucideIcon } from "lucide-react";
 
 interface ImageWithFallbackProps {
   src: string;
   alt: string;
   className?: string;
+  Icon?: LucideIcon;
 }
 
-export function ImageWithFallback({ src, alt, className = "" }: ImageWithFallbackProps) {
+export function ImageWithFallback({ src, alt, className = "", Icon = Car }: ImageWithFallbackProps) {
   const [hasError, setHasError] = useState(false);
 
   if (!src || hasError) {
     return (
       <div className={`bg-gradient-to-br from-[#E5E5E7] to-[#F2F2F7] flex items-center justify-center ${className}`}>
-        <Car className="size-12 text-[#C7C7CC]" strokeWidth={1} />
+        <Icon className="size-12 text-[#C7C7CC]" strokeWidth={1} />
       </div>
     );
   }

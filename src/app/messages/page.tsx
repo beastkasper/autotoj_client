@@ -158,7 +158,7 @@ function ChatRow({ chat, onClick }: ChatRowProps) {
           />
         ) : (
           <span className="text-[16px] font-medium text-[#6B7280]">
-            {chat.partner.name.charAt(0).toUpperCase()}
+            {chat.partner.name?.charAt(0)?.toUpperCase() ?? "?"}
           </span>
         )}
       </span>

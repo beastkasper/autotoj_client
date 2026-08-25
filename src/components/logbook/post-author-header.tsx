@@ -14,7 +14,7 @@ export function PostAuthorHeader({ author, date, variant }: PostAuthorHeaderProp
           {author.avatar ? (
             <img src={author.avatar} alt={author.name} className="w-full h-full rounded-full object-cover" />
           ) : (
-            <span className="text-lg font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">{author.name[0]}</span>
+            <span className="text-lg font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">{author.name?.[0] ?? "?"}</span>
           )}
         </div>
         <div>
@@ -31,7 +31,7 @@ export function PostAuthorHeader({ author, date, variant }: PostAuthorHeaderProp
         {author.avatar ? (
           <img src={author.avatar} alt={author.name} className="w-full h-full rounded-full object-cover" />
         ) : (
-          <span className="text-[20px] font-semibold text-[#E53935] font-[family-name:var(--font-manrope)]">{author.name[0]}</span>
+          <span className="text-[20px] font-semibold text-[#E53935] font-[family-name:var(--font-manrope)]">{author.name?.[0] ?? "?"}</span>
         )}
       </div>
       <div>

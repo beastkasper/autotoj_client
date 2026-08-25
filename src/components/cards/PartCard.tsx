@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+import { Package } from "lucide-react";
+import { ImageWithFallback } from "./ImageWithFallback";
 import { formatDateWithCity } from "@/lib/utils/dateFormat";
 import type { PartListing } from "@/lib/types/part";
 
@@ -29,9 +31,10 @@ export const PartCard = React.memo(function PartCard({
       }`}
     >
       <div className="relative aspect-square overflow-hidden bg-secondary">
-        <img
+        <ImageWithFallback
           src={part.image}
           alt={part.title}
+          Icon={Package}
           className={`size-full object-cover ${
             !isMobile ? "transition-transform duration-300 group-hover:scale-105" : ""
           }`}

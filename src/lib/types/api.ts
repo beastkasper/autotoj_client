@@ -429,6 +429,7 @@ export interface VideoUploadResponse {
 // ── Ad Update Body (PATCH /my/ads/:id) ──
 export interface AdUpdateBody {
   vehicle_type?: string;
+  category?: string;
   brand_id?: string;
   model_id?: string;
   generation_id?: string;
@@ -459,6 +460,21 @@ export interface AdUpdateBody {
   is_damaged?: boolean;
   modification?: string;
   steering_wheel?: string;
+  origin_country?: string;
+  ready_for_online_viewing?: boolean;
+
+  // Moto-specific
+  motorcycle_type?: string;
+  cylinder_layout?: string;
+  cylinder_count?: number;
+  strokes?: number;
+
+  // Commercial-specific
+  subcategory?: string;
+  bus_type?: string;
+  load_capacity?: number;
+  seats_count?: number;
+  wheel_formula?: string;
 }
 
 // ── Reports ──

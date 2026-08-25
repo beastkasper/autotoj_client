@@ -37,7 +37,7 @@ function MobileCard({ post, onClick }: Omit<LogbookPostCardProps, "variant">) {
             />
           ) : (
             <span className="text-[14px] font-semibold text-foreground">
-              {post.author.name[0]}
+              {post.author.name?.[0] ?? "?"}
             </span>
           )}
         </span>
@@ -84,7 +84,7 @@ function DesktopCard({ post, onClick }: Omit<LogbookPostCardProps, "variant">) {
             <img src={post.author.avatar} alt={post.author.name} className="w-full h-full rounded-full object-cover" />
           ) : (
             <span className="text-[17px] font-semibold text-[#E53935]">
-              {post.author.name[0]}
+              {post.author.name?.[0] ?? "?"}
             </span>
           )}
         </div>

@@ -8,6 +8,7 @@ import "./features/auth/authApi";
 import "./features/ads/adsApi";
 import "./features/parts/partsApi";
 import "./features/rental/rentalApi";
+import "./features/plates/platesApi";
 import "./features/dicts/dictsApi";
 import "./features/favorites/favoritesApi";
 import "./features/profile/profileApi";

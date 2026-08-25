@@ -206,7 +206,8 @@ function MyAdsTab({
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<"active" | "paused">("active");
   const { data: apiData, isLoading } = useGetMyAdsQuery(
-    { status: statusFilter },
+    // The backend status for a "paused" ad is "archived" (set by archive/restore).
+    { status: statusFilter === "paused" ? "archived" : "active" },
     { skip: !isAuthenticated },
   );
   const [archiveAd] = useArchiveAdMutation();

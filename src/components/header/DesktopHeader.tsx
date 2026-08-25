@@ -34,15 +34,17 @@ export function DesktopHeader() {
   // Derive active tab from current route
   const activeTab = pathname.startsWith("/rental")
     ? "rental"
-    : pathname.startsWith("/parts")
-      ? "parts"
-      : pathname.startsWith("/services")
-        ? "services"
-        : pathname.startsWith("/logbook")
-          ? "logbook"
-          : pathname.startsWith("/profile")
-            ? "menu"
-            : "search";
+    : pathname.startsWith("/plates")
+      ? "plates"
+      : pathname.startsWith("/parts")
+        ? "parts"
+        : pathname.startsWith("/services")
+          ? "services"
+          : pathname.startsWith("/logbook")
+            ? "logbook"
+            : pathname.startsWith("/profile")
+              ? "menu"
+              : "search";
 
   const handleNavigate = useCallback(
     (tab: string) => {
@@ -60,6 +62,7 @@ export function DesktopHeader() {
         search: "/",
         parts: "/parts",
         rental: "/rental",
+        plates: "/plates",
         services: "/services",
         logbook: "/logbook",
         blog: "/logbook",

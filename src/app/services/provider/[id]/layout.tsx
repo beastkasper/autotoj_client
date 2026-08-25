@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 
-const API_BASE = "https://api.autotoj.tj/v1";
+const API_BASE = process.env.INTERNAL_API_URL || "https://api.autotoj.tj/v1";
 
 async function getProvider(id: string) {
   try {
-    const res = await fetch(`${API_BASE}/services/providers/${id}`, {
+    const res = await fetch(`${API_BASE}/service-providers/${id}`, {
       next: { revalidate: 300 },
       headers: { Accept: "application/json", "Accept-Language": "ru" },
     });

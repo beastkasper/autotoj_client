@@ -10,7 +10,7 @@ import { setToken, resetAuth } from "./features/auth/authSlice";
 import type { AuthRefreshResponse } from "./types/api";
 
 const rawBaseQuery = fetchBaseQuery({
-  baseUrl: "https://api.autotoj.tj/v1/",
+  baseUrl: process.env.NEXT_PUBLIC_API_URL || "https://api.autotoj.tj/v1/",
   prepareHeaders: (headers, { getState }) => {
     const token = (getState() as RootState).auth.token;
     if (token) {
@@ -60,6 +60,9 @@ export const api = createApi({
     "PartDetail",
     "Rental",
     "RentalDetail",
+    "Plates",
+    "PlateDetail",
+    "MyPlates",
     "Dicts",
     "Favorites",
     "MyAds",

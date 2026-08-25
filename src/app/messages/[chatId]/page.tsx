@@ -184,7 +184,7 @@ export default function ChatPage() {
               />
             ) : (
               <span className="grid size-9 place-items-center rounded-full bg-muted text-[14px] font-medium text-[#6B7280]">
-                {chat.partner.name.charAt(0).toUpperCase()}
+                {chat.partner.name?.charAt(0)?.toUpperCase() ?? "?"}
               </span>
             )}
             <span className="line-1 text-[15px] font-semibold text-foreground">
