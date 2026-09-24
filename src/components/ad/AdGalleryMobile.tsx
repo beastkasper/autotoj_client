@@ -1,5 +1,6 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
 import { useRef, useState } from "react";
 import { Video } from "lucide-react";
 import { ImageWithFallback } from "@/components/cards/ImageWithFallback";
@@ -47,7 +48,7 @@ export function AdGalleryMobile({ images, alt, hasVideo }: AdGalleryMobileProps)
         {list.map((src, i) => (
           <div key={i} className="h-full w-full shrink-0">
             <ImageWithFallback
-              src={src}
+              src={mediaUrl(src)}
               alt={`${alt} ${i + 1}`}
               className="size-full object-cover"
             />

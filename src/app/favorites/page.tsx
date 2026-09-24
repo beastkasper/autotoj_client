@@ -1,10 +1,13 @@
 "use client";
 
+import { RequireAuth } from "@/components/auth/require-auth";
 import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Heart } from "lucide-react";
 import { AdCard } from "@/components/cards/AdCard";
 import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { PageHeader } from "@/components/layout/page-header";
 import { SkeletonGrid } from "@/components/layout/skeleton-grid";
 import { ContentGrid } from "@/components/layout/content-grid";
@@ -16,11 +19,11 @@ import {
 } from "@/lib/features/favorites/favoritesApi";
 import { mapAdListItemToAd } from "@/lib/utils/map-ad";
 
-export default function FavoritesPage() {
+function FavoritesPageContent() {
   const router = useRouter();
   const baseParams = useMemo(() => ({}), []);
   const { params: queryParams, page, setPage } = usePagedParams(baseParams);
-  const { data: apiData, isLoading, isFetching } = useGetFavoritesQuery(queryParams);
+  const { data: apiData, isLoading, isFetching, error, refetch } = useGetFavoritesQuery(queryParams);
   const [removeFavorite] = useRemoveFavoriteMutation();
 
   const favorites = apiData?.ads.map(mapAdListItemToAd) ?? [];
@@ -73,6 +76,13 @@ export default function FavoritesPage() {
           <ContentGrid desktopCols={4} mobileCols={2}>
             <SkeletonGrid count={8} />
           </ContentGrid>
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить избранное"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : favorites.length > 0 ? (
           <ContentGrid desktopCols={4} mobileCols={2}>
             {favorites.map((ad) => (
@@ -121,6 +131,13 @@ export default function FavoritesPage() {
       <div className="flex flex-col gap-3 p-4 lg:hidden">
         {isLoading ? (
           <SkeletonGrid count={4} variant="list" />
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить избранное"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : favorites.length > 0 ? (
           favorites.map((ad) => (
             <AdCard
@@ -152,5 +169,13 @@ export default function FavoritesPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function FavoritesPage() {
+  return (
+    <RequireAuth description="Избранное хранится в вашем аккаунте">
+      <FavoritesPageContent />
+    </RequireAuth>
   );
 }

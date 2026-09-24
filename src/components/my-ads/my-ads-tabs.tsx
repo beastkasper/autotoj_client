@@ -2,15 +2,22 @@
 
 import { Button } from "@/components/ui/button";
 
+export type MyAdsTab = "active" | "archived" | "rental";
+
 interface MyAdsTabsProps {
-  activeTab: "active" | "paused";
-  onTabChange: (tab: "active" | "paused") => void;
+  activeTab: MyAdsTab;
+  onTabChange: (tab: MyAdsTab) => void;
   variant: "desktop" | "mobile";
 }
 
-const tabs: { key: "active" | "paused"; label: string }[] = [
+// «На паузе» на бэкенде — это статус archived (INTEGRATION.md §6.1),
+// отдельного paused не существует.
+const tabs: { key: MyAdsTab; label: string }[] = [
   { key: "active", label: "Активные" },
-  { key: "paused", label: "На паузе" },
+  { key: "archived", label: "На паузе" },
+  // Объявления о прокате живут в отдельном эндпоинте /my/rental, и до
+  // появления этой вкладки управлять ими было неоткуда.
+  { key: "rental", label: "Прокат" },
 ];
 
 export function MyAdsTabs({ activeTab, onTabChange, variant }: MyAdsTabsProps) {

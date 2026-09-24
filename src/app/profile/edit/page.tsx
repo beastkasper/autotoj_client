@@ -1,5 +1,6 @@
 "use client";
 
+import { RequireAuth } from "@/components/auth/require-auth";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -11,6 +12,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
+import { useLogoutMutation } from "@/lib/features/auth/authApi";
+import { api } from "@/lib/api";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { useAppDispatch } from "@/hooks/hooks";
 import { ProfileSkeleton } from "@/components/skeletons/profile-skeleton";
 import { resetAuth } from "@/lib/features/auth/authSlice";
@@ -28,7 +32,7 @@ const INPUT_BASE =
   "bg-surface-alt border border-black/[0.04] px-5 py-4 text-[15px] w-full outline-none text-foreground";
 const LABEL = `block text-[13px] uppercase tracking-wider text-[#8E8E93] mb-2 ${F}`;
 
-export default function ProfileEditPage() {
+function ProfileEditPageContent() {
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { isAuthenticated, showAuthModal, closeAuthModal } = useAuth();
@@ -37,6 +41,7 @@ export default function ProfileEditPage() {
   const [uploadAvatar] = useUploadAvatarMutation();
   const [uploadBanner] = useUploadBannerMutation();
   const [deleteAccount] = useDeleteAccountMutation();
+  const [logout] = useLogoutMutation();
   const avatarRef = useRef<HTMLInputElement>(null);
   const bannerRef = useRef<HTMLInputElement>(null);
 
@@ -45,9 +50,15 @@ export default function ProfileEditPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  // Форму заполняем серверными данными ровно один раз. Раньше эффект висел на
+  // [profile], и любой рефетч (например, после загрузки аватара) затирал
+  // несохранённые правки пользователя.
+  const initialisedRef = useRef(false);
 
   useEffect(() => {
-    if (profile) {
+    if (profile && !initialisedRef.current) {
+      initialisedRef.current = true;
       setFormData({ name: profile.name ?? "", email: profile.email ?? "", bio: profile.bio ?? "" });
     }
   }, [profile]);
@@ -63,11 +74,34 @@ export default function ProfileEditPage() {
 
   const handleSave = async () => {
     if (!hasChanges || isSaving) return;
+    // Лимиты по INTEGRATION.md §2.1: name 100 символов, bio 150.
+    const name = formData.name.trim();
+    if (!name) {
+      setSaveError("Укажите имя");
+      return;
+    }
+    if (name.length > 100) {
+      setSaveError("Имя не длиннее 100 символов");
+      return;
+    }
+    if (formData.bio.length > 150) {
+      setSaveError("О себе — не длиннее 150 символов");
+      return;
+    }
+    if (formData.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(formData.email.trim())) {
+      setSaveError("Некорректный адрес почты");
+      return;
+    }
+    setSaveError(null);
     setIsSaving(true);
     try {
-      await updateProfile({ name: formData.name, email: formData.email, bio: formData.bio }).unwrap();
+      await updateProfile({ name, email: formData.email.trim(), bio: formData.bio }).unwrap();
       setSuccessMessage(true);
       setTimeout(() => setSuccessMessage(false), 3000);
+    } catch (err) {
+      // Раньше ошибка сохранения не показывалась никак: catch отсутствовал,
+      // и пользователь думал, что профиль сохранён.
+      setSaveError(getApiErrorMessage(err, "Не удалось сохранить профиль"));
     } finally {
       setIsSaving(false);
     }
@@ -93,11 +127,31 @@ export default function ProfileEditPage() {
     }
   };
 
-  const handleLogout = () => { dispatch(resetAuth()); router.push("/"); };
+  const handleLogout = async () => {
+    // Раньше выход только чистил localStorage, а серверная сессия оставалась
+    // валидной ещё 30 дней. Ответ не ждём как условие выхода: даже если
+    // запрос не прошёл, локально разлогиниваем.
+    try {
+      await logout().unwrap();
+    } catch {
+      // Сессия могла уже истечь — для пользователя это всё равно выход.
+    }
+    dispatch(resetAuth());
+    dispatch(api.util.resetApiState());
+    router.push("/");
+  };
 
   const handleDeleteAccount = async () => {
-    await deleteAccount({ confirm: true }).unwrap();
+    try {
+      await deleteAccount({ confirm: true }).unwrap();
+    } catch (err) {
+      setSaveError(getApiErrorMessage(err, "Не удалось удалить аккаунт"));
+      return;
+    }
     dispatch(resetAuth());
+    // Без сброса кэша RTK Query данные прежнего аккаунта остаются в памяти
+    // и мелькают у следующего вошедшего пользователя.
+    dispatch(api.util.resetApiState());
     router.push("/");
   };
 
@@ -157,9 +211,9 @@ export default function ProfileEditPage() {
     </div>
   );
 
-  const uploadErrorBanner = uploadError && (
+  const uploadErrorBanner = (uploadError || saveError) && (
     <div className="flex items-center gap-2 bg-red-50 text-[#D32F2F] px-4 py-3 rounded-2xl text-[15px] animate-in slide-in-from-top duration-300">
-      <span className={F}>{uploadError}</span>
+      <span className={F}>{uploadError ?? saveError}</span>
     </div>
   );
 
@@ -312,5 +366,13 @@ export default function ProfileEditPage() {
         />
       )}
     </>
+  );
+}
+
+export default function ProfileEditPage() {
+  return (
+    <RequireAuth description="Профиль редактируется только из своего аккаунта">
+      <ProfileEditPageContent />
+    </RequireAuth>
   );
 }

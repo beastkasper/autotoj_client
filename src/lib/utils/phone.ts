@@ -1,17 +1,36 @@
 /**
- * Parse a formatted phone string like "(XX) XXX XX XX" into raw digits "992XXXXXXXXX"
- * for sending to the API.
+ * Телефоны Таджикистана: +992 и 9 цифр национального номера.
+ *
+ * Раньше formatPhone просто резал первые 9 цифр из строки, поэтому вставка
+ * номера в привычном виде «+992900001001» превращалась в «(99) 290 00 01»,
+ * а в API уходил совсем другой номер (+992992900001) — SMS приходила не туда,
+ * и никакой ошибки при этом не было.
  */
-export function parseRawPhone(formatted: string): string {
-  const digits = formatted.replace(/\D/g, "");
-  return `+992${digits}`;
+
+const COUNTRY_CODE = "992";
+const NATIONAL_LENGTH = 9;
+
+/** Оставляет только 9 цифр национального номера, отбрасывая код страны. */
+export function normalizeNationalDigits(input: string): string {
+  let digits = input.replace(/\D/g, "");
+  // «00992…» — международный префикс, «992…» — код страны.
+  if (digits.startsWith("00" + COUNTRY_CODE)) digits = digits.slice(2 + COUNTRY_CODE.length);
+  else if (digits.startsWith(COUNTRY_CODE) && digits.length > NATIONAL_LENGTH) {
+    digits = digits.slice(COUNTRY_CODE.length);
+  }
+  // Ведущий ноль национального формата («0 90 …») тоже убираем.
+  if (digits.length > NATIONAL_LENGTH && digits.startsWith("0")) digits = digits.slice(1);
+  return digits.slice(0, NATIONAL_LENGTH);
 }
 
-/**
- * Format raw phone digits into the display format: (XX) XXX XX XX
- */
+/** Строка из поля ввода → номер для API: «+992XXXXXXXXX». */
+export function parseRawPhone(formatted: string): string {
+  return `+${COUNTRY_CODE}${normalizeNationalDigits(formatted)}`;
+}
+
+/** Цифры → отображаемый формат «(XX) XXX XX XX». */
 export function formatPhone(raw: string): string {
-  const digits = raw.replace(/\D/g, "").slice(0, 9);
+  const digits = normalizeNationalDigits(raw);
   if (digits.length === 0) return "";
 
   if (digits.length <= 2) {
@@ -22,4 +41,9 @@ export function formatPhone(raw: string): string {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 5)} ${digits.slice(5)}`;
   }
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 5)} ${digits.slice(5, 7)} ${digits.slice(7)}`;
+}
+
+/** Номер заполнен полностью? */
+export function isCompletePhone(value: string): boolean {
+  return normalizeNationalDigits(value).length === NATIONAL_LENGTH;
 }

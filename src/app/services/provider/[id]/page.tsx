@@ -1,5 +1,7 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
+import { label, CITY_LABELS } from "@/lib/utils/dict-labels";
 import { useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -20,15 +22,27 @@ import {
   useGetProviderReviewsQuery,
 } from "@/lib/features/services/servicesApi";
 
+// Бэкенд отдаёт короткие ключи (mon, tue…), а не полные названия — из-за
+// несовпадения в графике работы выводились английские «fri», «mon», «sat».
 const DAY_LABELS: Record<string, string> = {
-  monday: "Пн",
-  tuesday: "Вт",
-  wednesday: "Ср",
-  thursday: "Чт",
-  friday: "Пт",
-  saturday: "Сб",
-  sunday: "Вс",
+  mon: "Пн", monday: "Пн",
+  tue: "Вт", tuesday: "Вт",
+  wed: "Ср", wednesday: "Ср",
+  thu: "Чт", thursday: "Чт",
+  fri: "Пт", friday: "Пт",
+  sat: "Сб", saturday: "Сб",
+  sun: "Вс", sunday: "Вс",
 };
+
+// Object.entries отдаёт ключи в алфавитном порядке (fri, mon, sat…),
+// поэтому дни недели нужно расставить явно.
+const DAY_ORDER = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+
+function dayIndex(key: string): number {
+  const short = key.slice(0, 3).toLowerCase();
+  const i = DAY_ORDER.indexOf(short);
+  return i === -1 ? DAY_ORDER.length : i;
+}
 
 export default function ServiceProviderPage() {
   const router = useRouter();
@@ -43,17 +57,19 @@ export default function ServiceProviderPage() {
   const reviews = reviewsData?.reviews ?? [];
   const averageRating = reviewsData?.average_rating ?? provider?.rating ?? 0;
 
+  const providerPhone = provider?.phone;
   const handleCall = useCallback(() => {
-    if (provider?.phone) {
-      window.open(`tel:${provider.phone}`, "_self");
+    if (providerPhone) {
+      window.open(`tel:${providerPhone}`, "_self");
     }
-  }, [provider?.phone]);
+  }, [providerPhone]);
 
+  const hasMoreReviews = reviewsData?.has_more;
   const loadMoreReviews = useCallback(() => {
-    if (reviewsData?.has_more) {
+    if (hasMoreReviews) {
       setReviewsPage((p) => p + 1);
     }
-  }, [reviewsData?.has_more]);
+  }, [hasMoreReviews]);
 
   if (isLoading) {
     return (
@@ -80,7 +96,9 @@ export default function ServiceProviderPage() {
     );
   }
 
-  const workingHoursEntries = Object.entries(provider.working_hours ?? {});
+  const workingHoursEntries = Object.entries(provider.working_hours ?? {}).sort(
+    ([a], [b]) => dayIndex(a) - dayIndex(b),
+  );
 
   return (
     <div className="screen lg:min-h-screen lg:bg-[#F5F5F7]">
@@ -99,13 +117,13 @@ export default function ServiceProviderPage() {
       </div>
 
       {/* ── Photos Gallery ── */}
-      {provider.photos.length > 0 && (
+      {(provider.photos?.length ?? 0) > 0 && (
         <div className="lg:max-w-[1440px] lg:mx-auto lg:px-6 lg:pt-4">
           <div className="flex gap-2 overflow-x-auto lg:overflow-hidden lg:grid lg:grid-cols-3 lg:gap-4 px-4 lg:px-0 pb-2 lg:pb-0 scrollbar-hide">
-            {provider.photos.map((photo, i) => (
+            {(provider.photos ?? []).map((photo, i) => (
               <img
                 key={i}
-                src={photo}
+                src={mediaUrl(photo)}
                 alt={`${provider.name} ${i + 1}`}
                 className="h-48 lg:h-64 w-72 lg:w-full rounded-2xl object-cover bg-[#F5F5F7] shrink-0"
               />
@@ -132,7 +150,7 @@ export default function ServiceProviderPage() {
               <div className="flex items-center gap-1">
                 <Star className="size-5 fill-star text-star" />
                 <span className="text-[17px] font-bold text-[#111111] font-[family-name:var(--font-manrope)]">
-                  {averageRating.toFixed(1)}
+                  {(averageRating ?? 0).toFixed(1)}
                 </span>
               </div>
               <span className="text-[15px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
@@ -153,7 +171,7 @@ export default function ServiceProviderPage() {
               <div className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-[#8E8E93] mt-0.5 shrink-0" />
                 <p className="text-[15px] text-[#111111] font-[family-name:var(--font-manrope)]">
-                  {provider.city}, {provider.address}
+                  {label(provider.city, CITY_LABELS)}, {provider.address}
                 </p>
               </div>
             )}
@@ -224,7 +242,7 @@ export default function ServiceProviderPage() {
                     <div className="flex items-center gap-3">
                       {review.user_avatar ? (
                         <img
-                          src={review.user_avatar}
+                          src={mediaUrl(review.user_avatar)}
                           alt={review.user_name}
                           className="w-10 h-10 rounded-full object-cover bg-[#F5F5F7]"
                         />
@@ -301,7 +319,7 @@ export default function ServiceProviderPage() {
             {provider.logo_url && (
               <div className="bg-white rounded-2xl p-5 flex items-center justify-center">
                 <img
-                  src={provider.logo_url}
+                  src={mediaUrl(provider.logo_url)}
                   alt={provider.name}
                   className="w-32 h-32 rounded-2xl object-contain"
                 />
@@ -312,7 +330,7 @@ export default function ServiceProviderPage() {
       </div>
 
       {/* ── Mobile Fixed Call Button ── */}
-      <div className="blur-surface hairline-top fixed bottom-0 left-0 right-0 z-30 mx-auto max-w-[440px] px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] lg:hidden">
+      <div className="blur-surface hairline-top fixed bottom-0 left-0 right-0 z-[60] mx-auto max-w-[440px] px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)] lg:hidden">
         {/* Кнопка «Позвонить»: h48 r24, обводка 2px (§10.6) */}
         <button
           type="button"

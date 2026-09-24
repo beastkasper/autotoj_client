@@ -290,7 +290,7 @@ function MyAdsTab({
             <MyAdCardMobile
               key={ad.id}
               ad={ad}
-              activeTab={statusFilter}
+              activeTab={statusFilter === "paused" ? "archived" : "active"}
               isMenuOpen={mobileMenuId === ad.id}
               onMenuToggle={() =>
                 setMobileMenuId(mobileMenuId === ad.id ? null : ad.id)
@@ -344,7 +344,13 @@ function MyAdsTab({
 
 function LogbookTab({ onPostClick }: { onPostClick: (id: string) => void }) {
   const router = useRouter();
-  const { data, isLoading } = useGetLogbookPostsQuery();
+  const { userId } = useAuth();
+  // Без author_id вкладка «Бортжурнал» в профиле показывала записи всех
+  // пользователей подряд, а не свои (API поддерживает фильтр — §13.1).
+  const { data, isLoading } = useGetLogbookPostsQuery(
+    userId ? { author_id: userId } : undefined,
+    { skip: !userId },
+  );
   const posts = data?.posts ?? [];
 
   if (isLoading) {
@@ -365,7 +371,7 @@ function LogbookTab({ onPostClick }: { onPostClick: (id: string) => void }) {
       <EmptyState
         icon={BookOpen}
         title="Нет записей"
-        description="Здесь будут отображаться записи бортжурнала"
+        description="Ваши записи бортжурнала появятся здесь"
         action={{
           label: "Создать запись",
           onClick: () => router.push("/logbook/create"),

@@ -10,7 +10,7 @@ import type { AdListItem } from "@/lib/types/api";
 
 interface MyAdCardDesktopProps {
   ad: AdListItem;
-  activeTab: "active" | "paused";
+  activeTab: "active" | "archived";
   onEdit: (id: string) => void;
   onPause: (id: string) => void;
   onPublish: (id: string) => void;

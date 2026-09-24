@@ -75,6 +75,7 @@ export const api = createApi({
     "Services",
     "Logbook",
     "LogbookDetail",
+    "LogbookComments",
   ],
   endpoints: () => ({}),
 });

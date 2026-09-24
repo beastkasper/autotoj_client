@@ -1,5 +1,6 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
 import { useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, MoreVertical, X } from "lucide-react";
@@ -9,13 +10,16 @@ import {
   useLikeLogbookPostMutation,
   useUnlikeLogbookPostMutation,
   useAddLogbookCommentMutation,
+  useDeleteLogbookPostMutation,
 } from "@/lib/features/logbook/logbookApi";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { ConfirmModal } from "@/components/layout/confirm-modal";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { getCategoryColor, getCategoryColorDesktop } from "@/lib/utils/category-colors";
 import { formatDate } from "@/lib/utils/dateFormat";
-import { MOCK_POST, MOCK_COMMENTS } from "@/lib/data/mock-logbook";
+import { label, LOGBOOK_CATEGORY_LABELS } from "@/lib/utils/dict-labels";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { PostAuthorHeader } from "@/components/logbook/post-author-header";
 import { PostActions } from "@/components/logbook/post-actions";
 import { CommentSection } from "@/components/logbook/comment-section";
@@ -24,50 +28,67 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
   const { id: postId } = use(params);
   const router = useRouter();
 
-  const { data: apiPost } = useGetLogbookPostByIdQuery(postId);
+  const {
+    data: apiPost,
+    isLoading: isLoadingPost,
+    error: postError,
+    refetch: refetchPost,
+  } = useGetLogbookPostByIdQuery(postId);
   const { data: apiComments } = useGetLogbookCommentsQuery({ postId });
   const [likePost] = useLikeLogbookPostMutation();
   const [unlikePost] = useUnlikeLogbookPostMutation();
   const [addComment] = useAddLogbookCommentMutation();
-  const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
+  const [deletePost] = useDeleteLogbookPostMutation();
+  const { requireAuth, showAuthModal, closeAuthModal, userId } = useAuth();
 
-  const [post, setPost] = useState(apiPost ?? MOCK_POST);
-  const [comments, setComments] = useState(apiComments?.comments ?? MOCK_COMMENTS);
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  // Оптимистичный лайк поверх серверных данных. Раньше весь пост держался в
+  // useState с MOCK_POST в начальном значении, из-за чего при ошибке API
+  // пользователю показывалась выдуманная запись как настоящая.
+  const [likeOverride, setLikeOverride] = useState<{ is_liked: boolean; likes_count: number } | null>(null);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  if (apiPost && apiPost.id !== post.id) setPost(apiPost);
-  if (apiComments && apiComments.comments.length !== comments.length) setComments(apiComments.comments);
+  const handleDeletePost = async () => {
+    setConfirmDelete(false);
+    setMenuOpen(false);
+    try {
+      await deletePost(postId).unwrap();
+      router.push("/logbook");
+    } catch (err) {
+      setDeleteError(getApiErrorMessage(err, "Не удалось удалить запись"));
+    }
+  };
 
   const handleLikePost = () => {
+    if (!apiPost) return;
     requireAuth(async () => {
-      const wasLiked = post.is_liked;
-      setPost({
-        ...post,
-        is_liked: !wasLiked,
-        likes_count: wasLiked ? post.likes_count - 1 : post.likes_count + 1,
-      });
+      const wasLiked = likeOverride?.is_liked ?? apiPost.is_liked;
+      const count = likeOverride?.likes_count ?? apiPost.likes_count;
+      setLikeOverride({ is_liked: !wasLiked, likes_count: wasLiked ? count - 1 : count + 1 });
       try {
         if (wasLiked) await unlikePost(postId).unwrap();
         else await likePost(postId).unwrap();
-      } catch { /* optimistic update already applied */ }
+      } catch {
+        // Откатываем: иначе счётчик врёт до перезагрузки страницы.
+        setLikeOverride(null);
+      }
     });
   };
 
   const handleSendComment = (text: string) => {
     if (!text.trim()) return;
+    setCommentError(null);
     requireAuth(async () => {
-      const newComment = {
-        id: Date.now().toString(),
-        author: { id: "current-user", name: "Вы", avatar: null },
-        text,
-        created_at: new Date().toISOString(),
-      };
-      setComments([...comments, newComment]);
-      setPost({ ...post, comments_count: post.comments_count + 1 });
       try {
+        // Список перечитается сам — мутация инвалидирует тег LogbookComments.
         await addComment({ postId, text: text.trim() }).unwrap();
-      } catch { /* optimistic update already applied */ }
+      } catch (err) {
+        setCommentError(getApiErrorMessage(err, "Не удалось отправить комментарий"));
+      }
     });
   };
 
@@ -91,6 +112,57 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
     setShowImageGallery(true);
   };
 
+  if (isLoadingPost) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="size-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+      </div>
+    );
+  }
+
+  if (postError || !apiPost) {
+    const notFound =
+      typeof postError === "object" &&
+      postError !== null &&
+      "status" in postError &&
+      (postError as { status?: number }).status === 404;
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="text-[17px] font-semibold font-[family-name:var(--font-manrope)]">
+          {notFound ? "Запись не найдена" : "Не удалось загрузить запись"}
+        </p>
+        <p className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
+          {notFound
+            ? "Возможно, автор удалил её."
+            : getApiErrorMessage(postError)}
+        </p>
+        <div className="flex gap-3">
+          {!notFound && (
+            <button
+              type="button"
+              onClick={() => refetchPost()}
+              className="h-11 rounded-xl bg-[#111111] px-5 text-[15px] font-medium text-white"
+            >
+              Повторить
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => router.push("/logbook")}
+            className="h-11 rounded-xl bg-[#F2F2F7] px-5 text-[15px] font-medium text-[#111111]"
+          >
+            К бортжурналу
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const post = { ...apiPost, ...(likeOverride ?? {}) };
+  // Меню действий показываем только автору записи.
+  const isOwnPost = !!userId && post.author?.id === userId;
+  const comments = apiComments?.comments ?? [];
+  const categoryLabel = label(post.category, LOGBOOK_CATEGORY_LABELS);
   const formattedDate = formatDate(post.created_at);
 
   return (
@@ -103,9 +175,31 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="font-semibold font-[family-name:var(--font-manrope)]">Бортжурнал</h1>
-            <button className="p-2 -mr-2 hover:bg-[#F2F2F7] rounded-full transition-colors">
-              <MoreVertical className="w-5 h-5" />
-            </button>
+            {isOwnPost ? (
+              <div className="relative">
+                <button
+                  onClick={() => setMenuOpen((v) => !v)}
+                  aria-label="Действия с записью"
+                  aria-expanded={menuOpen}
+                  className="p-2 -mr-2 hover:bg-[#F2F2F7] rounded-full transition-colors"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+                {menuOpen && (
+                  <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-[#E5E5EA] bg-white shadow-lg">
+                    <button
+                      type="button"
+                      onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
+                      className="w-full px-4 py-3 text-left text-[15px] text-[#D32F2F] hover:bg-[#F9F9F9]"
+                    >
+                      Удалить запись
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-9" />
+            )}
           </div>
         </div>
 
@@ -113,7 +207,7 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex items-center justify-between mb-4">
             <PostAuthorHeader author={post.author} date={formattedDate} variant="mobile" />
             <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(post.category)}`}>
-              {post.category}
+              {categoryLabel}
             </span>
           </div>
 
@@ -124,7 +218,7 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
             <div className="grid grid-cols-2 gap-2 mb-4">
               {post.photos.map((photo, idx) => (
                 <button key={idx} onClick={() => handleImageClick(idx)} className="aspect-video bg-[#F2F2F7] rounded-lg overflow-hidden hover:scale-105 transition-transform">
-                  <img src={photo} alt="" className="w-full h-full object-cover" />
+                  <img src={mediaUrl(photo)} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -140,6 +234,11 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
           />
         </div>
 
+        {commentError && (
+          <p className="px-4 pb-2 text-[13px] text-[#D32F2F] font-[family-name:var(--font-manrope)]">
+            {commentError}
+          </p>
+        )}
         <CommentSection comments={comments} onSendComment={handleSendComment} variant="mobile" />
       </div>
 
@@ -160,11 +259,31 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
                 <PostAuthorHeader author={post.author} date={formattedDate} variant="desktop" />
                 <div className="flex items-center gap-3">
                   <span className={`px-4 py-2 rounded-lg text-[14px] font-medium border ${getCategoryColorDesktop(post.category)}`}>
-                    {post.category}
+                    {categoryLabel}
                   </span>
-                  <button className="p-2 hover:bg-[#F2F2F7] rounded-full transition-colors">
-                    <MoreVertical className="w-5 h-5 text-[#8E8E93]" />
-                  </button>
+                  {isOwnPost && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setMenuOpen((v) => !v)}
+                        aria-label="Действия с записью"
+                        aria-expanded={menuOpen}
+                        className="p-2 hover:bg-[#F2F2F7] rounded-full transition-colors"
+                      >
+                        <MoreVertical className="w-5 h-5 text-[#8E8E93]" />
+                      </button>
+                      {menuOpen && (
+                        <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-[#E5E5EA] bg-white shadow-lg">
+                          <button
+                            type="button"
+                            onClick={() => { setMenuOpen(false); setConfirmDelete(true); }}
+                            className="w-full px-4 py-3 text-left text-[15px] text-[#D32F2F] hover:bg-[#F9F9F9]"
+                          >
+                            Удалить запись
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -175,7 +294,7 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
                 <div className="grid grid-cols-2 gap-4 mt-6">
                   {post.photos.map((photo, idx) => (
                     <button key={idx} onClick={() => handleImageClick(idx)} className="aspect-video bg-[#F5F5F5] rounded-xl overflow-hidden hover:scale-105 transition-transform cursor-pointer">
-                      <img src={photo} alt="" className="w-full h-full object-cover" />
+                      <img src={mediaUrl(photo)} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
@@ -206,7 +325,7 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
             <X className="w-6 h-6 text-white" />
           </button>
           <img
-            src={post.photos[selectedImageIndex]}
+            src={mediaUrl(post.photos[selectedImageIndex])}
             alt=""
             className="max-w-full max-h-full object-contain"
           />
@@ -225,6 +344,23 @@ export default function LogbookDetailPage({ params }: { params: Promise<{ id: st
           )}
         </DialogContent>
       </Dialog>
+
+      {deleteError && (
+        <p className="fixed inset-x-4 bottom-24 z-[70] mx-auto max-w-[420px] rounded-xl bg-[#FFECEC] px-4 py-3 text-center text-[14px] text-[#D32F2F]">
+          {deleteError}
+        </p>
+      )}
+
+      {confirmDelete && (
+        <ConfirmModal
+          title="Удалить запись?"
+          description="Запись и комментарии к ней будут удалены безвозвратно."
+          confirmLabel="Удалить"
+          destructive
+          onConfirm={handleDeletePost}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
 
       <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
     </div>

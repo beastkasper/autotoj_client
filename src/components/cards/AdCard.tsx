@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Heart, Video } from "lucide-react";
 import { ImageWithFallback } from "./ImageWithFallback";
 import { formatPrice } from "@/lib/utils/formatPrice";
@@ -15,6 +16,8 @@ interface AdCardProps {
   variant?: "grid" | "list";
   onFavoriteToggle: (id: string) => void;
   onClick: (id: string) => void;
+  /** Куда ведёт карточка. По умолчанию — страница объявления. */
+  href?: string;
   showCategoryBadge?: boolean;
   /** Карточка в избранном — сердце залито брендовым красным (§6.8) */
   isFavorite?: boolean;
@@ -67,6 +70,9 @@ function MediaOverlays({
         aria-label="В избранное"
         aria-pressed={isFavorite ? "true" : "false"}
         onClick={(e) => {
+          // preventDefault обязателен: карточка теперь настоящая ссылка,
+          // и без него клик по сердечку уводил бы на страницу объявления.
+          e.preventDefault();
           e.stopPropagation();
           onFavoriteToggle(ad.id);
         }}
@@ -94,8 +100,13 @@ export const AdCard = React.memo(function AdCard({
   variant = "grid",
   onFavoriteToggle,
   onClick,
+  href,
   isFavorite,
 }: AdCardProps) {
+  // Карточка — настоящая ссылка <a href>, а не <article onClick>. Так её можно
+  // открыть в новой вкладке и средним кликом, она доступна с клавиатуры,
+  // и поисковики видят ссылки на объявления.
+  const target = href ?? `/ad/${ad.id}`;
   const characteristics = buildCharacteristics(ad);
   // Есть версия → «{марка} · {модель}» и версия отдельной строкой
   const title = ad.version ? `${ad.brand} · ${ad.model}` : buildAdTitle(ad);
@@ -117,10 +128,10 @@ export const AdCard = React.memo(function AdCard({
 
   if (variant === "list") {
     return (
-      <article
+      <Link
+        href={target}
         onClick={() => onClick(ad.id)}
-        className="ad-card cursor-pointer"
-        role="button"
+        className="ad-card block cursor-pointer"
       >
         <div className="flex">
           <div className="relative size-32 shrink-0">
@@ -139,14 +150,14 @@ export const AdCard = React.memo(function AdCard({
             {body}
           </div>
         </div>
-      </article>
+      </Link>
     );
   }
 
   return (
-    <article
+    <Link
+      href={target}
       onClick={() => onClick(ad.id)}
-      role="button"
       className="ad-card flex cursor-pointer flex-col lg:hover:border-foreground lg:hover:shadow-lg lg:hover:scale-[1.02] lg:transition-all"
     >
       <div className="relative aspect-[4/3]">
@@ -162,6 +173,6 @@ export const AdCard = React.memo(function AdCard({
         />
       </div>
       <div className="p-3">{body}</div>
-    </article>
+    </Link>
   );
 });

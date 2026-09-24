@@ -24,6 +24,16 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "api.autotoj.tj",
       },
+      // Сидовые объявления бэкенда ссылаются на picsum — без этого хоста
+      // оптимизатор изображений отвечает 400 на половину выдачи.
+      {
+        protocol: "https",
+        hostname: "picsum.photos",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
 };

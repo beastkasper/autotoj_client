@@ -21,7 +21,7 @@ export function AdActionBar({ phone, adId }: AdActionBarProps) {
   return (
     <>
       <div
-        className="blur-surface-soft hairline-top fixed left-0 right-0 z-40 mx-auto max-w-[440px] px-4 py-3 lg:hidden"
+        className="blur-surface-soft hairline-top fixed left-0 right-0 z-[60] mx-auto max-w-[440px] px-4 py-3 lg:hidden"
         style={{ bottom: "calc(64px + env(safe-area-inset-bottom))" }}
       >
         <div className="flex gap-3">

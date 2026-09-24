@@ -18,8 +18,6 @@ export interface FilterState {
   automatic?: boolean;
   withPhoto?: boolean;
   withVideo?: boolean;
-  notDamaged?: boolean;
-  fromOwner?: boolean;
   // Detail filters
   brand?: string;
   model?: string;
@@ -191,6 +189,9 @@ interface FilterSheetProps {
 
 export function FilterSheet({ onClose, onApply, activeFilters }: FilterSheetProps) {
   const [filters, setFilters] = useState<FilterState>(activeFilters || EMPTY_FILTERS);
+  // Закрываем через open=false, чтобы шит успел уехать вниз; onClose — после анимации.
+  const [open, setOpen] = useState(true);
+  const close = useCallback(() => setOpen(false), []);
   // По умолчанию раскрыт только аккордеон «Марка / Модель»
   const [openSection, setOpenSection] = useState<string | null>("brand-model");
   const count = countActiveFilters(filters);
@@ -220,8 +221,9 @@ export function FilterSheet({ onClose, onApply, activeFilters }: FilterSheetProp
 
   return (
     <BottomSheet
-      open
-      onClose={onClose}
+      open={open}
+      onClose={close}
+      onClosed={onClose}
       radius={16}
       showHandle={false}
       maxHeight="85vh"
@@ -385,7 +387,7 @@ export function FilterSheet({ onClose, onApply, activeFilters }: FilterSheetProp
           type="button"
           onClick={() => {
             onApply(filters);
-            onClose();
+            close();
           }}
           className="btn w-full rounded-lg bg-primary py-4 text-[16px] font-medium text-primary-foreground"
         >

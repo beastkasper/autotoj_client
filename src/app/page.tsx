@@ -82,15 +82,9 @@ export default function HomePage() {
 
   const pageState: PageState = isLoading ? "loading" : isError ? "error" : "default";
 
-  const { toggleFavorite } = useFavorites();
-  const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
-
-  const handleFavoriteToggle = useCallback(
-    (id: string) => {
-      requireAuth(() => toggleFavorite(id));
-    },
-    [requireAuth, toggleFavorite],
-  );
+  // toggleFavorite уже сам требует авторизацию и ходит в API.
+  const { toggleFavorite, isFavorite } = useFavorites();
+  const { showAuthModal, closeAuthModal } = useAuth();
 
   const handleRefresh = useCallback(async () => {
     // Collapse back to the first page, then refetch from the top.
@@ -185,7 +179,8 @@ export default function HomePage() {
         >
           <AdsGrid
             ads={displayAds}
-            onFavoriteToggle={handleFavoriteToggle}
+            isFavorite={isFavorite}
+            onFavoriteToggle={toggleFavorite}
             onAdClick={handleAdClick}
           />
         </PageStateRenderer>

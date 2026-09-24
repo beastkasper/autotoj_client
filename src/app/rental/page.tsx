@@ -6,16 +6,21 @@ import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RentalCard } from "@/components/cards/RentalCard";
 import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { RentalAddForm } from "@/components/rental/rental-add-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/search/search-input";
 import { FilterChip } from "@/components/search/filter-chip";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { SuccessToast } from "@/components/ui/success-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { GridPageSkeleton } from "@/components/skeletons/grid-page-skeleton";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { usePagedParams } from "@/hooks/usePagedParams";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useGetRentalsQuery } from "@/lib/features/rental/rentalApi";
+import { pluralize, WORD_CARS } from "@/lib/utils/plural";
 import { useGetCitiesQuery } from "@/lib/features/dicts/dictsApi";
 import {
   CAR_CLASSES,
@@ -28,9 +33,12 @@ export default function RentalPage() {
   const router = useRouter();
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  // Поиск с задержкой: иначе запрос уходит на каждое нажатие клавиши.
+  const debouncedSearch = useDebouncedValue(searchQuery);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [justPublished, setJustPublished] = useState(false);
 
   // City dictionary — backend filters/returns city slugs (e.g. "dushanbe").
   const { data: cities } = useGetCitiesQuery();
@@ -42,14 +50,14 @@ export default function RentalPage() {
   // RTK Query — fetch from backend
   const baseParams: RentalSearchParams = useMemo(() => {
     const p: RentalSearchParams = {};
-    if (searchQuery) p.q = searchQuery;
+    if (debouncedSearch) p.q = debouncedSearch;
     if (selectedClass) p.car_class = selectedClass;
     if (selectedCity) p.city = selectedCity;
     return p;
-  }, [searchQuery, selectedClass, selectedCity]);
+  }, [debouncedSearch, selectedClass, selectedCity]);
 
   const { params: queryParams, page, setPage } = usePagedParams(baseParams);
-  const { data: apiData, isLoading, isFetching } = useGetRentalsQuery(queryParams);
+  const { data: apiData, isLoading, isFetching, error, refetch } = useGetRentalsQuery(queryParams);
   const isLoadingMore = isFetching && !isLoading;
   const hasMore = apiData?.has_more ?? false;
 
@@ -74,9 +82,10 @@ export default function RentalPage() {
     }));
   }, [apiData, cityLabels]);
 
-  const handleAddSuccess = useCallback((_car: Omit<RentalCar, "id">) => {
-    // TODO: Use createRental API mutation instead
+  const handleAddSuccess = useCallback(() => {
     setShowAddForm(false);
+    // Список обновится сам: createRental инвалидирует тег Rental/LIST.
+    setJustPublished(true);
   }, []);
 
   const hasActiveFilters =
@@ -140,7 +149,7 @@ export default function RentalPage() {
 
           <div className="mt-3 flex items-center justify-between">
             <p className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-              Найдено {filteredCars.length} автомобилей
+              Найдено {pluralize(apiData?.total ?? filteredCars.length, WORD_CARS)}
             </p>
             {hasActiveFilters && (
               <button
@@ -158,6 +167,13 @@ export default function RentalPage() {
       <div className="hidden lg:block max-w-[1440px] mx-auto px-6 py-6">
         {isLoading ? (
           <GridPageSkeleton />
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить автомобили"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : filteredCars.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredCars.map((car) => (
@@ -239,6 +255,13 @@ export default function RentalPage() {
       <div className="px-4 lg:hidden">
         {isLoading ? (
           <GridPageSkeleton count={6} />
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить автомобили"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : filteredCars.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {filteredCars.map((car) => (
@@ -274,6 +297,13 @@ export default function RentalPage() {
       )}
 
       <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
+
+      <SuccessToast
+        open={justPublished}
+        onClose={() => setJustPublished(false)}
+        title="Объявление опубликовано"
+        description="Автомобиль добавлен в прокат и появится в списке после проверки."
+      />
     </main>
   );
 }

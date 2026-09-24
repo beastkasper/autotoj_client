@@ -47,6 +47,9 @@ export const servicesApi = api.injectEndpoints({
         url: `/service-providers/${providerId}/reviews`,
         params,
       }),
+      // Без накопления страниц «Показать ещё» подменяло список: ранее
+      // показанные отзывы исчезали вместо того, чтобы дополняться новыми.
+      ...infiniteListConfig<ReviewsResponse>("reviews"),
     }),
   }),
 });

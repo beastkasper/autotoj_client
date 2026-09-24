@@ -5,6 +5,8 @@ import { AdCard, type Ad } from "@/components/cards/AdCard";
 
 interface AdsGridProps {
   ads: Ad[];
+  /** Признак «в избранном» для карточки. Без него сердечки всегда пустые. */
+  isFavorite?: (id: string) => boolean;
   onFavoriteToggle: (id: string) => void;
   onAdClick: (id: string) => void;
   /** Desktop columns (default: 4) */
@@ -19,6 +21,7 @@ const DESKTOP_COLS = {
 
 export const AdsGrid = React.memo(function AdsGrid({
   ads,
+  isFavorite,
   onFavoriteToggle,
   onAdClick,
   desktopCols = 4,
@@ -28,6 +31,7 @@ export const AdsGrid = React.memo(function AdsGrid({
       key={ad.id}
       ad={ad}
       variant="grid"
+      isFavorite={isFavorite?.(ad.id) ?? false}
       onFavoriteToggle={onFavoriteToggle}
       onClick={onAdClick}
     />

@@ -1,5 +1,6 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "@/components/cards/ImageWithFallback";
 import { EmptyState } from "@/components/states/EmptyState";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { useAuth } from "@/hooks/useAuth";
 import {
   useGetChatQuery,
@@ -44,6 +46,8 @@ export default function ChatPage() {
   const {
     data: messagesData,
     isLoading: msgsLoading,
+    error: messagesError,
+    refetch: refetchMessages,
   } = useGetChatMessagesQuery(
     { chatId, page: 1, limit: MESSAGES_PAGE_SIZE },
     {
@@ -65,10 +69,11 @@ export default function ChatPage() {
   }, [chatId, token, markChatRead, messagesData?.total]);
 
   // Reverse messages: backend returns newest-first, UI shows oldest-first
+  const rawMessages = messagesData?.messages;
   const ordered: Message[] = useMemo(() => {
-    if (!messagesData?.messages) return [];
-    return [...messagesData.messages].reverse();
-  }, [messagesData?.messages]);
+    if (!rawMessages) return [];
+    return [...rawMessages].reverse();
+  }, [rawMessages]);
 
   // Group messages by day for separators
   const groups = useMemo(() => {
@@ -92,21 +97,31 @@ export default function ChatPage() {
   }, [ordered.length]);
 
   const [text, setText] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
   const handleSend = useCallback(async () => {
     const trimmed = text.trim();
     if (!trimmed || sending) return;
+    // Лимит бэкенда — 5000 символов; раньше более длинное сообщение молча
+    // получало 422 и не уходило, без единого слова пользователю.
+    if (trimmed.length > 5000) {
+      setSendError("Сообщение длиннее 5000 символов — сократите его");
+      return;
+    }
+    setSendError(null);
     setText("");
     try {
       await sendMessage({ chatId, text: trimmed }).unwrap();
-    } catch {
-      // Restore text on failure so the user doesn't lose it
+    } catch (err) {
+      // Возвращаем текст в поле и объясняем, что произошло.
       setText(trimmed);
+      setSendError(getApiErrorMessage(err, "Сообщение не отправлено"));
     }
   }, [text, sending, sendMessage, chatId]);
 
+  const chatAdId = chat?.ad?.id;
   const handleAdClick = useCallback(() => {
-    if (chat?.ad?.id) router.push(`/ad/${chat.ad.id}`);
-  }, [chat?.ad?.id, router]);
+    if (chatAdId) router.push(`/ad/${chatAdId}`);
+  }, [chatAdId, router]);
 
   if (!isAuthenticated) {
     return (
@@ -139,7 +154,10 @@ export default function ChatPage() {
     );
   }
 
-  if (chatError || !chat) {
+  // Полноэкранную ошибку показываем только когда чата нет вообще. Если
+  // переписка уже загружена, обрыв сети не должен стирать её вместе с
+  // набранным текстом.
+  if ((chatError && !chat) || !chat) {
     const status = (chatErrorObj as { status?: number } | undefined)?.status;
     return (
       <main className="screen min-h-screen bg-card">
@@ -178,7 +196,7 @@ export default function ChatPage() {
           <div className="flex min-w-0 flex-1 items-center gap-2">
             {chat.partner.avatar ? (
               <img
-                src={chat.partner.avatar}
+                src={mediaUrl(chat.partner.avatar)}
                 alt={chat.partner.name}
                 className="size-9 rounded-full bg-secondary object-cover"
               />
@@ -188,7 +206,7 @@ export default function ChatPage() {
               </span>
             )}
             <span className="line-1 text-[15px] font-semibold text-foreground">
-              {chat.partner.name}
+              {chat.partner.name ?? "Пользователь"}
             </span>
           </div>
 
@@ -205,7 +223,7 @@ export default function ChatPage() {
         >
           <div className="size-10 shrink-0 overflow-hidden rounded-lg bg-secondary">
             <ImageWithFallback
-              src={chat.ad.photo}
+              src={mediaUrl(chat.ad.photo)}
               alt={chat.ad.title}
               className="size-full object-cover"
             />
@@ -239,6 +257,21 @@ export default function ChatPage() {
               />
             ))}
           </div>
+        ) : messagesError ? (
+          // Раньше ошибка загрузки выглядела как пустая переписка:
+          // «Сообщений ещё нет. Напишите первым.»
+          <div className="py-12 text-center">
+            <p className="text-[14px] text-[#D32F2F]">
+              {getApiErrorMessage(messagesError, "Не удалось загрузить сообщения")}
+            </p>
+            <button
+              type="button"
+              onClick={() => refetchMessages()}
+              className="mt-3 h-10 rounded-xl bg-[#111111] px-5 text-[14px] font-medium text-white"
+            >
+              Повторить
+            </button>
+          </div>
         ) : ordered.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-[14px] text-muted-foreground">
@@ -264,9 +297,14 @@ export default function ChatPage() {
 
       {/* ── Строка ввода h56 (§10.10) ── */}
       <div
-        className="hairline-top fixed bottom-0 left-0 right-0 z-30 bg-card px-4 py-2"
+        className="hairline-top fixed bottom-0 left-0 right-0 z-[60] bg-card px-4 py-2"
         style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
       >
+        {sendError && (
+          <p className="mx-auto mb-2 max-w-[1000px] rounded-lg bg-[#FFECEC] px-3 py-2 text-[13px] text-[#D32F2F]">
+            {sendError}
+          </p>
+        )}
         <div className="mx-auto flex items-end gap-3 lg:max-w-[1000px]">
           <button
             type="button"
@@ -329,13 +367,13 @@ function MessageBubble({ message }: { message: Message }) {
           <div className="mt-1 overflow-hidden rounded-xl">
             {message.media_type === "video" ? (
               <video
-                src={message.media_url}
+                src={mediaUrl(message.media_url)}
                 controls
                 className="max-h-72 w-full rounded-xl"
               />
             ) : (
               <img
-                src={message.media_url}
+                src={mediaUrl(message.media_url)}
                 alt=""
                 className="max-h-72 w-full rounded-xl object-cover"
               />

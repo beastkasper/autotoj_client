@@ -8,7 +8,7 @@ import type { AdListItem } from "@/lib/types/api";
 
 interface MyAdCardMobileProps {
   ad: AdListItem;
-  activeTab: "active" | "paused";
+  activeTab: "active" | "archived";
   isMenuOpen: boolean;
   onMenuToggle: () => void;
   onEdit: (id: string) => void;

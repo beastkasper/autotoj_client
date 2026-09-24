@@ -22,7 +22,10 @@ export function filterStateToParams(filters: FilterState): AdsSearchParams {
   if (filters.color) params.color = filters.color;
   if (filters.withPhoto) params.with_photos = true;
   if (filters.withVideo) params.with_video = true;
-  if (filters.automatic) params.transmission = "automatic";
+  // Быстрый чип «Автомат» не должен перетирать явно выбранную коробку:
+  // раньше при выбранной «Механике» в запрос всё равно уходил automatic,
+  // и обе кнопки выглядели активными.
+  if (filters.automatic && !filters.transmission) params.transmission = "automatic";
   return params;
 }
 

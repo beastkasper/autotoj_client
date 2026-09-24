@@ -1,13 +1,17 @@
 "use client";
 
+import { RequireAuth } from "@/components/auth/require-auth";
 import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Package } from "lucide-react";
 import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { SkeletonGrid } from "@/components/layout/skeleton-grid";
 import { MyAdCardDesktop } from "@/components/my-ads/my-ad-card-desktop";
 import { MyAdCardMobile } from "@/components/my-ads/my-ad-card-mobile";
-import { MyAdsTabs } from "@/components/my-ads/my-ads-tabs";
+import { MyAdsTabs, type MyAdsTab } from "@/components/my-ads/my-ads-tabs";
+import { MyRentalsList } from "@/components/my-ads/my-rentals-list";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { usePagedParams } from "@/hooks/usePagedParams";
 import {
@@ -18,20 +22,30 @@ import {
 } from "@/lib/features/ads/adsApi";
 import { ConfirmModal } from "@/components/layout/confirm-modal";
 
-type AdStatus = "active" | "paused";
+// Бэкенд знает статусы active/moderation/draft/archived/rejected (INTEGRATION.md §6.1).
+// Раньше вкладка «На паузе» запрашивала несуществующий status=paused и всегда
+// приходила пустой, а заархивированное объявление пропадало из интерфейса совсем.
+type AdTab = MyAdsTab;
 
-export default function MyAdsPage() {
+function MyAdsPageContent() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<AdStatus>("active");
+  const [activeTab, setActiveTab] = useState<AdTab>("active");
   const [mobileMenuId, setMobileMenuId] = useState<string | null>(null);
   const [confirmModal, setConfirmModal] = useState<{
-    type: "pause" | "publish";
+    type: "pause" | "publish" | "delete";
     adId: string;
   } | null>(null);
 
-  const baseParams = useMemo(() => ({ status: activeTab }), [activeTab]);
+  const isRentalTab = activeTab === "rental";
+  const baseParams = useMemo(
+    () => ({ status: isRentalTab ? "active" : activeTab }),
+    [activeTab, isRentalTab],
+  );
   const { params: queryParams, page, setPage } = usePagedParams(baseParams);
-  const { data: apiData, isLoading, isFetching } = useGetMyAdsQuery(queryParams);
+  const { data: apiData, isLoading, isFetching, error, refetch } = useGetMyAdsQuery(
+    queryParams,
+    { skip: isRentalTab },
+  );
   const [archiveAd] = useArchiveAdMutation();
   const [restoreAd] = useRestoreAdMutation();
   const [deleteAd] = useDeleteMyAdMutation();
@@ -68,9 +82,17 @@ export default function MyAdsPage() {
     [restoreAd],
   );
 
+  // Удаление необратимо, поэтому спрашиваем подтверждение — как у паузы и публикации.
+  const handleDeleteRequest = useCallback((adId: string) => {
+    setMobileMenuId(null);
+    setConfirmModal({ type: "delete", adId });
+  }, []);
+
   const handleDelete = useCallback(
     (adId: string) => {
       deleteAd(adId);
+      setConfirmModal(null);
+      setMobileMenuId(null);
     },
     [deleteAd],
   );
@@ -119,7 +141,9 @@ export default function MyAdsPage() {
           <MyAdsTabs activeTab={activeTab} onTabChange={setActiveTab} variant="desktop" />
 
           {/* Desktop Cards */}
-          {isLoading ? (
+          {isRentalTab ? (
+            <MyRentalsList />
+          ) : isLoading ? (
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div
@@ -137,17 +161,24 @@ export default function MyAdsPage() {
                 </div>
               ))}
             </div>
+          ) : error ? (
+            <ErrorState
+              type="error"
+              title="Не удалось загрузить объявления"
+              description={getApiErrorMessage(error)}
+              onRetry={() => refetch()}
+            />
           ) : ads.length > 0 ? (
             <div className="space-y-4">
               {ads.map((ad) => (
                 <MyAdCardDesktop
                   key={ad.id}
                   ad={ad}
-                  activeTab={activeTab}
+                  activeTab={activeTab === "archived" ? "archived" : "active"}
                   onEdit={handleEdit}
                   onPause={handlePause}
                   onPublish={handlePublish}
-                  onDelete={handleDelete}
+                  onDelete={handleDeleteRequest}
                   onClick={handleAdClick}
                 />
               ))}
@@ -206,14 +237,23 @@ export default function MyAdsPage() {
 
       {/* Список: padding 16, gap 12 */}
       <div className="flex flex-col gap-3 p-4 lg:hidden">
-        {isLoading ? (
+        {isRentalTab ? (
+          <MyRentalsList />
+        ) : isLoading ? (
           <SkeletonGrid count={4} variant="list" />
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить объявления"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : ads.length > 0 ? (
           ads.map((ad) => (
             <MyAdCardMobile
               key={ad.id}
               ad={ad}
-              activeTab={activeTab}
+              activeTab={activeTab === "archived" ? "archived" : "active"}
               isMenuOpen={mobileMenuId === ad.id}
               onMenuToggle={() =>
                 setMobileMenuId(mobileMenuId === ad.id ? null : ad.id)
@@ -259,13 +299,44 @@ export default function MyAdsPage() {
       {/* ── Mobile Confirm Modal ── */}
       {confirmModal && (
         <ConfirmModal
-          title={confirmModal.type === "pause" ? "Поставить на паузу?" : "Опубликовать объявление?"}
-          description={confirmModal.type === "pause" ? "Объявление не будет видно другим пользователям" : "Объявление станет видно всем пользователям"}
-          confirmLabel={confirmModal.type === "pause" ? "На паузу" : "Опубликовать"}
-          onConfirm={() => confirmModal.type === "pause" ? handlePause(confirmModal.adId) : handlePublish(confirmModal.adId)}
+          title={
+            confirmModal.type === "delete"
+              ? "Удалить объявление?"
+              : confirmModal.type === "pause"
+                ? "Поставить на паузу?"
+                : "Опубликовать объявление?"
+          }
+          description={
+            confirmModal.type === "delete"
+              ? "Объявление будет удалено безвозвратно. Отменить это действие нельзя."
+              : confirmModal.type === "pause"
+                ? "Объявление не будет видно другим пользователям"
+                : "Объявление станет видно всем пользователям"
+          }
+          confirmLabel={
+            confirmModal.type === "delete"
+              ? "Удалить"
+              : confirmModal.type === "pause"
+                ? "На паузу"
+                : "Опубликовать"
+          }
+          destructive={confirmModal.type === "delete"}
+          onConfirm={() => {
+            if (confirmModal.type === "delete") handleDelete(confirmModal.adId);
+            else if (confirmModal.type === "pause") handlePause(confirmModal.adId);
+            else handlePublish(confirmModal.adId);
+          }}
           onCancel={() => setConfirmModal(null)}
         />
       )}
     </main>
+  );
+}
+
+export default function MyAdsPage() {
+  return (
+    <RequireAuth description="Здесь собраны объявления вашего аккаунта">
+      <MyAdsPageContent />
+    </RequireAuth>
   );
 }

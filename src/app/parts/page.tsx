@@ -14,39 +14,49 @@ import {
 } from "@/components/ui/select";
 import { PartCard } from "@/components/cards/PartCard";
 import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { PageHeader } from "@/components/layout/page-header";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { useAuth } from "@/hooks/useAuth";
 import { GridPageSkeleton } from "@/components/skeletons/grid-page-skeleton";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { usePagedParams } from "@/hooks/usePagedParams";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useGetPartsQuery } from "@/lib/features/parts/partsApi";
+import { label, CITY_LABELS, PART_TYPE_LABELS } from "@/lib/utils/dict-labels";
+import { pluralize, WORD_ADS } from "@/lib/utils/plural";
 import {
   CONDITION_OPTIONS,
   type PartCondition,
 } from "@/lib/types/part";
-import { PARTS_CATEGORIES } from "@/lib/types/parts-listing";
+import { PARTS_CATEGORIES, type PartsCategory } from "@/lib/types/parts-listing";
+import { toPartType } from "@/lib/data/parts-mapping";
 import type { PartsSearchParams } from "@/lib/types/api";
 
 export default function PartsPage() {
   const router = useRouter();
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  // Поиск с задержкой: иначе запрос уходит на каждое нажатие клавиши.
+  const debouncedSearch = useDebouncedValue(searchQuery);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [selectedCondition, setSelectedCondition] = useState<PartCondition>("Все");
 
   // RTK Query — fetch from backend
   const baseParams: PartsSearchParams = useMemo(() => {
     const p: PartsSearchParams = {};
-    if (searchQuery) p.q = searchQuery;
-    if (selectedCategory !== "all") p.part_type = selectedCategory;
+    if (debouncedSearch) p.q = debouncedSearch;
+    // PARTS_CATEGORIES хранит id с дефисами (steering-wheel, body-parts),
+    // а бэкенд ждёт подчёркивания — иначе эти две категории всегда пустые.
+    if (selectedCategory !== "all") p.part_type = toPartType(selectedCategory as PartsCategory);
     if (selectedCondition === "Новый") p.condition = "new";
     else if (selectedCondition === "Б/у") p.condition = "used";
     return p;
-  }, [searchQuery, selectedCategory, selectedCondition]);
+  }, [debouncedSearch, selectedCategory, selectedCondition]);
 
   const { params: queryParams, page, setPage } = usePagedParams(baseParams);
-  const { data: apiData, isLoading, isFetching } = useGetPartsQuery(queryParams);
+  const { data: apiData, isLoading, isFetching, error, refetch } = useGetPartsQuery(queryParams);
   const isLoadingMore = isFetching && !isLoading;
   const hasMore = apiData?.has_more ?? false;
 
@@ -54,12 +64,17 @@ export default function PartsPage() {
     if (!apiData?.parts) return [];
     return apiData.parts.map((part) => ({
       id: part.id,
-      title: part.title ?? `${part.brand ?? ""} ${part.model ?? ""}`.trim(),
+      // Без brand/model карточка оставалась вовсе без названия — подставляем
+      // тип запчасти, как и предусмотрено дизайн-спекой.
+      title:
+        part.title ??
+        ([part.brand, part.model].filter(Boolean).join(" ").trim() ||
+          label(part.part_type, PART_TYPE_LABELS)),
       price: String(part.price),
       condition: part.condition === "new" ? "Новый" as const : "Б/у" as const,
       image: part.photos[0] ?? "",
-      city: part.contact_city,
-      category: part.part_type,
+      city: label(part.contact_city, CITY_LABELS),
+      category: label(part.part_type, PART_TYPE_LABELS),
       publishedDate: part.created_at,
     }));
   }, [apiData]);
@@ -143,7 +158,7 @@ export default function PartsPage() {
           {/* Results Count */}
           <div className="mt-3">
             <p className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-              Найдено {filteredParts.length} объявлений
+              Найдено {pluralize(apiData?.total ?? filteredParts.length, WORD_ADS)}
             </p>
           </div>
         </div>
@@ -153,6 +168,13 @@ export default function PartsPage() {
       <div className="hidden lg:block max-w-[1440px] mx-auto px-6 py-6">
         {isLoading ? (
           <GridPageSkeleton />
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить запчасти"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : filteredParts.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filteredParts.map((part) => (
@@ -251,6 +273,13 @@ export default function PartsPage() {
       <div className="px-4 lg:hidden">
         {isLoading ? (
           <GridPageSkeleton count={6} />
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить запчасти"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : filteredParts.length > 0 ? (
           <div className="grid grid-cols-2 gap-3">
             {filteredParts.map((part) => (

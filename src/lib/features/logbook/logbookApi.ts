@@ -5,7 +5,6 @@ import type {
   LogbookSearchParams,
   LogbookPostDetail,
   LogbookCommentsResponse,
-  LogbookComment,
   PaginationParams,
   PhotoUploadResponse,
 } from "@/lib/types/api";
@@ -113,6 +112,11 @@ export const logbookApi = api.injectEndpoints({
         url: `/logbook/${postId}/comments`,
         params,
       }),
+      // Без этого тега отправленный комментарий не появлялся в списке
+      // до ручной перезагрузки: мутация инвалидировала только LogbookDetail.
+      providesTags: (_result, _error, { postId }) => [
+        { type: "LogbookComments", id: postId },
+      ],
     }),
 
     // POST /logbook/:id/comments — Add comment
@@ -125,7 +129,10 @@ export const logbookApi = api.injectEndpoints({
         method: "POST",
         body: { text },
       }),
-      invalidatesTags: (_result, _error, { postId }) => [{ type: "LogbookDetail", id: postId }],
+      invalidatesTags: (_result, _error, { postId }) => [
+        { type: "LogbookDetail", id: postId },
+        { type: "LogbookComments", id: postId },
+      ],
     }),
   }),
 });

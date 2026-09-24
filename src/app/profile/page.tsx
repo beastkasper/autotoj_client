@@ -1,5 +1,6 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -81,7 +82,7 @@ export default function ProfilePage() {
               <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-secondary">
                 {profile?.avatar_url ? (
                   <Image
-                    src={profile.avatar_url}
+                    src={mediaUrl(profile.avatar_url)}
                     alt={profile.name ?? "Аватар"}
                     width={40}
                     height={40}

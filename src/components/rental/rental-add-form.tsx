@@ -1,27 +1,44 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, Upload, X, ImagePlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, X, ImagePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { RentalCar } from "@/lib/types/rental";
-import { RENTAL_CITIES, type RentalCity } from "@/lib/types/rental";
+import { CAR_CLASSES } from "@/lib/types/rental";
+import { FALLBACK_CITIES } from "@/lib/data/dict-fallbacks";
+import {
+  useCreateRentalMutation,
+  useUploadRentalPhotosMutation,
+} from "@/lib/features/rental/rentalApi";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 
 interface RentalAddFormProps {
   onClose: () => void;
-  onSuccess: (car: Omit<RentalCar, "id">) => void;
+  onSuccess: () => void;
 }
 
-const TRANSMISSIONS = ["Автомат", "Механика"] as const;
-const FUEL_TYPES = ["Бензин", "Дизель", "Гибрид", "Электро"] as const;
-const CAR_CLASSES_OPTIONS = ["Эконом", "Комфорт"] as const;
+// Значения — слаги бэкенда, подписи — русские. Раньше в форму были зашиты
+// русские строки, и они же уходили бы в API.
+const TRANSMISSIONS = [
+  { id: "automatic", label: "Автомат" },
+  { id: "manual", label: "Механика" },
+] as const;
+const FUEL_TYPES = [
+  { id: "petrol", label: "Бензин" },
+  { id: "diesel", label: "Дизель" },
+  { id: "hybrid", label: "Гибрид" },
+  { id: "electric", label: "Электро" },
+] as const;
 
 export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
+  const [createRental, { isLoading: isSubmitting }] = useCreateRentalMutation();
+  const [uploadPhotos] = useUploadRentalPhotosMutation();
+
   const [formData, setFormData] = useState({
     title: "",
     carClass: "" as string,
     year: "",
-    transmission: "Автомат",
-    fuelType: "Бензин",
+    transmission: "automatic",
+    fuelType: "petrol",
     pricePerDay: "",
     description: "",
     city: "" as string,
@@ -29,8 +46,13 @@ export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
     sellerPhone: "",
   });
 
+  // Храним сами файлы: для POST /my/rental/:id/photos нужен File, а не blob-URL.
+  const [files, setFiles] = useState<File[]>([]);
   const [images, setImages] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Освобождаем object-URL'ы, иначе они утекают до перезагрузки вкладки.
+  useEffect(() => () => images.forEach((u) => URL.revokeObjectURL(u)), [images]);
 
   const updateField = (key: string, value: string) => {
     setFormData((prev) => ({ ...prev, [key]: value }));
@@ -45,17 +67,25 @@ export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files) {
-      const newImages = Array.from(files).map(
-        (file) => URL.createObjectURL(file)
-      );
-      setImages((prev) => [...prev, ...newImages].slice(0, 10));
+    const picked = e.target.files;
+    if (!picked) return;
+    const accepted = Array.from(picked).filter((f) => f.type.startsWith("image/"));
+    if (accepted.length !== picked.length) {
+      setErrors((prev) => ({ ...prev, photos: "Можно загружать только изображения" }));
     }
+    setFiles((prev) => [...prev, ...accepted].slice(0, 10));
+    setImages((prev) => [...prev, ...accepted.map((f) => URL.createObjectURL(f))].slice(0, 10));
+    // Разрешаем выбрать тот же файл повторно.
+    e.target.value = "";
   };
 
   const removeImage = (index: number) => {
-    setImages((prev) => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setImages((prev) => {
+      const url = prev[index];
+      if (url) URL.revokeObjectURL(url);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const validate = (): boolean => {
@@ -63,39 +93,60 @@ export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
 
     if (!formData.title.trim()) newErrors.title = "Укажите название";
     if (!formData.pricePerDay.trim()) newErrors.pricePerDay = "Укажите цену";
+    else if (!Number.isFinite(Number(formData.pricePerDay)) || Number(formData.pricePerDay) <= 0)
+      newErrors.pricePerDay = "Цена должна быть больше нуля";
+    if (formData.year) {
+      const y = Number(formData.year);
+      const maxYear = new Date().getFullYear() + 1;
+      if (!Number.isInteger(y) || y < 1950 || y > maxYear)
+        newErrors.year = `Год должен быть от 1950 до ${maxYear}`;
+    }
     if (!formData.carClass) newErrors.carClass = "Выберите класс";
     if (!formData.city) newErrors.city = "Выберите город";
     if (!formData.sellerName.trim()) newErrors.sellerName = "Укажите имя";
     if (!formData.sellerPhone.trim()) newErrors.sellerPhone = "Укажите телефон";
+    else if (formData.sellerPhone.replace(/\D/g, "").length !== 9)
+      newErrors.sellerPhone = "Телефон должен содержать 9 цифр";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
 
-    const newCar: Omit<RentalCar, "id"> = {
-      title: formData.title,
-      carClass: formData.carClass as "Эконом" | "Комфорт",
-      year: formData.year ? parseInt(formData.year, 10) : undefined,
+    const body: Record<string, unknown> = {
+      title: formData.title.trim(),
+      car_class: formData.carClass,
       transmission: formData.transmission,
-      fuel: formData.fuelType,
-      pricePerDay: formData.pricePerDay,
-      city: formData.city,
-      description: formData.description || undefined,
-      sellerName: formData.sellerName,
-      sellerPhone: `+992 ${formData.sellerPhone}`,
-      image: images[0] || "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=600",
-      images: images.length > 0 ? images : undefined,
-      publishedDate: new Date().toISOString().split("T")[0],
+      fuel_type: formData.fuelType,
+      price_per_day: Number(formData.pricePerDay),
+      contact_city: formData.city,
+      contact_name: formData.sellerName.trim(),
+      contact_phone: `+992${formData.sellerPhone.replace(/\D/g, "")}`,
     };
+    if (formData.year) body.year = Number(formData.year);
+    if (formData.description.trim()) body.description = formData.description.trim();
 
-    onSuccess(newCar);
+    try {
+      const created = await createRental(body).unwrap();
+      if (files.length > 0) {
+        try {
+          await uploadPhotos({ id: created.id, photos: files }).unwrap();
+        } catch (err) {
+          // Объявление уже создано — не теряем его из-за фото, а честно говорим.
+          setErrors({ submit: `Объявление создано, но фото не загрузились: ${getApiErrorMessage(err)}` });
+          return;
+        }
+      }
+      onSuccess();
+    } catch (err) {
+      setErrors({ submit: getApiErrorMessage(err, "Не удалось опубликовать объявление") });
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+    <div className="fixed inset-0 z-[60] bg-white flex flex-col">
       {/* ── Header ── */}
       <div
         className="h-14 flex items-center justify-between px-4 bg-white/95 backdrop-blur-md shrink-0"
@@ -184,19 +235,19 @@ export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
             <div>
               <FieldLabel>Класс *</FieldLabel>
               <div className="flex gap-2">
-                {CAR_CLASSES_OPTIONS.map((cls) => (
+                {CAR_CLASSES.map((cls) => (
                   <button
-                    key={cls}
+                    key={cls.id}
                     type="button"
-                    onClick={() => updateField("carClass", cls)}
+                    onClick={() => updateField("carClass", cls.id)}
                     className={cn(
                       "flex-1 h-11 rounded-xl text-[15px] font-medium font-[family-name:var(--font-manrope)] transition-all border",
-                      formData.carClass === cls
+                      formData.carClass === cls.id
                         ? "bg-[#111111] text-white border-[#111111]"
                         : "bg-[#F2F2F7] text-[#111111] border-transparent hover:bg-[#EAEAEF]"
                     )}
                   >
-                    {cls}
+                    {cls.label}
                   </button>
                 ))}
               </div>
@@ -218,17 +269,17 @@ export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
               <div className="flex gap-2">
                 {TRANSMISSIONS.map((type) => (
                   <button
-                    key={type}
+                    key={type.id}
                     type="button"
-                    onClick={() => updateField("transmission", type)}
+                    onClick={() => updateField("transmission", type.id)}
                     className={cn(
                       "flex-1 h-11 rounded-xl text-[15px] font-medium font-[family-name:var(--font-manrope)] transition-all border",
-                      formData.transmission === type
+                      formData.transmission === type.id
                         ? "bg-[#111111] text-white border-[#111111]"
                         : "bg-[#F2F2F7] text-[#111111] border-transparent hover:bg-[#EAEAEF]"
                     )}
                   >
-                    {type}
+                    {type.label}
                   </button>
                 ))}
               </div>
@@ -240,17 +291,17 @@ export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
               <div className="flex gap-2">
                 {FUEL_TYPES.map((type) => (
                   <button
-                    key={type}
+                    key={type.id}
                     type="button"
-                    onClick={() => updateField("fuelType", type)}
+                    onClick={() => updateField("fuelType", type.id)}
                     className={cn(
                       "flex-1 h-11 rounded-xl text-[14px] font-medium font-[family-name:var(--font-manrope)] transition-all border",
-                      formData.fuelType === type
+                      formData.fuelType === type.id
                         ? "bg-[#111111] text-white border-[#111111]"
                         : "bg-[#F2F2F7] text-[#111111] border-transparent hover:bg-[#EAEAEF]"
                     )}
                   >
-                    {type}
+                    {type.label}
                   </button>
                 ))}
               </div>
@@ -343,19 +394,19 @@ export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
             <div>
               <FieldLabel>Город *</FieldLabel>
               <div className="flex flex-wrap gap-2">
-                {RENTAL_CITIES.map((city) => (
+                {FALLBACK_CITIES.map((city) => (
                   <button
-                    key={city}
+                    key={city.id}
                     type="button"
-                    onClick={() => updateField("city", city)}
+                    onClick={() => updateField("city", city.id)}
                     className={cn(
                       "h-10 px-4 rounded-xl text-[14px] font-medium font-[family-name:var(--font-manrope)] transition-all border",
-                      formData.city === city
+                      formData.city === city.id
                         ? "bg-[#111111] text-white border-[#111111]"
                         : "bg-[#F2F2F7] text-[#111111] border-transparent hover:bg-[#EAEAEF]"
                     )}
                   >
-                    {city}
+                    {city.name}
                   </button>
                 ))}
               </div>
@@ -366,15 +417,23 @@ export function RentalAddForm({ onClose, onSuccess }: RentalAddFormProps) {
       </div>
 
       {/* ── Footer Button ── */}
-      <div className="shrink-0 bg-white border-t border-[#E5E5EA] px-4 py-3">
-        <div className="max-w-[640px] mx-auto">
+      {/* z-[60] — выше мобильного таббара (z-50), иначе на 390px тап по кнопке
+          попадал в таббар и уводил на /post-ad, уничтожая заполненную форму. */}
+      <div className="relative z-[60] shrink-0 bg-white border-t border-[#E5E5EA] px-4 py-3">
+        <div className="max-w-[640px] mx-auto space-y-2">
+          {errors.submit && (
+            <p className="text-[13px] text-[#D32F2F] text-center font-[family-name:var(--font-manrope)]">
+              {errors.submit}
+            </p>
+          )}
           <button
             id="rental-publish-btn"
             type="button"
             onClick={handleSubmit}
-            className="w-full h-12 bg-[#E53935] text-white rounded-xl text-[15px] font-semibold font-[family-name:var(--font-manrope)] hover:bg-[#D32F2F] active:scale-[0.99] transition-all hover:shadow-md cursor-pointer"
+            disabled={isSubmitting}
+            className="w-full h-12 bg-[#E53935] text-white rounded-xl text-[15px] font-semibold font-[family-name:var(--font-manrope)] hover:bg-[#D32F2F] active:scale-[0.99] transition-all hover:shadow-md cursor-pointer disabled:opacity-60"
           >
-            Опубликовать
+            {isSubmitting ? "Публикуем…" : "Опубликовать"}
           </button>
         </div>
       </div>

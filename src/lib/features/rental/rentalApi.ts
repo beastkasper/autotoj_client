@@ -55,7 +55,12 @@ export const rentalApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: [{ type: "MyRental", id: "LIST" }],
+      // Публичный список тоже надо сбросить, иначе только что добавленное авто
+      // не появится в /rental до перезагрузки страницы.
+      invalidatesTags: [
+        { type: "MyRental", id: "LIST" },
+        { type: "Rental", id: "LIST" },
+      ],
     }),
 
     // PATCH /my/rental/:id — Update rental

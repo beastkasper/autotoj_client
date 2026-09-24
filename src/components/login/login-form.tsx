@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { LoginTabs } from "@/components/login/login-tabs";
 import { PhoneInput } from "@/components/login/phone-input";
 import { EmailInput } from "@/components/login/email-input";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { TermsCheckbox } from "@/components/login/terms-checkbox";
 
 interface FieldErrors {
@@ -65,18 +66,25 @@ export function LoginForm() {
       return;
     }
 
-    // Send code via API (INTEGRATION.md: POST /auth/request { phone })
-    const contact = method === "phone" ? parseRawPhone(phone) : email;
+    // Бэкенд умеет только телефон: POST /auth/request принимает поле phone
+    // по маске ^\+992\d{9}$ (INTEGRATION.md §3.1). Раньше почта уходила в это
+    // же поле, ловила 422, а пользователю показывалось «Ошибка сети».
+    if (method === "email") {
+      setErrors({ email: "Вход по почте пока не поддерживается. Войдите по номеру телефона." });
+      return;
+    }
+
+    const contact = parseRawPhone(phone);
     try {
       const response = await sendCode({ phone: contact }).unwrap();
       if (response.success) {
         dispatch(codeSent({ contact, method }));
         router.push("/login/confirm");
       } else {
-        setErrors({ [method]: response.message || "Ошибка отправки" });
+        setErrors({ phone: response.message || "Не удалось отправить код" });
       }
-    } catch {
-      setErrors({ [method]: "Ошибка сети. Попробуйте еще раз." });
+    } catch (err) {
+      setErrors({ phone: getApiErrorMessage(err, "Не удалось отправить код") });
     }
   }
 

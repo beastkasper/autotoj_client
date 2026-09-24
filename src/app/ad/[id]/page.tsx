@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useRef, useState } from "react";
 import {
   X,
   Heart,
@@ -42,6 +42,18 @@ import {
 } from "@/lib/features/favorites/favoritesApi";
 import { formatPrice } from "@/lib/utils/formatPrice";
 import { useAuth } from "@/hooks/useAuth";
+import { useGetDictsQuery } from "@/lib/features/dicts/dictsApi";
+import {
+  label,
+  FUEL_LABELS,
+  TRANSMISSION_LABELS,
+  DRIVE_LABELS,
+  BODY_LABELS,
+  COLOR_LABELS,
+  CITY_LABELS,
+  CONDITION_LABELS,
+  PTS_LABELS,
+} from "@/lib/utils/dict-labels";
 import { useOpenChat } from "@/hooks/useOpenChat";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 import { DetailPageSkeleton } from "@/components/skeletons/detail-page-skeleton";
@@ -76,10 +88,21 @@ export default function AdDetailPage() {
 
   // RTK Query — fetch from backend
   const { data: apiAd, isLoading } = useGetAdByIdQuery(id);
+  const { data: dicts } = useGetDictsQuery();
+  // Опции объявления приходят слагами (climate_control, heated_seats);
+  // без словаря в «Комплектации» выводились сырые id.
+  const optionLabels = useMemo(
+    () => Object.fromEntries((dicts?.options ?? []).map((o) => [o.id, o.name])),
+    [dicts],
+  );
   const [trackView] = useTrackAdViewMutation();
 
-  // Track view on mount
+  // Просмотр засчитываем один раз на объявление за заход: в dev React
+  // монтирует эффекты дважды, и POST /ads/:id/view уходил по два раза.
+  const trackedRef = useRef<string | null>(null);
   useEffect(() => {
+    if (trackedRef.current === id) return;
+    trackedRef.current = id;
     trackView(id);
   }, [id, trackView]);
 
@@ -95,29 +118,33 @@ export default function AdDetailPage() {
       category: "cars" as const,
       year: apiAd.year,
       mileage: apiAd.mileage,
-      engineType: apiAd.fuel,
-      transmission: apiAd.transmission,
-      driveType: apiAd.drive,
-      location: apiAd.location,
+      // Здесь своя разметка, отдельная от mapAdListItemToAd, — слаги нужно
+      // переводить и тут, иначе в характеристиках видно petrol/automatic/fwd.
+      engineType: label(apiAd.fuel, FUEL_LABELS),
+      transmission: label(apiAd.transmission, TRANSMISSION_LABELS),
+      driveType: label(apiAd.drive, DRIVE_LABELS),
+      location: label(apiAd.location, CITY_LABELS),
       publishedDate: apiAd.published_at ?? apiAd.created_at,
       image: apiAd.photos[0] ?? "",
       photos: apiAd.photos,
-      bodyType: apiAd.body,
-      color: apiAd.color,
-      condition: apiAd.condition,
+      bodyType: label(apiAd.body, BODY_LABELS),
+      color: label(apiAd.color, COLOR_LABELS),
+      condition: label(apiAd.condition, CONDITION_LABELS),
       engineVolume: apiAd.engine_volume ? `${apiAd.engine_volume}L` : undefined,
       sellerName: apiAd.seller?.name,
       sellerType: (apiAd.seller?.type === "business" ? "dealer" : apiAd.seller?.type ?? "private") as "private" | "dealer",
       sellerAdsCount: apiAd.seller?.ads_count ?? 0,
       description: apiAd.description ?? undefined,
-      equipment: apiAd.options ?? undefined,
+      // Опции приходят слагами (climate_control, heated_seats) — переводим по
+      // справочнику /dicts, иначе в «Комплектации» видны сырые id.
+      equipment: apiAd.options?.map((o) => optionLabels[o] ?? o) ?? undefined,
       vehicleStatus: (apiAd.vehicle_status === "on_order" ? "На заказ" : "В наличии") as "В наличии" | "На заказ",
       statusNew: apiAd.condition === "Новый",
       statusOnOrder: apiAd.vehicle_status === "on_order",
       owners: apiAd.owners,
       isCustomsCleared: apiAd.is_customs_cleared,
     };
-  }, [apiAd]);
+  }, [apiAd, optionLabels]);
 
   // Favorites API
   const { data: favoriteData } = useCheckFavoriteQuery(id);
@@ -146,6 +173,7 @@ export default function AdDetailPage() {
   );
 
   // Порядок и иконки характеристик — по §5 и §10.2
+  const adPts = apiAd?.pts;
   const specs = useMemo(() => {
     if (!ad) return [];
     const result: { icon: typeof Gauge; label: string; value: string }[] = [];
@@ -161,9 +189,9 @@ export default function AdDetailPage() {
     if (ad.driveType) result.push({ icon: Cog, label: "Привод", value: ad.driveType });
     if (ad.condition) result.push({ icon: Shield, label: "Состояние", value: ad.condition });
     if (ad.owners !== undefined) result.push({ icon: Users, label: "Владельцев", value: `${ad.owners}` });
-    if (apiAd?.pts) result.push({ icon: FileText, label: "ПТС", value: apiAd.pts });
+    if (adPts) result.push({ icon: FileText, label: "ПТС", value: label(adPts, PTS_LABELS) });
     return result;
-  }, [ad, apiAd?.pts]);
+  }, [ad, adPts]);
 
   const quickStats = useMemo(() => {
     if (!ad) return [];

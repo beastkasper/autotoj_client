@@ -1,5 +1,6 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
 import { useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Search, ChevronLeft, Star, BadgeCheck, MapPin, Phone } from "lucide-react";
@@ -14,6 +15,9 @@ import {
 import { ServiceProvidersSkeleton } from "@/components/skeletons/services-skeleton";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { usePagedParams } from "@/hooks/usePagedParams";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { pluralize, WORD_COMPANIES } from "@/lib/utils/plural";
+import { label, CITY_LABELS } from "@/lib/utils/dict-labels";
 
 const SORT_OPTIONS = [
   { value: "rating_desc", label: "По рейтингу" },
@@ -25,6 +29,8 @@ export default function ServiceProvidersPage() {
   const router = useRouter();
   const { categoryId } = useParams<{ categoryId: string }>();
   const [searchQuery, setSearchQuery] = useState("");
+  // Поиск с задержкой: иначе запрос уходит на каждое нажатие клавиши.
+  const debouncedSearch = useDebouncedValue(searchQuery);
   const [sortBy, setSortBy] = useState("rating_desc");
 
   // Get category name
@@ -39,15 +45,17 @@ export default function ServiceProvidersPage() {
     const p: { category_id: string; q?: string; sort?: string } = {
       category_id: categoryId,
     };
-    if (searchQuery) p.q = searchQuery;
+    if (debouncedSearch) p.q = debouncedSearch;
     if (sortBy) p.sort = sortBy;
     return p;
-  }, [categoryId, searchQuery, sortBy]);
+  }, [categoryId, debouncedSearch, sortBy]);
 
   const { params: queryParams, page, setPage } = usePagedParams(baseParams);
   const { data: providersData, isLoading, isFetching } =
     useGetServiceProvidersQuery(queryParams);
   const providers = providersData?.providers ?? [];
+  // Счётчик должен показывать общее число, а не длину текущей страницы.
+  const providersTotal = providersData?.total ?? providers.length;
   const isLoadingMore = isFetching && !isLoading;
   const hasMore = providersData?.has_more ?? false;
 
@@ -105,7 +113,7 @@ export default function ServiceProvidersPage() {
             </select>
           </div>
           <p className="mt-3 text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-            Найдено {providers.length} компаний
+            Найдено {pluralize(providersTotal, WORD_COMPANIES)}
           </p>
         </div>
       </div>
@@ -154,7 +162,7 @@ export default function ServiceProvidersPage() {
                   <div className="flex gap-4">
                     {provider.logo_url ? (
                       <img
-                        src={provider.logo_url}
+                        src={mediaUrl(provider.logo_url)}
                         alt={provider.name}
                         className="w-16 h-16 rounded-xl object-cover bg-[#F5F5F7] shrink-0"
                       />
@@ -176,7 +184,7 @@ export default function ServiceProvidersPage() {
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-[#FF9500] fill-[#FF9500]" />
                           <span className="text-[14px] font-medium text-[#111111] font-[family-name:var(--font-manrope)]">
-                            {provider.rating.toFixed(1)}
+                            {(provider.rating ?? 0).toFixed(1)}
                           </span>
                         </div>
                         <span className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
@@ -187,7 +195,7 @@ export default function ServiceProvidersPage() {
                         <div className="flex items-center gap-1 mt-2">
                           <MapPin className="w-4 h-4 text-[#8E8E93] shrink-0" />
                           <span className="text-[13px] text-[#8E8E93] truncate font-[family-name:var(--font-manrope)]">
-                            {provider.city}, {provider.address}
+                            {label(provider.city, CITY_LABELS)}, {provider.address}
                           </span>
                         </div>
                       )}
@@ -221,7 +229,7 @@ export default function ServiceProvidersPage() {
                 <div className="flex gap-3">
                   {provider.logo_url ? (
                     <img
-                      src={provider.logo_url}
+                      src={mediaUrl(provider.logo_url)}
                       alt={provider.name}
                       className="size-20 shrink-0 rounded-xl bg-secondary object-cover"
                     />
@@ -242,7 +250,7 @@ export default function ServiceProvidersPage() {
                     <div className="flex items-center gap-2 mt-0.5">
                       <Star className="size-4 fill-star text-star" />
                       <span className="text-[14px] font-medium text-foreground">
-                        {provider.rating.toFixed(1)}
+                        {(provider.rating ?? 0).toFixed(1)}
                       </span>
                       <span className="text-[13px] text-muted-foreground">
                         ({provider.reviews_count} отзывов)
@@ -250,7 +258,7 @@ export default function ServiceProvidersPage() {
                     </div>
                     {provider.address && (
                       <p className="line-1 mt-2 text-[13px] text-muted-foreground">
-                        {provider.city}, {provider.address}
+                        {label(provider.city, CITY_LABELS)}, {provider.address}
                       </p>
                     )}
                   </div>

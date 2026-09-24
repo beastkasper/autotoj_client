@@ -1,10 +1,9 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   X,
-  Heart,
   Share2,
   MapPin,
   Eye,
@@ -52,7 +51,8 @@ export default function PlateDetailPage() {
     };
   }, [apiPlate, idStr]);
 
-  const [isFavorite, setIsFavorite] = useState(false);
+  // Избранное для гос. номеров бэкенд не поддерживает: POST /favorites/:id
+  // отвечает 404. Кнопка убрана, чтобы не изображать работающую функцию.
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const { openChat, isOpening } = useOpenChat();
 
@@ -108,16 +108,6 @@ export default function PlateDetailPage() {
             >
               <Upload className="w-4 h-4" />
               Поделиться
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => requireAuth(() => setIsFavorite(!isFavorite))}
-              className={`flex items-center gap-2 text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                isFavorite ? "text-[#E53935]" : "text-[#111111] hover:text-[#8E8E93]"
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${isFavorite ? "fill-[#E53935]" : ""}`} />
-              В избранное
             </Button>
           </div>
         </div>
@@ -242,16 +232,6 @@ export default function PlateDetailPage() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={handleShare} className="rounded-full">
               <Share2 className="w-5 h-5 text-[#111111]" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsFavorite(!isFavorite)}
-              className="rounded-full"
-            >
-              <Heart
-                className={`w-5 h-5 ${isFavorite ? "fill-[#E53935] text-[#E53935]" : "text-[#111111]"}`}
-              />
             </Button>
           </div>
         </div>

@@ -1,10 +1,10 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
 import { useParams, useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   X,
-  Heart,
   Share2,
   MapPin,
   Calendar,
@@ -81,7 +81,9 @@ export default function RentalDetailPage() {
       publishedDate: c.published_at,
     }));
   }, [apiSimilar, cityLabels]);
-  const [isFavorite, setIsFavorite] = useState(false);
+  // Избранное бэкенд поддерживает только для объявлений об авто:
+  // POST /favorites/:id для этой сущности отвечает 404. Кнопка убрана,
+  // чтобы не изображать работающую функцию.
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const { openChat, isOpening } = useOpenChat();
 
@@ -148,16 +150,6 @@ export default function RentalDetailPage() {
               <Upload className="w-4 h-4" />
               Поделиться
             </Button>
-            <Button
-              variant="ghost"
-              onClick={() => requireAuth(() => setIsFavorite(!isFavorite))}
-              className={`flex items-center gap-2 text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                isFavorite ? "text-[#E53935]" : "text-[#111111] hover:text-[#8E8E93]"
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${isFavorite ? "fill-[#E53935]" : ""}`} />
-              В избранное
-            </Button>
           </div>
         </div>
       </div>
@@ -181,7 +173,7 @@ export default function RentalDetailPage() {
                       key={i}
                       className="w-[120px] h-[80px] rounded-xl overflow-hidden bg-[#E5E5E7] border-2 border-transparent hover:border-[#111111] transition-colors cursor-pointer"
                     >
-                      <img src={img} alt={`${car.title} ${i + 1}`} className="w-full h-full object-cover" />
+                      <img src={mediaUrl(img)} alt={`${car.title} ${i + 1}`} className="w-full h-full object-cover" />
                     </div>
                   ))}
                 </div>
@@ -323,16 +315,6 @@ export default function RentalDetailPage() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon" onClick={handleShare} className="rounded-full">
               <Share2 className="w-5 h-5 text-[#111111]" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsFavorite(!isFavorite)}
-              className="rounded-full"
-            >
-              <Heart
-                className={`w-5 h-5 ${isFavorite ? "fill-[#E53935] text-[#E53935]" : "text-[#111111]"}`}
-              />
             </Button>
           </div>
         </div>

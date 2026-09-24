@@ -6,79 +6,25 @@ import { Plus, BookOpen } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { useGetLogbookPostsQuery } from "@/lib/features/logbook/logbookApi";
 import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { LogbookPostCard } from "@/components/logbook/logbook-post-card";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { usePagedParams } from "@/hooks/usePagedParams";
 import { useAuth } from "@/hooks/useAuth";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
 
-// Mock data for development
-const MOCK_POSTS = [
-  {
-    id: "1",
-    author: { id: "user1", name: "Алишер", avatar: null },
-    title: "Первое ТО на новой Камри",
-    category: "ТО",
-    excerpt: "Сегодня сделал первое техническое обслуживание. Всё прошло отлично, никаких проблем не выявлено...",
-    photos: ["https://images.unsplash.com/photo-1625047509248-ec889cbff17f?w=400&h=300&fit=crop"],
-    likes_count: 12,
-    comments_count: 5,
-    created_at: "2026-01-10T10:00:00Z",
-  },
-  {
-    id: "2",
-    author: { id: "user2", name: "Farrukh", avatar: null },
-    title: "Посоветуйте хорошую автомойку в Душанбе",
-    category: "Прошу совета",
-    excerpt: "Ищу качественную автомойку с детейлингом. Кто может посоветовать проверенное место?",
-    photos: [],
-    likes_count: 3,
-    comments_count: 8,
-    created_at: "2026-01-09T10:00:00Z",
-  },
-  {
-    id: "3",
-    author: { id: "user3", name: "Davron", avatar: null },
-    title: "Установил новую магнитолу",
-    category: "Тюнинг",
-    excerpt: "Решил обновить мультимедийную систему. Выбрал модель с Android Auto и Apple CarPlay...",
-    photos: ["https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=400&h=300&fit=crop"],
-    likes_count: 20,
-    comments_count: 4,
-    created_at: "2026-01-08T10:00:00Z",
-  },
-  {
-    id: "4",
-    author: { id: "user4", name: "Шохруз", avatar: null },
-    title: "Замена тормозных колодок",
-    category: "Ремонт",
-    excerpt: "Появился скрип при торможении, решил заменить колодки. Выбрал оригинальные запчасти, хоть и дороже, но качество того стоит...",
-    photos: [],
-    likes_count: 7,
-    comments_count: 2,
-    created_at: "2026-01-07T10:00:00Z",
-  },
-  {
-    id: "5",
-    author: { id: "user5", name: "Рустам", avatar: null },
-    title: "Поездка в горы - впечатления",
-    category: "Автопутешествия",
-    excerpt: "Решили на выходных съездить в горы. Дорога была непростой, но машина справилась отлично. Полный привод показал себя на все 100%...",
-    photos: [],
-    likes_count: 15,
-    comments_count: 6,
-    created_at: "2026-01-06T10:00:00Z",
-  },
-];
-
 export default function LogbookPage() {
   const router = useRouter();
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const baseParams = useMemo(() => ({}), []);
   const { params: queryParams, page, setPage } = usePagedParams(baseParams);
-  const { data, isLoading, isFetching } = useGetLogbookPostsQuery(queryParams);
+  const { data, isLoading, isFetching, error, refetch } =
+    useGetLogbookPostsQuery(queryParams);
 
-  const posts = data?.posts ?? MOCK_POSTS;
+  // Раньше здесь стояло `?? MOCK_POSTS`: при недоступном API лента молча
+  // заполнялась выдуманными записями несуществующих пользователей.
+  const posts = data?.posts ?? [];
   const isLoadingMore = isFetching && !isLoading;
   const hasMore = data?.has_more ?? false;
 
@@ -164,8 +110,18 @@ export default function LogbookPage() {
         </>
       )}
 
+      {/* Ошибка загрузки — раньше её место занимали моковые записи */}
+      {!isLoading && error && (
+        <ErrorState
+          type="error"
+          onRetry={() => refetch()}
+          title="Не удалось загрузить бортжурнал"
+          description={getApiErrorMessage(error)}
+        />
+      )}
+
       {/* Empty State */}
-      {!isLoading && posts.length === 0 && (
+      {!isLoading && !error && posts.length === 0 && (
         <EmptyState
           icon={BookOpen}
           title="Нет записей"

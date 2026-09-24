@@ -1,10 +1,11 @@
+// Только те быстрые фильтры, под которые у API есть параметры
+// (INTEGRATION.md §5.1). «Не битый» и «От собственника» были мёртвыми
+// кнопками: они не давали ни одного query-параметра и не меняли выдачу.
 export const QUICK_FILTERS = [
   { id: "priceUnder100k", label: "До 100 000 сомони" },
   { id: "automatic", label: "Автомат" },
   { id: "withPhoto", label: "С фото" },
   { id: "withVideo", label: "С видео" },
-  { id: "notDamaged", label: "Не битый" },
-  { id: "fromOwner", label: "От собственника" },
 ] as const;
 
 export const BRANDS = [

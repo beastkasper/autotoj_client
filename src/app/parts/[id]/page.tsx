@@ -4,7 +4,6 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import {
   X,
-  Heart,
   ArrowLeft,
   MapPin,
   Phone,
@@ -14,6 +13,7 @@ import {
   Wrench,
   Factory,
   Hash,
+  Ruler,
   Shield,
   User,
 } from "lucide-react";
@@ -28,6 +28,17 @@ import { AdGalleryMobile } from "@/components/ad/AdGalleryMobile";
 import { PartCard } from "@/components/cards/PartCard";
 import { useGetPartByIdQuery } from "@/lib/features/parts/partsApi";
 import type { PartListing } from "@/lib/types/part";
+import {
+  label,
+  CITY_LABELS,
+  PART_TYPE_LABELS,
+  TIRE_TYPE_LABELS,
+  WHEEL_TYPE_LABELS,
+  BODY_PART_LABELS,
+  SIDE_LABELS,
+  COLOR_LABELS,
+  FUEL_LABELS,
+} from "@/lib/utils/dict-labels";
 import { formatFullDateWithCity } from "@/lib/utils/dateFormat";
 import { useAuth } from "@/hooks/useAuth";
 import { useOpenChat } from "@/hooks/useOpenChat";
@@ -45,13 +56,16 @@ export default function PartDetailPage() {
     if (!apiPart) return null;
     return {
       id: apiPart.id || idStr,
-      title: apiPart.title ?? `${apiPart.brand ?? ""} ${apiPart.model ?? ""}`.trim(),
+      title:
+        apiPart.title ??
+        ([apiPart.brand, apiPart.model].filter(Boolean).join(" ").trim() ||
+          label(apiPart.part_type, PART_TYPE_LABELS)),
       price: String(apiPart.price),
       condition: apiPart.condition === "new" ? "Новый" as const : "Б/у" as const,
       image: apiPart.photos[0] ?? "",
       images: apiPart.photos,
-      city: apiPart.contact_city,
-      category: apiPart.part_type,
+      city: label(apiPart.contact_city, CITY_LABELS),
+      category: label(apiPart.part_type, PART_TYPE_LABELS),
       publishedDate: apiPart.published_at ?? apiPart.created_at,
       description: apiPart.description ?? undefined,
       sellerName: apiPart.seller?.name ?? undefined,
@@ -62,7 +76,9 @@ export default function PartDetailPage() {
   }, [apiPart, idStr]);
 
   const similarParts: PartListing[] = [];
-  const [isFavorite, setIsFavorite] = useState(false);
+  // Избранное бэкенд поддерживает только для объявлений об авто:
+  // POST /favorites/:id для этой сущности отвечает 404. Кнопка убрана,
+  // чтобы не изображать работающую функцию.
   const [descExpanded, setDescExpanded] = useState(false);
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const { openChat, isOpening } = useOpenChat();
@@ -75,8 +91,51 @@ export default function PartDetailPage() {
     if (part.manufacturer) result.push({ icon: Factory, label: "Производитель", value: part.manufacturer });
     if (part.compatibility) result.push({ icon: Wrench, label: "Совместимость", value: part.compatibility });
     if (part.partNumber) result.push({ icon: Hash, label: "Артикул", value: part.partNumber });
+
+    // Типоспецифичные характеристики: бэкенд их хранит, но страница раньше
+    // не показывала ни одной — объявление выглядело пустым.
+    if (apiPart) {
+      const add = (label: string, value: unknown, suffix = "") => {
+        if (value === null || value === undefined || value === "") return;
+        result.push({ icon: Ruler, label, value: `${value}${suffix}` });
+      };
+      // «Производитель» выше — то же поле; не дублируем строку.
+      if (apiPart.brand && apiPart.brand !== part.manufacturer)
+        result.push({ icon: Factory, label: "Бренд", value: apiPart.brand });
+      if (apiPart.model) result.push({ icon: Tag, label: "Модель", value: apiPart.model });
+
+      // Шины
+      add("Ширина", apiPart.tire_width, " мм");
+      add("Профиль", apiPart.tire_profile);
+      add("Диаметр", apiPart.tire_diameter, '"');
+      if (apiPart.tire_type) add("Тип шин", label(apiPart.tire_type, TIRE_TYPE_LABELS));
+      add("Индекс нагрузки", apiPart.tire_load_index);
+      add("Индекс скорости", apiPart.tire_speed_index);
+      add("Количество", apiPart.tire_quantity ?? apiPart.wheel_quantity, " шт.");
+      add("Страна производства", apiPart.tire_country_of_origin);
+
+      // Диски
+      add("Диаметр диска", apiPart.wheel_diameter, '"');
+      add("Ширина диска", apiPart.wheel_width, "J");
+      add("PCD", apiPart.wheel_pcd);
+      add("Вылет (ET)", apiPart.wheel_offset);
+      add("DIA", apiPart.wheel_dia);
+      if (apiPart.wheel_type) add("Тип диска", label(apiPart.wheel_type, WHEEL_TYPE_LABELS));
+
+      // Двигатель
+      if (apiPart.engine_type) add("Тип двигателя", label(apiPart.engine_type, FUEL_LABELS));
+      add("Объём", apiPart.engine_displacement, " см³");
+      add("Мощность", apiPart.engine_power, " л.с.");
+      add("Цилиндры", apiPart.engine_cylinder_count);
+
+      // Кузовные детали
+      if (apiPart.body_part_category) add("Деталь", label(apiPart.body_part_category, BODY_PART_LABELS));
+      if (apiPart.body_part_side) add("Сторона", label(apiPart.body_part_side, SIDE_LABELS));
+      if (apiPart.body_part_color) add("Цвет", label(apiPart.body_part_color, COLOR_LABELS));
+    }
+
     return result;
-  }, [part]);
+  }, [part, apiPart]);
 
   if (isLoading) {
     return <DetailPageSkeleton />;
@@ -152,16 +211,6 @@ export default function PartDetailPage() {
             >
               <Upload className="w-4 h-4" />
               Поделиться
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setIsFavorite(!isFavorite)}
-              className={`flex items-center gap-2 text-[14px] font-medium font-[family-name:var(--font-manrope)] ${
-                isFavorite ? "text-[#E53935]" : "text-[#111111] hover:text-[#8E8E93]"
-              }`}
-            >
-              <Heart className={`w-4 h-4 ${isFavorite ? "fill-[#E53935]" : ""}`} />
-              В избранное
             </Button>
           </div>
         </div>
@@ -333,18 +382,6 @@ export default function PartDetailPage() {
               className="icon-btn"
             >
               <Upload className="size-5" strokeWidth={1.5} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsFavorite(!isFavorite)}
-              aria-label="В избранное"
-              className="icon-btn -mr-2.5"
-            >
-              <Heart
-                className={`size-5 ${isFavorite ? "text-[#E53935]" : ""}`}
-                strokeWidth={1.5}
-                fill={isFavorite ? "#E53935" : "none"}
-              />
             </button>
           </div>
         </div>

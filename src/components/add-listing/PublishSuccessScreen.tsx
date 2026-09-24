@@ -9,33 +9,42 @@ interface PublishSuccessScreenProps {
 
 export function PublishSuccessScreen({ onComplete }: PublishSuccessScreenProps) {
   useEffect(() => {
-    const timer = setTimeout(() => onComplete(), 3000);
+    // Auto-redirect after 3 seconds
+    const timer = setTimeout(() => {
+      onComplete();
+    }, 3000);
+
     return () => clearTimeout(timer);
   }, [onComplete]);
 
-  const font = { fontFamily: "Manrope, system-ui, sans-serif" } as const;
-
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-white px-5">
-      <div className="w-20 h-20 bg-[#34C759] rounded-full flex items-center justify-center mb-6">
-        <Check className="w-10 h-10 text-white" strokeWidth={3} />
+    <div className="flex min-h-dvh flex-1 flex-col items-center justify-center bg-[#FFFFFF] px-5">
+      {/* Success Icon */}
+      <div className="mb-6 flex size-20 items-center justify-center rounded-[40px] bg-[#34C759]">
+        <Check color="#FFFFFF" size={40} strokeWidth={3} />
       </div>
-      <h1 className="text-[28px] font-bold text-[#000000] text-center mb-2" style={font}>
-        Объявление опубликовано
-      </h1>
-      <p className="text-[16px] text-[#8E8E93] text-center mb-8" style={font}>
+
+      {/* Title */}
+      <span className="mb-2 text-center text-[28px] font-bold text-[#000000]">Объявление опубликовано</span>
+
+      {/* Description */}
+      <span className="mb-8 text-center text-[16px] font-normal text-[#8E8E93]">
         Ваше объявление успешно размещено и скоро появится в поиске
-      </p>
+      </span>
+
+      {/* Manual Continue Button */}
       <button
+        type="button"
         onClick={onComplete}
-        className="w-full max-w-[300px] h-[52px] rounded-[14px] font-semibold bg-[#000000] text-white active:opacity-70 transition-opacity"
-        style={font}
+        className="flex h-[52px] w-[300px] max-w-full items-center justify-center rounded-[14px] bg-[#000000]"
       >
-        Готово
+        <span className="text-[16px] font-semibold text-[#FFFFFF]">Готово</span>
       </button>
-      <p className="text-[13px] text-[#8E8E93] text-center mt-4" style={font}>
+
+      {/* Auto-redirect hint */}
+      <span className="mt-4 text-center text-[13px] font-normal text-[#8E8E93]">
         Автоматический переход через 3 секунды
-      </p>
+      </span>
     </div>
   );
 }

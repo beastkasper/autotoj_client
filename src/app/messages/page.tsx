@@ -1,5 +1,6 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircle } from "lucide-react";
@@ -152,8 +153,8 @@ function ChatRow({ chat, onClick }: ChatRowProps) {
       <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-muted">
         {chat.partner.avatar ? (
           <img
-            src={chat.partner.avatar}
-            alt={chat.partner.name}
+            src={mediaUrl(chat.partner.avatar)}
+            alt={chat.partner.name ?? "Пользователь"}
             className="size-full object-cover"
           />
         ) : (
@@ -166,7 +167,7 @@ function ChatRow({ chat, onClick }: ChatRowProps) {
       <span className="min-w-0 flex-1 border-b border-border pb-3 -mb-3">
         <span className="flex items-center justify-between gap-2">
           <span className="line-1 text-[15px] font-medium text-foreground">
-            {chat.partner.name}
+            {chat.partner.name ?? "Пользователь"}
           </span>
           <span className="shrink-0 text-[12px] text-muted-foreground">
             {formatChatListTime(chat.updated_at)}
@@ -206,7 +207,7 @@ function DesktopChatRow({ chat, onClick }: ChatRowProps) {
     >
       <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-[#F2F2F7]">
         <ImageWithFallback
-          src={chat.ad.photo}
+          src={mediaUrl(chat.ad.photo)}
           alt={chat.ad.title}
           className="size-full object-cover"
         />
@@ -214,7 +215,7 @@ function DesktopChatRow({ chat, onClick }: ChatRowProps) {
       <div className="min-w-0 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate text-[15px] font-semibold text-[#111111]">
-            {chat.partner.name}
+            {chat.partner.name ?? "Пользователь"}
           </span>
           <span className="shrink-0 text-[12px] text-[#8E8E93]">
             {formatChatListTime(chat.updated_at)}

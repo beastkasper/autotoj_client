@@ -1,7 +1,9 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
 import React from "react";
 import { getCategoryColor, getCategoryColorDesktop } from "@/lib/utils/category-colors";
+import { label, LOGBOOK_CATEGORY_LABELS } from "@/lib/utils/dict-labels";
 import { formatDate } from "@/lib/utils/dateFormat";
 
 interface LogbookPostCardProps {
@@ -31,7 +33,7 @@ function MobileCard({ post, onClick }: Omit<LogbookPostCardProps, "variant">) {
         <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground/10">
           {post.author.avatar ? (
             <img
-              src={post.author.avatar}
+              src={mediaUrl(post.author.avatar)}
               alt={post.author.name}
               className="size-full object-cover"
             />
@@ -55,14 +57,14 @@ function MobileCard({ post, onClick }: Omit<LogbookPostCardProps, "variant">) {
         <span
           className={`inline-block rounded-full px-2 py-1 text-[12px] font-medium ${getCategoryColor(post.category)}`}
         >
-          {post.category}
+          {label(post.category, LOGBOOK_CATEGORY_LABELS)}
         </span>
       </div>
       <p className="line-2 mb-3 text-[14px] text-muted-foreground">{post.excerpt}</p>
       {post.photos.length > 0 && (
         <div className="h-48 w-full overflow-hidden rounded-lg bg-muted">
           <img
-            src={post.photos[0]}
+            src={mediaUrl(post.photos[0])}
             alt={post.title}
             className="size-full object-cover"
           />
@@ -81,7 +83,7 @@ function DesktopCard({ post, onClick }: Omit<LogbookPostCardProps, "variant">) {
       <div className="flex items-center gap-3 mb-4">
         <div className="w-12 h-12 rounded-full bg-[#F5F5F5] flex items-center justify-center flex-shrink-0">
           {post.author.avatar ? (
-            <img src={post.author.avatar} alt={post.author.name} className="w-full h-full rounded-full object-cover" />
+            <img src={mediaUrl(post.author.avatar)} alt={post.author.name} className="w-full h-full rounded-full object-cover" />
           ) : (
             <span className="text-[17px] font-semibold text-[#E53935]">
               {post.author.name?.[0] ?? "?"}
@@ -98,7 +100,7 @@ function DesktopCard({ post, onClick }: Omit<LogbookPostCardProps, "variant">) {
       </h3>
       <div className="mb-3">
         <span className={`inline-block px-3 py-1.5 rounded-lg text-[13px] font-medium border ${getCategoryColorDesktop(post.category)}`}>
-          {post.category}
+          {label(post.category, LOGBOOK_CATEGORY_LABELS)}
         </span>
       </div>
       <p className="text-[15px] text-[#8E8E93] line-clamp-3 font-[family-name:var(--font-manrope)]">{post.excerpt}</p>

@@ -1,38 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { RequireAuth } from "@/components/auth/require-auth";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { X, Image as ImageIcon, Video, ChevronRight } from "lucide-react";
+import { X, Image as ImageIcon, ChevronRight } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateLogbookPostMutation } from "@/lib/features/logbook/logbookApi";
+import {
+  useCreateLogbookPostMutation,
+  useUploadLogbookPhotosMutation,
+} from "@/lib/features/logbook/logbookApi";
+import { useAuth } from "@/hooks/useAuth";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
+import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import {
+  LOGBOOK_CATEGORY_LABELS,
+  LOGBOOK_CATEGORY_SLUGS,
+} from "@/lib/utils/dict-labels";
 
-const CATEGORIES = [
-  "Без темы", "Автоматика", "Прошу совета", "Автопутешествия", "Поломка",
-  "ТО", "Ремонт", "Тюнинг", "Покупка", "Гаджеты",
-];
+// В шите показываем русские названия, а в API уходит слаг: бэкенд принимает
+// только no_topic/automatics/advice/... и на русское название отвечает 422.
+const CATEGORIES = Object.values(LOGBOOK_CATEGORY_LABELS);
 
-export default function LogbookCreatePage() {
+function LogbookCreatePageContent() {
   const router = useRouter();
   const [createPost] = useCreateLogbookPostMutation();
+  const [uploadPhotos] = useUploadLogbookPhotosMutation();
+  const { showAuthModal, requireAuth, closeAuthModal } = useAuth();
 
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Без темы");
   const [showCategorySheet, setShowCategorySheet] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = async () => {
-    if (!title.trim() || !text.trim()) {
-      alert("Заполните заголовок и текст");
+  useEffect(() => () => previews.forEach((u) => URL.revokeObjectURL(u)), [previews]);
+
+  const handlePickPhotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const picked = e.target.files;
+    if (!picked) return;
+    const images = Array.from(picked).filter((f) => f.type.startsWith("image/"));
+    if (images.length !== picked.length) {
+      setSubmitError("Можно прикладывать только изображения");
+    }
+    const room = 10 - photos.length;
+    const toAdd = images.slice(0, room);
+    setPhotos((prev) => [...prev, ...toAdd]);
+    setPreviews((prev) => [...prev, ...toAdd.map((f) => URL.createObjectURL(f))]);
+    e.target.value = "";
+  };
+
+  const removePhoto = (i: number) => {
+    setPhotos((prev) => prev.filter((_, idx) => idx !== i));
+    setPreviews((prev) => {
+      const u = prev[i];
+      if (u) URL.revokeObjectURL(u);
+      return prev.filter((_, idx) => idx !== i);
+    });
+  };
+
+  const handleSubmit = () => {
+    if (!title.trim()) {
+      setSubmitError("Укажите заголовок записи");
+      return;
+    }
+    if (title.trim().length < 5) {
+      setSubmitError("Заголовок должен быть не короче 5 символов");
+      return;
+    }
+    if (text.trim().length < 20) {
+      setSubmitError("Текст записи должен быть не короче 20 символов");
       return;
     }
     setSubmitError(null);
-    try {
-      await createPost({ title: title.trim(), text: text.trim(), category: selectedCategory }).unwrap();
-      router.back();
-    } catch {
-      setSubmitError("Не удалось опубликовать запись. Попробуйте ещё раз.");
-    }
+
+    requireAuth(async () => {
+      setIsSubmitting(true);
+      try {
+        const created = await createPost({
+          title: title.trim(),
+          text: text.trim(),
+          category: LOGBOOK_CATEGORY_SLUGS[selectedCategory] ?? "no_topic",
+        }).unwrap();
+        if (photos.length > 0) {
+          try {
+            await uploadPhotos({ id: created.id, photos }).unwrap();
+          } catch (err) {
+            // Запись уже создана — не теряем её из-за фотографий.
+            setSubmitError(`Запись опубликована, но фото не загрузились: ${getApiErrorMessage(err)}`);
+            return;
+          }
+        }
+        router.back();
+      } catch (err) {
+        setSubmitError(getApiErrorMessage(err));
+      } finally {
+        setIsSubmitting(false);
+      }
+    });
   };
 
   const handleClose = () => {
@@ -61,10 +129,10 @@ export default function LogbookCreatePage() {
             </h2>
             <button
               onClick={handleSubmit}
-              disabled={!title.trim() || !text.trim()}
+              disabled={!title.trim() || !text.trim() || isSubmitting}
               className="text-[#111111] font-medium disabled:opacity-50 transition-opacity font-[family-name:var(--font-manrope)]"
             >
-              Опубликовать
+              {isSubmitting ? "Публикуем…" : "Опубликовать"}
             </button>
           </div>
 
@@ -124,18 +192,44 @@ export default function LogbookCreatePage() {
               />
             </div>
 
-            {/* Media buttons */}
-            <div className="flex gap-3">
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border border-[#E5E5EA] rounded-lg hover:bg-[#F9F9F9] transition-colors">
-                <ImageIcon className="w-5 h-5 text-[#8E8E93]" />
-                <span className="text-sm font-medium font-[family-name:var(--font-manrope)]">Фото</span>
-                <span className="text-xs text-[#8E8E93]">(до 10)</span>
-              </button>
-              <button className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-white border border-[#E5E5EA] rounded-lg hover:bg-[#F9F9F9] transition-colors">
-                <Video className="w-5 h-5 text-[#8E8E93]" />
-                <span className="text-sm font-medium font-[family-name:var(--font-manrope)]">Видео</span>
-              </button>
-            </div>
+            {/* Фото. Кнопка «Видео» убрана: эндпоинта для видео в бортжурнале нет. */}
+            {previews.length > 0 && (
+              <div className="grid grid-cols-4 gap-2">
+                {previews.map((src, i) => (
+                  <div key={src} className="relative aspect-square overflow-hidden rounded-lg bg-[#F2F2F7]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="" className="size-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(i)}
+                      aria-label="Убрать фото"
+                      className="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-black/60"
+                    >
+                      <X className="size-3.5 text-white" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handlePickPhotos}
+            />
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={photos.length >= 10}
+              className="flex w-full items-center justify-center gap-2 rounded-lg border border-[#E5E5EA] bg-white px-4 py-3 transition-colors hover:bg-[#F9F9F9] disabled:opacity-50"
+            >
+              <ImageIcon className="size-5 text-[#8E8E93]" />
+              <span className="text-sm font-medium font-[family-name:var(--font-manrope)]">Фото</span>
+              <span className="text-xs text-[#8E8E93]">{photos.length}/10</span>
+            </button>
 
             <p className="text-xs text-[#8E8E93] font-[family-name:var(--font-manrope)]">
               Пожалуйста, соблюдайте правила сообщества и будьте вежливы к другим пользователям.
@@ -187,6 +281,15 @@ export default function LogbookCreatePage() {
           </div>
         </div>
       )}
+      <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
     </>
+  );
+}
+
+export default function LogbookCreatePage() {
+  return (
+    <RequireAuth description="Записи в бортжурнал публикуются от имени аккаунта">
+      <LogbookCreatePageContent />
+    </RequireAuth>
   );
 }

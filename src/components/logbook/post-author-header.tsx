@@ -1,5 +1,7 @@
 "use client";
 
+import { mediaUrl } from "@/lib/utils/mediaUrl";
+
 interface PostAuthorHeaderProps {
   author: { name: string; avatar: string | null };
   date: string;
@@ -12,7 +14,7 @@ export function PostAuthorHeader({ author, date, variant }: PostAuthorHeaderProp
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-full bg-[#111111]/10 flex items-center justify-center">
           {author.avatar ? (
-            <img src={author.avatar} alt={author.name} className="w-full h-full rounded-full object-cover" />
+            <img src={mediaUrl(author.avatar)} alt={author.name} className="w-full h-full rounded-full object-cover" />
           ) : (
             <span className="text-lg font-semibold text-[#111111] font-[family-name:var(--font-manrope)]">{author.name?.[0] ?? "?"}</span>
           )}
@@ -29,7 +31,7 @@ export function PostAuthorHeader({ author, date, variant }: PostAuthorHeaderProp
     <div className="flex items-center gap-4">
       <div className="w-14 h-14 rounded-full bg-[#F5F5F5] flex items-center justify-center">
         {author.avatar ? (
-          <img src={author.avatar} alt={author.name} className="w-full h-full rounded-full object-cover" />
+          <img src={mediaUrl(author.avatar)} alt={author.name} className="w-full h-full rounded-full object-cover" />
         ) : (
           <span className="text-[20px] font-semibold text-[#E53935] font-[family-name:var(--font-manrope)]">{author.name?.[0] ?? "?"}</span>
         )}

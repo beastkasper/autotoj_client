@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/hooks/hooks";
 import { useVerifyCodeMutation, useSendCodeMutation } from "@/lib/features/auth/authApi";
-import { resetAuth, setResendCountdown, loginSuccess } from "@/lib/features/auth/authSlice";
+import { resetAuthFlow, setResendCountdown, loginSuccess } from "@/lib/features/auth/authSlice";
 
 const RESEND_SECONDS = 45;
 /** Код из 4 цифр (API принимает 4–6) */
@@ -154,7 +154,8 @@ export function AuthCodeStep({
   }
 
   function handleBack() {
-    dispatch(resetAuth());
+    // Сбрасываем только шаг ввода кода: resetAuth() стирал бы и токен.
+    dispatch(resetAuthFlow());
     onBack();
   }
 

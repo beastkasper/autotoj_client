@@ -60,11 +60,16 @@ export const chatsApi = api.injectEndpoints({
         method: "POST",
         body,
       }),
-      invalidatesTags: (_result, _error, { chatId }) => [
-        { type: "Chats", id: "LIST" },
-        { type: "Chats", id: chatId },
-        { type: "Chats", id: `MSG-${chatId}` },
-      ],
+      // Инвалидируем только при успехе: иначе неудачная отправка запускала
+      // рефетч чата, и при отсутствии сети экран переписки схлопывался в ошибку.
+      invalidatesTags: (_result, error, { chatId }) =>
+        error
+          ? []
+          : [
+              { type: "Chats", id: "LIST" },
+              { type: "Chats", id: chatId },
+              { type: "Chats", id: `MSG-${chatId}` },
+            ],
     }),
 
     // POST /chats/:id/read — Mark as read

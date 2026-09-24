@@ -37,6 +37,13 @@ interface AuthState {
   resendCountdown: number;
   token: string | null;
   userId: string | null;
+  /**
+   * Открыта ли модалка «Требуется вход».
+   * Живёт в сторе, а не в useAuth: раньше каждый вызов useAuth() создавал свой
+   * useState, поэтому useOpenChat открывал модалку у своего экземпляра, а на
+   * странице был отрисован другой — кнопка «Написать» для гостя не делала ничего.
+   */
+  authModalOpen: boolean;
 }
 
 const initialState: AuthState = {
@@ -48,6 +55,7 @@ const initialState: AuthState = {
   resendCountdown: 0,
   token: getStoredValue(TOKEN_KEY),
   userId: getStoredValue(USER_ID_KEY),
+  authModalOpen: false,
 };
 
 const authSlice = createSlice({
@@ -89,10 +97,29 @@ const authSlice = createSlice({
       state.userId = action.payload;
       setStoredValue(USER_ID_KEY, action.payload);
     },
+    /**
+     * Сброс только шагов входа, без выхода из аккаунта.
+     * resetAuth() стирает токен, и кнопка «Изменить номер» на экране кода
+     * разлогинивала уже вошедшего пользователя.
+     */
+    resetAuthFlow(state) {
+      state.contact = "";
+      state.step = "form";
+      state.isLoading = false;
+      state.error = null;
+      state.resendCountdown = 0;
+    },
+    openAuthModal(state) {
+      state.authModalOpen = true;
+    },
+    closeAuthModal(state) {
+      state.authModalOpen = false;
+    },
     loginSuccess(state, action: PayloadAction<{ token: string; userId: string }>) {
       state.token = action.payload.token;
       state.userId = action.payload.userId;
       state.step = "form";
+      state.authModalOpen = false;
       state.isLoading = false;
       state.error = null;
       setStoredValue(TOKEN_KEY, action.payload.token);
@@ -110,6 +137,7 @@ const authSlice = createSlice({
         resendCountdown: 0,
         token: null,
         userId: null,
+        authModalOpen: false,
       };
     },
   },
@@ -123,6 +151,9 @@ export const {
   setError,
   setResendCountdown,
   codeSent,
+  resetAuthFlow,
+  openAuthModal,
+  closeAuthModal,
   setToken,
   setUserId,
   loginSuccess,

@@ -6,16 +6,21 @@ import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PlateCard } from "@/components/cards/PlateCard";
 import { EmptyState } from "@/components/states/EmptyState";
+import { ErrorState } from "@/components/states/ErrorState";
+import { getApiErrorMessage } from "@/lib/utils/apiError";
 import { PlateAddForm } from "@/components/plates/plate-add-form";
 import { PageHeader } from "@/components/layout/page-header";
 import { SearchInput } from "@/components/search/search-input";
 import { FilterChip } from "@/components/search/filter-chip";
 import { AuthRequiredModal } from "@/components/auth/auth-required-modal";
+import { SuccessToast } from "@/components/ui/success-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { GridPageSkeleton } from "@/components/skeletons/grid-page-skeleton";
 import { LoadMoreButton } from "@/components/ui/load-more-button";
 import { usePagedParams } from "@/hooks/usePagedParams";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useGetPlatesQuery } from "@/lib/features/plates/platesApi";
+import { pluralize, WORD_PLATES } from "@/lib/utils/plural";
 import {
   PLATE_CATEGORIES,
   PLATE_REGION_LABELS,
@@ -28,19 +33,22 @@ export default function PlatesPage() {
   const router = useRouter();
   const { requireAuth, showAuthModal, closeAuthModal } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  // Поиск с задержкой: иначе запрос уходит на каждое нажатие клавиши.
+  const debouncedSearch = useDebouncedValue(searchQuery);
   const [selectedCategory, setSelectedCategory] = useState<PlateCategory | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [justPublished, setJustPublished] = useState(false);
 
   // RTK Query — fetch from backend
   const baseParams: PlatesSearchParams = useMemo(() => {
     const p: PlatesSearchParams = {};
-    if (searchQuery) p.q = searchQuery;
+    if (debouncedSearch) p.q = debouncedSearch;
     if (selectedCategory) p.category = selectedCategory;
     return p;
-  }, [searchQuery, selectedCategory]);
+  }, [debouncedSearch, selectedCategory]);
 
   const { params: queryParams, page, setPage } = usePagedParams(baseParams);
-  const { data: apiData, isLoading, isFetching } = useGetPlatesQuery(queryParams);
+  const { data: apiData, isLoading, isFetching, error, refetch } = useGetPlatesQuery(queryParams);
   const isLoadingMore = isFetching && !isLoading;
   const hasMore = apiData?.has_more ?? false;
 
@@ -61,6 +69,7 @@ export default function PlatesPage() {
 
   const handleAddSuccess = useCallback(() => {
     setShowAddForm(false);
+    setJustPublished(true);
   }, []);
 
   const hasActiveFilters = searchQuery !== "" || selectedCategory !== null;
@@ -118,7 +127,7 @@ export default function PlatesPage() {
 
           <div className="mt-3 flex items-center justify-between">
             <p className="text-[14px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-              Найдено {plates.length} номеров
+              Найдено {pluralize(apiData?.total ?? plates.length, WORD_PLATES)}
             </p>
             {hasActiveFilters && (
               <button
@@ -136,6 +145,13 @@ export default function PlatesPage() {
       <div className="hidden lg:block max-w-[1440px] mx-auto px-6 py-6">
         {isLoading ? (
           <GridPageSkeleton />
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить номера"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : plates.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {plates.map((plate) => (
@@ -202,7 +218,7 @@ export default function PlatesPage() {
 
         <div className="flex items-center justify-between">
           <p className="text-[13px] text-[#8E8E93] font-[family-name:var(--font-manrope)]">
-            Найдено {plates.length} номеров
+            Найдено {pluralize(apiData?.total ?? plates.length, WORD_PLATES)}
           </p>
           {hasActiveFilters && (
             <button
@@ -219,6 +235,13 @@ export default function PlatesPage() {
       <div className="lg:hidden px-4 md:px-6 pb-24">
         {isLoading ? (
           <GridPageSkeleton count={6} />
+        ) : error ? (
+          <ErrorState
+            type="error"
+            title="Не удалось загрузить номера"
+            description={getApiErrorMessage(error)}
+            onRetry={() => refetch()}
+          />
         ) : plates.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
             {plates.map((plate) => (
@@ -250,6 +273,13 @@ export default function PlatesPage() {
       )}
 
       <AuthRequiredModal open={showAuthModal} onClose={closeAuthModal} />
+
+      <SuccessToast
+        open={justPublished}
+        onClose={() => setJustPublished(false)}
+        title="Номер отправлен на модерацию"
+        description="После проверки он появится в разделе «Гос. номера»."
+      />
     </main>
   );
 }
