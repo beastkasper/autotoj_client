@@ -24,6 +24,11 @@ interface SelectionStepProps {
   /** When true, shows "add your own" when list is empty or no search results */
   allowCustom?: boolean;
   customPlaceholder?: string;
+  /**
+   * Максимальная длина своего значения. Бэкенд хранит марку/модель в
+   * VARCHAR(100), поколение/кузов/цвет — в VARCHAR(50); длиннее → 500/422.
+   */
+  customMaxLength?: number;
   /** When provided, shows a "Skip" button */
   onSkip?: () => void;
   skipLabel?: string;
@@ -38,6 +43,7 @@ export function SelectionStep({
   searchPlaceholder = 'Поиск',
   allowCustom = false,
   customPlaceholder = 'Введите своё значение',
+  customMaxLength = 100,
   onSkip,
   skipLabel = 'Пропустить',
 }: SelectionStepProps) {
@@ -45,13 +51,26 @@ export function SelectionStep({
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customValue, setCustomValue] = useState('');
 
+  // Поиск и ручной ввод относятся к одному шагу. CarListingForm монтирует каждый
+  // шаг с собственным key; на случай формы без key — новый заголовок = новый шаг,
+  // сбрасываем состояние прямо во время рендера. Иначе поиск марки «Toy»
+  // переезжал на шаг «Год выпуска» и отфильтровывал все годы.
+  const [stepTitle, setStepTitle] = useState(title);
+  if (stepTitle !== title) {
+    setStepTitle(title);
+    setQuery('');
+    setShowCustomInput(false);
+    setCustomValue('');
+  }
+
   const listIsEmpty = items.length === 0;
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return items;
+    // Без поля поиска фильтр не применяется вовсе — его нельзя было бы очистить.
+    if (!searchable || !query.trim()) return items;
     const q = query.trim().toLowerCase();
     return items.filter(item => item.label.toLowerCase().includes(q));
-  }, [items, query]);
+  }, [items, query, searchable]);
 
   // Show "add your own" when: list is empty, or search has no results
   const showAddOwn = allowCustom && !showCustomInput && (
@@ -62,9 +81,13 @@ export function SelectionStep({
   const effectiveShowCustom = showCustomInput || (allowCustom && listIsEmpty);
 
   const handleSubmitCustom = () => {
-    const value = (effectiveShowCustom && !showCustomInput ? customValue : customValue).trim();
+    const value = customValue.trim().slice(0, customMaxLength);
     if (value) {
-      onSelect(value);
+      // «Своё» значение, совпадающее с пунктом списка («toyota»), выбирает этот
+      // пункт: иначе марка ушла бы текстом и каскад моделей не загрузился.
+      const lower = value.toLowerCase();
+      const match = items.find(item => item.label.trim().toLowerCase() === lower);
+      onSelect(match ? itemValue(match) : value);
       setCustomValue('');
       setShowCustomInput(false);
     }
@@ -149,6 +172,7 @@ export function SelectionStep({
               placeholder={customPlaceholder}
               value={customValue}
               onChange={(e) => setCustomValue(e.target.value)}
+              maxLength={customMaxLength}
               autoFocus
               enterKeyHint="done"
               onKeyDown={(e) => {
@@ -226,7 +250,7 @@ export function SelectionStep({
                     type="button"
                     onClick={() => {
                       setShowCustomInput(true);
-                      setCustomValue(query);
+                      setCustomValue(query.trim().slice(0, customMaxLength));
                     }}
                     className="flex flex-row items-center gap-[10px] self-stretch rounded-[12px] bg-secondary px-5 py-[14px]"
                   >
@@ -235,6 +259,12 @@ export function SelectionStep({
                       Добавить «{query.trim()}»
                     </span>
                   </button>
+                </div>
+              ) : query.trim() !== '' ? (
+                <div className="flex flex-col items-center pt-6">
+                  <span className="text-[15px] font-normal text-muted-foreground">
+                    Ничего не найдено
+                  </span>
                 </div>
               ) : null)
               : filtered.map(renderItem)}

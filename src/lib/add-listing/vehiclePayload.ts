@@ -46,14 +46,20 @@ const float = (v: unknown): number | undefined => {
 
 const bool = (v: unknown): boolean | undefined => (typeof v === 'boolean' ? v : undefined);
 
-/** Формы хранят 9 цифр; профиль может уже содержать +992. Итог: +992XXXXXXXXX. */
+/**
+ * Формы хранят 9 цифр; профиль может уже содержать +992. Итог: +992XXXXXXXXX.
+ * Обрывок номера ('+90012') не отправляем — иначе он публиковался как контакт продавца;
+ * без поля бэкенд оставит телефон аккаунта.
+ */
 export function normalizePhone(v: unknown): string | undefined {
-  const digits = (str(v) ?? '').replace(/\D/g, '');
-  if (!digits) return undefined;
-  if (digits.length === 9) return `+992${digits}`;
-  if (digits.length === 12 && digits.startsWith('992')) return `+${digits}`;
-  return `+${digits}`;
+  let digits = (str(v) ?? '').replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('992')) digits = digits.slice(3);
+  return digits.length === 9 ? `+992${digits}` : undefined;
 }
+
+/** Переключатель в мото/коммерческих формах подписан «Не растаможен»: true → is_customs_cleared=false. */
+const customsClearedFromNotToggle = (notCleared: unknown): boolean | undefined =>
+  typeof notCleared === 'boolean' ? !notCleared : undefined;
 
 /** '1' | '2' | '3' | '4+' → 0..4 (бэкенд: owners int ge=0 le=4). */
 export function normalizeOwners(v: unknown): number | undefined {
@@ -202,6 +208,7 @@ export interface MotoFormInput {
   hasElectricStarter: boolean;
   hasABS: boolean;
   vehicleStatus: string;
+  /** Состояние переключателя «Не растаможен» (true = НЕ растаможен). */
   isCustomsCleared: boolean;
   originCountry: string;
   pts: string;
@@ -244,7 +251,8 @@ export function buildMotoPayload(f: MotoFormInput, subcategory?: string): Vehicl
     color: str(f.color),
     options: options.length ? options : undefined,
     vehicle_status: normalizeVehicleStatus(f.vehicleStatus),
-    is_customs_cleared: bool(f.isCustomsCleared),
+    // isCustomsCleared у мото/коммерческих = состояние переключателя «Не растаможен»
+    is_customs_cleared: customsClearedFromNotToggle(f.isCustomsCleared),
     origin_country: str(f.originCountry),
     pts: str(f.pts),
     owners: normalizeOwners(f.owners),
@@ -283,6 +291,7 @@ export interface CommercialFormInput {
   selectedColors: string[];
   pts: string;
   owners: string;
+  /** Состояние переключателя «Не растаможен» (true = НЕ растаможен). */
   isCustomsCleared: boolean;
   isDamaged: boolean;
   equipment: string[];
@@ -352,7 +361,8 @@ export function buildCommercialPayload(
     color: str(f.selectedColors?.[0]),
     pts: str(f.pts),
     owners: normalizeOwners(f.owners),
-    is_customs_cleared: bool(f.isCustomsCleared),
+    // isCustomsCleared у мото/коммерческих = состояние переключателя «Не растаможен»
+    is_customs_cleared: customsClearedFromNotToggle(f.isCustomsCleared),
     is_damaged: bool(f.isDamaged),
     options: options.length ? options : undefined,
     vehicle_status: normalizeVehicleStatus(f.vehicleStatus),

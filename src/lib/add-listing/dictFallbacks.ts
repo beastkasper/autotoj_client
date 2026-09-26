@@ -3,13 +3,12 @@ import type { DictItem } from '@/lib/types/api';
 /**
  * Резервные справочники для форм подачи объявлений.
  *
- * Live API (GET /dicts) сейчас отдаёт ПУСТЫЕ списки для fuel_types, drive_types,
- * body_types и steering_positions, а GET /brands?type=moto|commercial — 0 марок.
- * Без запасного списка шаги мастера «Двигатель / Привод / Руль» в CarListingForm
- * рендерят ноль вариантов и не дают пройти дальше (у них нет ни allowCustom, ни onSkip).
+ * Используются, только если GET /dicts не ответил или вернул пустой список
+ * (нет сети, старый бэкенд). Без запасного списка шаги мастера «Двигатель / Привод / Руль»
+ * рендерили бы ноль вариантов и не давали пройти дальше.
  *
- * Ids совпадают со slug-соглашением бэкенда ('automatic', 'white', ...), чтобы
- * при появлении настоящих справочников уже сохранённые объявления не разъехались.
+ * Ids обязаны совпадать со slug'ами прод-справочника /dicts ('fwd', 'gas_petrol', 'white', …):
+ * объявление, поданное с запасным списком, иначе не находится фильтрами поиска.
  */
 
 export const FALLBACK_FUEL_TYPES: DictItem[] = [
@@ -17,13 +16,13 @@ export const FALLBACK_FUEL_TYPES: DictItem[] = [
   { id: 'diesel', name: 'Дизель' },
   { id: 'hybrid', name: 'Гибрид' },
   { id: 'electric', name: 'Электро' },
-  { id: 'gas', name: 'Газ' },
+  { id: 'gas_petrol', name: 'Газ/Бензин' },
 ];
 
 export const FALLBACK_DRIVE_TYPES: DictItem[] = [
-  { id: 'front', name: 'Передний' },
-  { id: 'rear', name: 'Задний' },
-  { id: 'all', name: 'Полный' },
+  { id: 'fwd', name: 'Передний' },
+  { id: 'rwd', name: 'Задний' },
+  { id: 'awd', name: 'Полный' },
 ];
 
 export const FALLBACK_BODY_TYPES: DictItem[] = [

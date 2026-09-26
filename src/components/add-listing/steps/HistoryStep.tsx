@@ -6,6 +6,16 @@ import { useDicts } from '@/lib/add-listing/dicts';
 // Owners is a small fixed enum with no API equivalent.
 const OWNERS_OPTIONS = ['1', '2', '3', '4+'];
 
+/** Если /dicts не загрузился — ids как на проде. */
+const FALLBACK_PTS_OPTIONS = [
+  { id: 'original', name: 'Оригинал' },
+  { id: 'duplicate', name: 'Дубликат' },
+  { id: 'none', name: 'Нет ПТС' },
+];
+
+/** 9 999 999 км — колонка mileage INTEGER. */
+const MILEAGE_MAX_DIGITS = 7;
+
 interface HistoryStepProps {
   mileage: string;
   pts: string;
@@ -15,6 +25,13 @@ interface HistoryStepProps {
   onChangePts: (value: string) => void;
   onChangeOwners: (value: string) => void;
   onToggleDamaged: () => void;
+  /**
+   * Растаможен ли автомобиль (is_customs_cleared). Переключатель подписан
+   * «Не растаможен», как в мото/коммерческих формах, поэтому он включён,
+   * когда isCustomsCleared === false. Без пропсов строка не показывается.
+   */
+  isCustomsCleared?: boolean;
+  onToggleCustomsCleared?: () => void;
   onNext: () => void;
 }
 
@@ -27,10 +44,13 @@ export function HistoryStep({
   onChangePts,
   onChangeOwners,
   onToggleDamaged,
+  isCustomsCleared,
+  onToggleCustomsCleared,
   onNext,
 }: HistoryStepProps) {
   const { dicts } = useDicts();
-  const ptsOptions = dicts?.pts_options ?? [];
+  const ptsOptions = dicts?.pts_options?.length ? dicts.pts_options : FALLBACK_PTS_OPTIONS;
+  const isNotCustomsCleared = isCustomsCleared === false;
 
   const formatMileage = (value: string) => {
     if (!value) return '';
@@ -53,7 +73,7 @@ export function HistoryStep({
             placeholder="Пробег"
             value={formatMileage(mileage)}
             onChange={(e) => {
-              const digits = e.target.value.replace(/\D/g, '');
+              const digits = e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, MILEAGE_MAX_DIGITS);
               onChangeMileage(digits);
             }}
             inputMode="numeric"
@@ -132,12 +152,42 @@ export function HistoryStep({
           >
             <div
               className={cn(
-                'size-[20px] rounded-[10px] bg-[#FFFFFF]',
-                isDamaged ? 'translate-x-[20px]' : 'translate-x-[2px]',
+                'size-[20px] rounded-[10px]',
+                // Во включённом состоянии — цвет фона: в тёмной теме --primary
+                // светлый, и белый бегунок на нём не виден.
+                isDamaged ? 'translate-x-[20px] bg-background' : 'translate-x-[2px] bg-[#FFFFFF]',
               )}
             />
           </button>
         </div>
+
+        {/* Customs toggle */}
+        {onToggleCustomsCleared && (
+          <div className="mb-8 flex flex-row items-center justify-between">
+            <span className="text-[16px] font-normal text-foreground">
+              Не растаможен
+            </span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isNotCustomsCleared}
+              onClick={onToggleCustomsCleared}
+              className={cn(
+                'flex h-[24px] w-[44px] shrink-0 items-center rounded-[12px]',
+                isNotCustomsCleared ? 'bg-primary' : 'bg-border',
+              )}
+            >
+              <div
+                className={cn(
+                  'size-[20px] rounded-[10px]',
+                  // Во включённом состоянии — цвет фона: в тёмной теме --primary
+                  // светлый, и белый бегунок на нём не виден.
+                  isNotCustomsCleared ? 'translate-x-[20px] bg-background' : 'translate-x-[2px] bg-[#FFFFFF]',
+                )}
+              />
+            </button>
+          </div>
+        )}
 
         {/* Continue */}
         <button

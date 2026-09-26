@@ -257,7 +257,7 @@ export function CommercialPreviewStep({
                   <Info color="#8E8E93" size={16} strokeWidth={2} />
                 </button>
               </div>
-              <span className={infoRowValueCls}>{formData.isCustomsCleared ? "Растаможен" : "Не растаможен"}</span>
+              <span className={infoRowValueCls}>{formData.isCustomsCleared ? "Не растаможен" : "Растаможен"}</span>
             </div>
           </Section>
 
